@@ -47,7 +47,7 @@ class EpisodeSelectionBar(
             context, com.google.android.material.R.attr.colorOnSurface, Color.WHITE
         )
         val primary = MaterialColors.getColor(
-            context, com.google.android.material.R.attr.colorPrimary, Color.CYAN
+            context, androidx.appcompat.R.attr.colorPrimary, Color.CYAN
         )
         val boldFont: Typeface? = try {
             ResourcesCompat.getFont(context, R.font.poppins_bold)

@@ -102,7 +102,7 @@ class EpisodeAdapter(
 
     private fun selectionOverlay(v: View): android.graphics.drawable.Drawable {
         val primary = com.google.android.material.color.MaterialColors.getColor(
-            v, com.google.android.material.R.attr.colorPrimary
+            v, androidx.appcompat.R.attr.colorPrimary
         )
         val density = v.resources.displayMetrics.density
         return android.graphics.drawable.GradientDrawable().apply {
