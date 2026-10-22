@@ -41,7 +41,7 @@ class EpisodeSelectionBar(
 
     init {
         val surface = MaterialColors.getColor(
-            context, com.google.android.material.R.attr.colorSurfaceVariant, Color.DKGRAY
+            context, com.google.android.material.R.attr.colorSurface, Color.DKGRAY
         )
         val onSurface = MaterialColors.getColor(
             context, com.google.android.material.R.attr.colorOnSurface, Color.WHITE
@@ -60,8 +60,10 @@ class EpisodeSelectionBar(
         )
 
         card.apply {
-            radius = dp(24).toFloat()
-            cardElevation = dp(10).toFloat()
+            // Flat, full-width bar in the same surface colour as the Info/Watch/Comments bar
+            radius = 0f
+            cardElevation = 0f
+            strokeWidth = 0
             setCardBackgroundColor(surface)
             isClickable = true // swallow touches so they don't reach the list behind the bar
             visibility = View.GONE
@@ -69,7 +71,7 @@ class EpisodeSelectionBar(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 Gravity.BOTTOM
-            ).apply { setMargins(dp(12), 0, dp(12), dp(12)) }
+            ).apply { setMargins(0, 0, 0, 0) }
         }
 
         val column = LinearLayout(context).apply {
@@ -143,7 +145,28 @@ class EpisodeSelectionBar(
 
         column.addView(header)
         column.addView(actions)
-        card.addView(column)
+        // Thin divider on top, like a separator between the list and the bar
+        val divider = View(context).apply {
+            setBackgroundColor(androidx.core.graphics.ColorUtils.setAlphaComponent(onSurface, 40))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(1)
+            )
+        }
+        val wrapper = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+        wrapper.addView(divider)
+        wrapper.addView(column)
+        card.addView(wrapper)
+    }
+
+    /** Height the bar takes up, so the list can leave room for it. */
+    fun measuredHeightPx(): Int {
+        val w = View.MeasureSpec.makeMeasureSpec(
+            context.resources.displayMetrics.widthPixels, View.MeasureSpec.EXACTLY
+        )
+        val h = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        card.measure(w, h)
+        return card.measuredHeight
     }
 
     /** Called with the current number of selected episodes. */
@@ -160,13 +183,14 @@ class EpisodeSelectionBar(
         if (shown) return
         shown = true
         (card.layoutParams as? FrameLayout.LayoutParams)?.let {
-            it.bottomMargin = dp(12) + navBarHeight
+            // sit directly on top of the Info / Watch / Comments tab bar (64dp + system nav bar)
+            it.bottomMargin = dp(64) + navBarHeight
             card.layoutParams = it
         }
         card.animate().cancel()
         card.visibility = View.VISIBLE
         card.alpha = 0f
-        card.translationY = dp(80).toFloat()
+        card.translationY = dp(24).toFloat()
         card.animate().alpha(1f).translationY(0f).setDuration(200).start()
     }
 
@@ -174,7 +198,7 @@ class EpisodeSelectionBar(
         if (!shown) return
         shown = false
         card.animate().cancel()
-        card.animate().alpha(0f).translationY(dp(80).toFloat()).setDuration(160)
+        card.animate().alpha(0f).translationY(dp(24).toFloat()).setDuration(160)
             .withEndAction { if (!shown) card.visibility = View.GONE }
             .start()
     }

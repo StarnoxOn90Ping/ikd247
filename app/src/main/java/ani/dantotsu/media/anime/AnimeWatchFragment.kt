@@ -200,7 +200,7 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
 
                 val position = gridLayoutManager.findFirstVisibleItemPosition()
                 if (position > 2) {
-                    binding.ScrollTop.translationY = -(navBarHeight + 12.toPx).toFloat()
+                    binding.ScrollTop.translationY = -(navBarHeight + 12.toPx + selectionInset).toFloat()
                     binding.ScrollTop.visibility = View.VISIBLE
                 } else {
                     binding.ScrollTop.visibility = View.GONE
@@ -581,6 +581,24 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
         episodeAdapter.onSelectionChanged = { count ->
             selectionBackCallback.isEnabled = count > 0
             selectionBar?.update(count)
+            applySelectionInsets(count > 0)
+        }
+    }
+
+    private var recyclerBasePaddingBottom = -1
+    private var selectionInset = 0
+
+    /** Adds bottom room to the list (and lifts the scroll-to-top button) while the bar is showing. */
+    private fun applySelectionInsets(show: Boolean) {
+        val b = _binding ?: return
+        val bar = selectionBar ?: return
+        if (recyclerBasePaddingBottom < 0) {
+            recyclerBasePaddingBottom = b.mediaSourceRecycler.paddingBottom
+        }
+        selectionInset = if (show) bar.measuredHeightPx() else 0
+        b.mediaSourceRecycler.updatePadding(bottom = recyclerBasePaddingBottom + selectionInset)
+        if (b.ScrollTop.isVisible) {
+            b.ScrollTop.translationY = -(navBarHeight + 12.toPx + selectionInset).toFloat()
         }
     }
 
@@ -1161,6 +1179,8 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
         }
         selectionBar?.let { (it.view.parent as? ViewGroup)?.removeView(it.view) }
         selectionBar = null
+        recyclerBasePaddingBottom = -1
+        selectionInset = 0
         super.onDestroyView()
         _binding?.mediaSourceRecycler?.adapter = null
         _binding = null
