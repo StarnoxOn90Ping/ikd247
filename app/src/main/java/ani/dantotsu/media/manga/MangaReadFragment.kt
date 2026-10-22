@@ -919,6 +919,7 @@ open class MangaReadFragment : Fragment(), ScanlatorSelectionListener {
 
         model.saveSelected(media.id, selected)
         headerAdapter.handleChapters()
+        setupSelectionUi()
         chapterAdapter.clearSelection()
         chapterAdapter.notifyItemRangeRemoved(0, chapterAdapter.arr.size)
         var arr: ArrayList<MangaChapter> = arrayListOf()
