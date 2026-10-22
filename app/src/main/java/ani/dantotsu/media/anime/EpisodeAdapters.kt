@@ -68,6 +68,58 @@ class EpisodeAdapter(
         private const val PAYLOAD_PROGRESS = "download_progress"
         /** Partial bind: update download chrome (icon/state) without full card rebind. */
         private const val PAYLOAD_DOWNLOAD_STATE = "download_state"
+        /** Partial bind: only refresh the selected/unselected look of a card. */
+        private const val PAYLOAD_SELECTION = "selection"
+    }
+
+    /** Episodes picked in multi-select mode (long-press an episode to start). */
+    val selectedEpisodes = LinkedHashSet<String>()
+    var onSelectionChanged: ((Int) -> Unit)? = null
+
+    fun isSelecting(): Boolean = selectedEpisodes.isNotEmpty()
+
+    fun isDownloaded(episodeNumber: String): Boolean = downloadedEpisodes.contains(episodeNumber)
+
+    fun toggleSelection(episodeNumber: String) {
+        if (!selectedEpisodes.remove(episodeNumber)) selectedEpisodes.add(episodeNumber)
+        val index = arr.indexOfFirst { it.number == episodeNumber }
+        if (index >= 0) notifyItemChanged(index, PAYLOAD_SELECTION)
+        onSelectionChanged?.invoke(selectedEpisodes.size)
+    }
+
+    fun selectAll() {
+        arr.forEach { selectedEpisodes.add(it.number) }
+        notifyItemRangeChanged(0, arr.size, PAYLOAD_SELECTION)
+        onSelectionChanged?.invoke(selectedEpisodes.size)
+    }
+
+    fun clearSelection() {
+        if (selectedEpisodes.isEmpty()) return
+        selectedEpisodes.clear()
+        notifyItemRangeChanged(0, arr.size, PAYLOAD_SELECTION)
+        onSelectionChanged?.invoke(0)
+    }
+
+    private fun selectionOverlay(v: View): android.graphics.drawable.Drawable {
+        val primary = com.google.android.material.color.MaterialColors.getColor(
+            v, com.google.android.material.R.attr.colorPrimary
+        )
+        val density = v.resources.displayMetrics.density
+        return android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = 16f * density
+            setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(primary, 70))
+            setStroke((3 * density).toInt(), primary)
+        }
+    }
+
+    private fun applySelection(holder: RecyclerView.ViewHolder, ep: Episode) {
+        val card: android.widget.FrameLayout = when (holder) {
+            is EpisodeListViewHolder -> holder.binding.itemEpisodeCont
+            is EpisodeGridViewHolder -> holder.binding.itemEpisodeCont
+            is EpisodeCompactViewHolder -> holder.binding.itemEpisodeCont
+            else -> return
+        }
+        card.foreground = if (selectedEpisodes.contains(ep.number)) selectionOverlay(card) else null
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -115,6 +167,10 @@ class EpisodeAdapter(
         }
         if (position !in arr.indices) return
         val ep = arr[position]
+        if (payloads.contains(PAYLOAD_SELECTION)) {
+            applySelection(holder, ep)
+            return
+        }
         val listHolder = holder as? EpisodeListViewHolder ?: return
 
         when {
@@ -193,10 +249,7 @@ class EpisodeAdapter(
                     } else {
                         binding.itemEpisodeViewedCover.visibility = View.GONE
                         binding.itemEpisodeViewed.visibility = View.GONE
-                        binding.itemEpisodeCont.setOnLongClickListener {
-                            updateProgress(media, ep.number)
-                            true
-                        }
+                        // long-press now selects the episode (see the view holders)
                     }
                 } else {
                     binding.itemEpisodeViewedCover.visibility = View.GONE
@@ -260,10 +313,7 @@ class EpisodeAdapter(
                     } else {
                         binding.itemEpisodeViewedCover.visibility = View.GONE
                         binding.itemEpisodeViewed.visibility = View.GONE
-                        binding.itemEpisodeCont.setOnLongClickListener {
-                            updateProgress(media, ep.number)
-                            true
-                        }
+                        // long-press now selects the episode (see the view holders)
                     }
                 } else {
                     binding.itemEpisodeViewedCover.visibility = View.GONE
@@ -289,10 +339,7 @@ class EpisodeAdapter(
                         binding.itemEpisodeViewedCover.visibility = View.VISIBLE
                     else {
                         binding.itemEpisodeViewedCover.visibility = View.GONE
-                        binding.itemEpisodeCont.setOnLongClickListener {
-                            updateProgress(media, ep.number)
-                            true
-                        }
+                        // long-press now selects the episode (see the view holders)
                     }
                 }
                 handleProgress(
@@ -304,6 +351,7 @@ class EpisodeAdapter(
                 )
             }
         }
+        applySelection(holder, ep)
     }
 
     override fun getItemCount(): Int = arr.size
@@ -409,8 +457,16 @@ class EpisodeAdapter(
         RecyclerView.ViewHolder(binding.root) {
         init {
             itemView.setOnClickListener {
-                if (bindingAdapterPosition < arr.size && bindingAdapterPosition >= 0)
-                    fragment.onEpisodeClick(arr[bindingAdapterPosition].number)
+                val pos = bindingAdapterPosition
+                if (pos >= 0 && pos < arr.size) {
+                    if (isSelecting()) toggleSelection(arr[pos].number)
+                    else fragment.onEpisodeClick(arr[pos].number)
+                }
+            }
+            itemView.setOnLongClickListener {
+                val pos = bindingAdapterPosition
+                if (pos >= 0 && pos < arr.size) toggleSelection(arr[pos].number)
+                true
             }
         }
     }
@@ -419,8 +475,16 @@ class EpisodeAdapter(
         RecyclerView.ViewHolder(binding.root) {
         init {
             itemView.setOnClickListener {
-                if (bindingAdapterPosition < arr.size && bindingAdapterPosition >= 0)
-                    fragment.onEpisodeClick(arr[bindingAdapterPosition].number)
+                val pos = bindingAdapterPosition
+                if (pos >= 0 && pos < arr.size) {
+                    if (isSelecting()) toggleSelection(arr[pos].number)
+                    else fragment.onEpisodeClick(arr[pos].number)
+                }
+            }
+            itemView.setOnLongClickListener {
+                val pos = bindingAdapterPosition
+                if (pos >= 0 && pos < arr.size) toggleSelection(arr[pos].number)
+                true
             }
         }
     }
@@ -431,8 +495,16 @@ class EpisodeAdapter(
 
         init {
             itemView.setOnClickListener {
-                if (bindingAdapterPosition < arr.size && bindingAdapterPosition >= 0)
-                    fragment.onEpisodeClick(arr[bindingAdapterPosition].number)
+                val pos = bindingAdapterPosition
+                if (pos >= 0 && pos < arr.size) {
+                    if (isSelecting()) toggleSelection(arr[pos].number)
+                    else fragment.onEpisodeClick(arr[pos].number)
+                }
+            }
+            itemView.setOnLongClickListener {
+                val pos = bindingAdapterPosition
+                if (pos >= 0 && pos < arr.size) toggleSelection(arr[pos].number)
+                true
             }
             binding.itemDownload.setOnClickListener {
                 if (0 <= bindingAdapterPosition && bindingAdapterPosition < arr.size) {

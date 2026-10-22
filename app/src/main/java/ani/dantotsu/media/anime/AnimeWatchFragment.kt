@@ -9,6 +9,11 @@ import android.os.Bundle
 import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
+import ani.dantotsu.connections.updateProgress
+import ani.dantotsu.connections.mal.MAL
+import ani.dantotsu.connections.anilist.Anilist
+import ani.dantotsu.Refresh
+import androidx.activity.OnBackPressedCallback
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toast
@@ -249,6 +254,7 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
 
                     binding.mediaSourceRecycler.adapter =
                         ConcatAdapter(headerAdapter, episodeAdapter)
+                    setupSelectionUi()
 
                     viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                         val ctx = context
@@ -541,6 +547,164 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
 
         for (episode in episodesToDelete) {
             onAnimeEpisodeRemoveDownloadClick(episode.number)
+        }
+    }
+
+    // ---------------- Multi-select (long-press an episode) ----------------
+    private var selectionBar: EpisodeSelectionBar? = null
+    private val selectionBackCallback = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            if (::episodeAdapter.isInitialized) episodeAdapter.clearSelection()
+        }
+    }
+
+    private fun setupSelectionUi() {
+        val root = _binding?.root as? ViewGroup ?: return
+        if (selectionBar == null) {
+            val bar = EpisodeSelectionBar(
+                requireContext(),
+                onClose = { episodeAdapter.clearSelection() },
+                onSelectAll = { episodeAdapter.selectAll() },
+                onInfo = { showSelectedEpisodeInfo() },
+                onWatched = { markSelectedWatched() },
+                onUnwatched = { markSelectedUnwatched() },
+                onDownload = { downloadSelectedEpisodes() },
+                onDelete = { deleteSelectedDownloads() }
+            )
+            root.addView(bar.view)
+            selectionBar = bar
+            requireActivity().onBackPressedDispatcher.addCallback(
+                viewLifecycleOwner,
+                selectionBackCallback
+            )
+        }
+        episodeAdapter.onSelectionChanged = { count ->
+            selectionBackCallback.isEnabled = count > 0
+            selectionBar?.update(count)
+        }
+    }
+
+    private fun selectedEpisodesInOrder(): List<Episode> =
+        episodeAdapter.arr.filter { episodeAdapter.selectedEpisodes.contains(it.number) }
+
+    private fun episodeNumberValue(ep: Episode): Float? =
+        MediaNameAdapter.findEpisodeNumber(ep.number) ?: ep.number.toFloatOrNull()
+
+    private fun showSelectedEpisodeInfo() {
+        val eps = selectedEpisodesInOrder()
+        if (eps.isEmpty()) return
+        val text = StringBuilder()
+        eps.forEach { ep ->
+            text.append("Episode ").append(ep.number)
+            val title = ep.title
+            if (!title.isNullOrBlank() && title != ep.number) text.append(" - ").append(title)
+            text.append("\n")
+            text.append(ep.desc?.takeIf { it.isNotBlank() } ?: "No description available.")
+            text.append("\n\n")
+        }
+        requireContext().customAlertDialog().apply {
+            setTitle(if (eps.size == 1) "Episode info" else "${eps.size} episodes")
+            setMessage(text.toString().trim())
+            setPosButton(R.string.ok)
+            show()
+        }
+    }
+
+    private fun markSelectedWatched() {
+        val target = selectedEpisodesInOrder()
+            .maxByOrNull { episodeNumberValue(it) ?: -1f } ?: return
+        val value = episodeNumberValue(target)?.toInt() ?: return
+        if (value <= (media.userProgress ?: -1)) {
+            toast("Already marked as watched")
+            return
+        }
+        updateProgress(media, target.number)
+        episodeAdapter.clearSelection()
+        view?.postDelayed({
+            if (_binding != null && ::episodeAdapter.isInitialized) {
+                episodeAdapter.notifyDataSetChanged()
+            }
+        }, 1500)
+    }
+
+    private fun markSelectedUnwatched() {
+        val lowest = selectedEpisodesInOrder()
+            .minByOrNull { episodeNumberValue(it) ?: Float.MAX_VALUE } ?: return
+        val lowestNum = episodeNumberValue(lowest)?.toInt() ?: return
+        val current = media.userProgress ?: 0
+        if (lowestNum > current) {
+            toast("Selected episodes are already unwatched")
+            return
+        }
+        val newProgress = (lowestNum - 1).coerceAtLeast(0)
+        if (PrefManager.getVal<Boolean>(PrefName.Incognito)) {
+            toast("Not available in incognito mode")
+            return
+        }
+        if (PrefManager.getVal<Boolean>(PrefName.RescueMode) || Anilist.userid == null) {
+            toast("Can't change progress right now")
+            return
+        }
+        requireContext().customAlertDialog().apply {
+            setTitle("Mark as unwatched")
+            setMessage("AniList only tracks one progress number, so this sets your progress back to episode $newProgress. Continue?")
+            setPosButton(R.string.yes) {
+                val status = if (media.userStatus == "REPEATING") "REPEATING" else "CURRENT"
+                episodeAdapter.clearSelection()
+                kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        Anilist.mutation.editList(media.id, newProgress, status = status)
+                        MAL.query.editList(media.idMAL, media.anime != null, newProgress, null, status)
+                        media.userProgress = newProgress
+                        Anilist.query.invalidateHomePageCache()
+                        Anilist.query.invalidateUserStatusCache()
+                        Refresh.all()
+                        withContext(Dispatchers.Main) {
+                            if (_binding != null && ::episodeAdapter.isInitialized) {
+                                episodeAdapter.notifyDataSetChanged()
+                            }
+                            toast("Progress set to episode $newProgress")
+                        }
+                    } catch (e: Exception) {
+                        Logger.log(e)
+                        toast("Couldn't update progress")
+                    }
+                }
+            }
+            setNegButton(R.string.no)
+            show()
+        }
+    }
+
+    private fun downloadSelectedEpisodes() {
+        val toDownload = selectedEpisodesInOrder()
+            .map { it.number }
+            .filter { !episodeAdapter.isDownloaded(it) }
+        if (toDownload.isEmpty()) {
+            toast("Selected episodes are already downloaded")
+            return
+        }
+        episodeAdapter.clearSelection()
+        onAnimeEpisodesDownload(ArrayList<String>(toDownload))
+    }
+
+    private fun deleteSelectedDownloads() {
+        val downloaded = selectedEpisodesInOrder()
+            .map { it.number }
+            .filter { episodeAdapter.isDownloaded(it) }
+        if (downloaded.isEmpty()) {
+            toast("None of the selected episodes are downloaded")
+            return
+        }
+        requireContext().customAlertDialog().apply {
+            setTitle("Delete downloads")
+            setMessage("Delete ${downloaded.size} downloaded episode(s)?")
+            setPosButton(R.string.yes) {
+                episodeAdapter.clearSelection()
+                downloaded.forEach { onAnimeEpisodeRemoveDownloadClick(it) }
+            }
+            setNegButton(R.string.no)
+            show()
         }
     }
 
@@ -962,6 +1126,7 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
         headerAdapter.handleEpisodes()
         val isDownloaded = model.watchSources!!.isDownloadedSource(media.selected!!.sourceIndex)
         episodeAdapter.offlineMode = isDownloaded
+        episodeAdapter.clearSelection()
         episodeAdapter.notifyItemRangeRemoved(0, episodeAdapter.arr.size)
         var arr: ArrayList<Episode> = arrayListOf()
         if (media.anime!!.episodes != null) {
@@ -994,6 +1159,8 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
         if (::headerAdapter.isInitialized) {
             headerAdapter.clearBinding()
         }
+        selectionBar?.let { (it.view.parent as? ViewGroup)?.removeView(it.view) }
+        selectionBar = null
         super.onDestroyView()
         _binding?.mediaSourceRecycler?.adapter = null
         _binding = null
