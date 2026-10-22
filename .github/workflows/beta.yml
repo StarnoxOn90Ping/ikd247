@@ -107,7 +107,7 @@ jobs:
       if: ${{ env.SKIP_BUILD != 'true' }}
       run: |
         if [ "${{ github.repository }}" == "rebelonion/Dantotsu" ]; then
-          ./gradlew assembleGoogleAlpha \
+          ./gradlew assembleGoogleRelease \
             -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/key.keystore \
             -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
             -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
@@ -133,7 +133,7 @@ jobs:
           name: Dantotsu
           retention-days: 5
           compression-level: 9
-          path: "app/build/outputs/apk/**/*.apk"
+          path: "app/build/outputs/apk/**/*arm64-v8a*.apk"
 
     - name: Upload APK to Discord and Telegram
       if: ${{ github.repository == 'rebelonion/Dantotsu' }}
