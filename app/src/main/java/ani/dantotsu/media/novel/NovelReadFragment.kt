@@ -10,6 +10,9 @@ import android.os.Looper
 import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
+import ani.dantotsu.toast
+import ani.dantotsu.media.anime.EpisodeSelectionBar
+import androidx.activity.OnBackPressedCallback
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.core.view.updatePadding
@@ -532,7 +535,7 @@ class NovelReadFragment : Fragment(),
 
                 val position = gridLayoutManager.findFirstVisibleItemPosition()
                 if (position > 2) {
-                    binding.ScrollTop.translationY = -(navBarHeight + 12.toPx).toFloat()
+                    binding.ScrollTop.translationY = -(navBarHeight + 12.toPx + selectionInset).toFloat()
                     binding.ScrollTop.visibility = View.VISIBLE
                 } else {
                     binding.ScrollTop.visibility = View.GONE
@@ -564,6 +567,7 @@ class NovelReadFragment : Fragment(),
 
                     binding.mediaSourceRecycler.adapter =
                         ConcatAdapter(headerAdapter, novelResponseAdapter)
+                    setupSelectionUi()
                     loaded = true
 
                     val isLnReader = source in 0 until model.novelSources.names.size
@@ -708,6 +712,10 @@ class NovelReadFragment : Fragment(),
         if (::headerAdapter.isInitialized) {
             headerAdapter.clearBinding()
         }
+        selectionBar?.let { (it.view.parent as? ViewGroup)?.removeView(it.view) }
+        selectionBar = null
+        recyclerBasePaddingBottom = -1
+        selectionInset = 0
         super.onDestroyView()
         _binding?.mediaSourceRecycler?.adapter = null
         _binding = null
@@ -722,6 +730,111 @@ class NovelReadFragment : Fragment(),
             isReceiverRegistered = false
         }
         super.onDestroy()
+    }
+
+    // ---------------- Multi-select (long-press a novel) ----------------
+    private var selectionBar: EpisodeSelectionBar? = null
+    private val selectionBackCallback = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            if (::novelResponseAdapter.isInitialized) novelResponseAdapter.clearSelection()
+        }
+    }
+    private var recyclerBasePaddingBottom = -1
+    private var selectionInset = 0
+
+    // Novels have no per-item read progress, so the bar only has Info / Download / Delete.
+    private fun setupSelectionUi() {
+        val root = _binding?.root as? ViewGroup ?: return
+        if (selectionBar == null) {
+            val bar = EpisodeSelectionBar(
+                requireContext(),
+                onClose = { novelResponseAdapter.clearSelection() },
+                onSelectAll = { novelResponseAdapter.selectAll() },
+                onInfo = { showSelectedNovelInfo() },
+                onDownload = { downloadSelectedNovels() },
+                onDelete = { deleteSelectedNovels() }
+            )
+            root.addView(bar.view)
+            selectionBar = bar
+            requireActivity().onBackPressedDispatcher.addCallback(
+                viewLifecycleOwner,
+                selectionBackCallback
+            )
+        }
+        novelResponseAdapter.onSelectionChanged = { count ->
+            selectionBackCallback.isEnabled = count > 0
+            selectionBar?.update(count)
+            applySelectionInsets(count > 0)
+        }
+    }
+
+    /** Leaves room under the list (and lifts the scroll-to-top button) while the bar is showing. */
+    private fun applySelectionInsets(show: Boolean) {
+        val b = _binding ?: return
+        val bar = selectionBar ?: return
+        if (recyclerBasePaddingBottom < 0) {
+            recyclerBasePaddingBottom = b.mediaSourceRecycler.paddingBottom
+        }
+        selectionInset = if (show) bar.measuredHeightPx() else 0
+        b.mediaSourceRecycler.updatePadding(bottom = recyclerBasePaddingBottom + selectionInset)
+        if (b.ScrollTop.isVisible) {
+            b.ScrollTop.translationY = -(navBarHeight + 12.toPx + selectionInset).toFloat()
+        }
+    }
+
+    private fun showSelectedNovelInfo() {
+        val novels = novelResponseAdapter.selectedNovelsInOrder()
+        if (novels.isEmpty()) return
+        val text = StringBuilder()
+        novels.forEach { novel ->
+            text.append(novel.name).append("\n")
+            if (novel.otherNames.isNotEmpty()) {
+                text.append("Also known as: ").append(novel.otherNames.joinToString(", ")).append("\n")
+            }
+            novel.total?.let { text.append("Chapters: ").append(it).append("\n") }
+            novel.extra?.get("1")?.takeIf { it.isNotBlank() }?.let { text.append(it).append("\n") }
+            when {
+                novelResponseAdapter.isDownloading(novel.link) -> text.append("Status: downloading\n")
+                novelResponseAdapter.isDownloaded(novel) -> text.append("Status: downloaded\n")
+            }
+            novel.extra?.get("2")?.takeIf { it.isNotBlank() }?.let { text.append(it).append("\n") }
+            text.append("\n")
+        }
+        requireContext().customAlertDialog().apply {
+            setTitle(if (novels.size == 1) "Novel info" else "${novels.size} novels")
+            setMessage(text.toString().trim())
+            setPosButton(R.string.ok)
+            show()
+        }
+    }
+
+    private fun downloadSelectedNovels() {
+        val started = novelResponseAdapter.downloadSelected()
+        if (started == 0) {
+            toast("Selected novels are already downloaded")
+            return
+        }
+        novelResponseAdapter.clearSelection()
+    }
+
+    private fun deleteSelectedNovels() {
+        val deletable = novelResponseAdapter.selectedNovelsInOrder().count {
+            !novelResponseAdapter.isDownloading(it.link) && novelResponseAdapter.isDownloaded(it)
+        }
+        if (deletable == 0) {
+            toast("None of the selected novels are downloaded")
+            return
+        }
+        requireContext().customAlertDialog().apply {
+            setTitle("Delete downloads")
+            setMessage("Delete $deletable downloaded novel(s)?")
+            setPosButton(R.string.yes) {
+                novelResponseAdapter.deleteSelected()
+                novelResponseAdapter.clearSelection()
+            }
+            setNegButton(R.string.no)
+            show()
+        }
     }
 
     fun multiDownload(n: Int) {

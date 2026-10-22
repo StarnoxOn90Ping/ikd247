@@ -14,6 +14,7 @@ import ani.dantotsu.databinding.ItemChapterListBinding
 import ani.dantotsu.databinding.ItemEpisodeCompactBinding
 import ani.dantotsu.databinding.ItemNovelResponseBinding
 import ani.dantotsu.getThemeColor
+import ani.dantotsu.media.anime.applySelectionStyle
 import ani.dantotsu.loadImage
 import ani.dantotsu.parsers.ShowResponse
 import ani.dantotsu.setAnimation
@@ -30,6 +31,91 @@ class NovelResponseAdapter(
 
     // 0 = List, 1 = Compact, 2 = Cover (default)
     private var type: Int = 2
+
+    /** Novels picked in multi-select mode, keyed by link. */
+    val selectedLinks = LinkedHashSet<String>()
+    var onSelectionChanged: ((Int) -> Unit)? = null
+
+    fun isSelecting(): Boolean = selectedLinks.isNotEmpty()
+
+    fun isDownloaded(novel: ShowResponse): Boolean =
+        downloadedCheckCallback.downloadedCheck(novel) || downloadedChapters.contains(novel.link)
+
+    fun toggleSelection(novel: ShowResponse) {
+        if (!selectedLinks.remove(novel.link)) selectedLinks.add(novel.link)
+        val index = list.indexOfFirst { it.link == novel.link }
+        if (index >= 0) notifyItemChanged(index, PAYLOAD_SELECTION)
+        onSelectionChanged?.invoke(selectedLinks.size)
+    }
+
+    fun selectAll() {
+        list.forEach { selectedLinks.add(it.link) }
+        notifyItemRangeChanged(0, list.size, PAYLOAD_SELECTION)
+        onSelectionChanged?.invoke(selectedLinks.size)
+    }
+
+    fun clearSelection() {
+        if (selectedLinks.isEmpty()) return
+        selectedLinks.clear()
+        notifyItemRangeChanged(0, list.size, PAYLOAD_SELECTION)
+        onSelectionChanged?.invoke(0)
+    }
+
+    fun selectedNovelsInOrder(): List<ShowResponse> =
+        list.filter { selectedLinks.contains(it.link) }
+
+    /** Starts downloading every selected novel that isn't already downloaded or downloading. */
+    fun downloadSelected(): Int {
+        var started = 0
+        selectedNovelsInOrder().forEach { novel ->
+            if (activeDownloads.contains(novel.link) || isDownloaded(novel)) return@forEach
+            downloadTriggerCallback.downloadTrigger(
+                NovelDownloadPackage(novel.link, novel.coverUrl.url, novel.name, novel.link)
+            )
+            startDownload(novel.link)
+            started++
+        }
+        return started
+    }
+
+    /** Deletes every selected novel that is downloaded (active downloads are left alone). */
+    fun deleteSelected(): Int {
+        var deleted = 0
+        selectedNovelsInOrder().forEach { novel ->
+            if (activeDownloads.contains(novel.link) || !isDownloaded(novel)) return@forEach
+            fragment.deleteDownload(novel)
+            deleteDownload(novel.link)
+            deleted++
+        }
+        return deleted
+    }
+
+    private fun applySelection(holder: RecyclerView.ViewHolder, novel: ShowResponse, animate: Boolean) {
+        val card: View = when (holder) {
+            is CoverViewHolder -> holder.binding.root
+            is ListViewHolder -> holder.binding.root
+            is CompactViewHolder -> holder.binding.root
+            else -> return
+        }
+        applySelectionStyle(card, selectedLinks.contains(novel.link), animate)
+    }
+
+    override fun onBindViewHolder(
+        holder: RecyclerView.ViewHolder,
+        position: Int,
+        payloads: MutableList<Any>
+    ) {
+        if (payloads.contains(PAYLOAD_SELECTION)) {
+            if (position in list.indices) applySelection(holder, list[position], true)
+            return
+        }
+        super.onBindViewHolder(holder, position, payloads)
+    }
+
+    companion object {
+        /** Partial bind: only refresh the selected/unselected look of a card. */
+        private const val PAYLOAD_SELECTION = "selection"
+    }
 
     inner class CoverViewHolder(val binding: ItemNovelResponseBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -252,25 +338,16 @@ class NovelResponseAdapter(
             is ListViewHolder -> holder.bind(novel, position)
             is CompactViewHolder -> holder.bind(novel, position)
         }
+        applySelection(holder, novel, false)
     }
 
     private fun setupClickListeners(root: View, novel: ShowResponse) {
         root.setOnClickListener {
-            fragment.onNovelClick(novel)
+            if (isSelecting()) toggleSelection(novel) else fragment.onNovelClick(novel)
         }
 
         root.setOnLongClickListener {
-            it.context.customAlertDialog().apply {
-                setTitle("Delete ${novel.name}?")
-                setMessage("Are you sure you want to delete ${novel.name}?")
-                setPosButton(R.string.yes) {
-                    downloadedCheckCallback.deleteDownload(novel)
-                    deleteDownload(novel.link)
-                    snackString("Deleted ${novel.name}")
-                }
-                setNegButton(R.string.no)
-                show()
-            }
+            toggleSelection(novel)
             true
         }
     }
@@ -385,6 +462,10 @@ class NovelResponseAdapter(
     }
 
     fun clear() {
+        if (selectedLinks.isNotEmpty()) {
+            selectedLinks.clear()
+            onSelectionChanged?.invoke(0)
+        }
         val size = list.size
         list.clear()
         notifyItemRangeRemoved(0, size)
