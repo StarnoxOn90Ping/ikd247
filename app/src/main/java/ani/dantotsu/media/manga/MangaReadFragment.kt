@@ -12,6 +12,14 @@ import android.os.Bundle
 import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
+import ani.dantotsu.util.Logger
+import ani.dantotsu.toast
+import ani.dantotsu.media.anime.EpisodeSelectionBar
+import ani.dantotsu.connections.updateProgress
+import ani.dantotsu.connections.mal.MAL
+import ani.dantotsu.connections.anilist.Anilist
+import ani.dantotsu.Refresh
+import androidx.activity.OnBackPressedCallback
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toast
@@ -196,7 +204,7 @@ open class MangaReadFragment : Fragment(), ScanlatorSelectionListener {
 
                 val position = gridLayoutManager.findFirstVisibleItemPosition()
                 if (position > 2) {
-                    binding.ScrollTop.translationY = -(navBarHeight + 12.toPx).toFloat()
+                    binding.ScrollTop.translationY = -(navBarHeight + 12.toPx + selectionInset).toFloat()
                     binding.ScrollTop.visibility = View.VISIBLE
                 } else {
                     binding.ScrollTop.visibility = View.GONE
@@ -249,6 +257,7 @@ open class MangaReadFragment : Fragment(), ScanlatorSelectionListener {
 
                         binding.mediaSourceRecycler.adapter =
                             ConcatAdapter(headerAdapter, chapterAdapter)
+                        setupSelectionUi()
 
                         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                             val ctx = context
@@ -277,6 +286,207 @@ open class MangaReadFragment : Fragment(), ScanlatorSelectionListener {
 
     override fun onScanlatorsSelected() {
         updateChapters()
+    }
+
+    // ---------------- Multi-select (long-press a chapter) ----------------
+    private var selectionBar: EpisodeSelectionBar? = null
+    private val selectionBackCallback = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            if (::chapterAdapter.isInitialized) chapterAdapter.clearSelection()
+        }
+    }
+    private var recyclerBasePaddingBottom = -1
+    private var selectionInset = 0
+
+    private fun setupSelectionUi() {
+        val root = _binding?.root as? ViewGroup ?: return
+        if (selectionBar == null) {
+            val bar = EpisodeSelectionBar(
+                requireContext(),
+                onClose = { chapterAdapter.clearSelection() },
+                onSelectAll = { chapterAdapter.selectAll() },
+                onInfo = { showSelectedChapterInfo() },
+                onWatched = { markSelectedRead() },
+                onUnwatched = { markSelectedUnread() },
+                onDownload = { downloadSelectedChapters() },
+                onDelete = { deleteSelectedChapters() },
+                watchedLabel = "Read",
+                unwatchedLabel = "Unread"
+            )
+            root.addView(bar.view)
+            selectionBar = bar
+            requireActivity().onBackPressedDispatcher.addCallback(
+                viewLifecycleOwner,
+                selectionBackCallback
+            )
+        }
+        chapterAdapter.onSelectionChanged = { count ->
+            selectionBackCallback.isEnabled = count > 0
+            selectionBar?.update(count)
+            applySelectionInsets(count > 0)
+        }
+    }
+
+    /** Leaves room under the list (and lifts the scroll-to-top button) while the bar is showing. */
+    private fun applySelectionInsets(show: Boolean) {
+        val b = _binding ?: return
+        val bar = selectionBar ?: return
+        if (recyclerBasePaddingBottom < 0) {
+            recyclerBasePaddingBottom = b.mediaSourceRecycler.paddingBottom
+        }
+        selectionInset = if (show) bar.measuredHeightPx() else 0
+        b.mediaSourceRecycler.updatePadding(bottom = recyclerBasePaddingBottom + selectionInset)
+        if (b.ScrollTop.isVisible) {
+            b.ScrollTop.translationY = -(navBarHeight + 12.toPx + selectionInset).toFloat()
+        }
+    }
+
+    private fun selectedChaptersInOrder(): List<MangaChapter> =
+        chapterAdapter.arr.filter { chapterAdapter.selectedChapters.contains(it.uniqueNumber()) }
+
+    private fun chapterNumberValue(chapter: MangaChapter): Float? =
+        MediaNameAdapter.findChapterNumber(chapter.number)
+
+    private fun isChapterDownloading(chapter: MangaChapter): Boolean =
+        chapterAdapter.isDownloading(chapter.uniqueNumber()) || chapterAdapter.isDownloading(chapter.number)
+
+    /** Chapter details: title, scanlator group, upload date, download state, description. */
+    private fun showSelectedChapterInfo() {
+        val chapters = selectedChaptersInOrder()
+        if (chapters.isEmpty()) return
+        val text = StringBuilder()
+        chapters.forEach { ch ->
+            text.append("Chapter ").append(ch.number)
+            val title = ch.title
+            if (!title.isNullOrBlank() && title != ch.number) text.append(" - ").append(title)
+            text.append("\n")
+            ch.scanlator?.takeIf { it.isNotBlank() }?.let {
+                text.append("Scanlator: ").append(it).append("\n")
+            }
+            val date = chapterAdapter.formatDate(ch.date)
+            if (date.isNotEmpty()) text.append("Uploaded: ").append(date).append("\n")
+            when {
+                isChapterDownloading(ch) -> text.append("Status: downloading\n")
+                chapterAdapter.isDownloaded(ch) -> text.append("Status: downloaded\n")
+            }
+            ch.description?.takeIf { it.isNotBlank() }?.let { text.append(it).append("\n") }
+            text.append("\n")
+        }
+        requireContext().customAlertDialog().apply {
+            setTitle(if (chapters.size == 1) "Chapter info" else "${chapters.size} chapters")
+            setMessage(text.toString().trim())
+            setPosButton(R.string.ok)
+            show()
+        }
+    }
+
+    private fun markSelectedRead() {
+        val target = selectedChaptersInOrder()
+            .maxByOrNull { chapterNumberValue(it) ?: -1f } ?: return
+        val value = chapterNumberValue(target) ?: run {
+            toast("Couldn't read this chapter's number")
+            return
+        }
+        if (value.toInt() <= (media.userProgress ?: -1)) {
+            toast("Already marked as read")
+            return
+        }
+        updateProgress(media, value.toString())
+        chapterAdapter.clearSelection()
+        view?.postDelayed({
+            if (_binding != null && ::chapterAdapter.isInitialized) {
+                chapterAdapter.notifyDataSetChanged()
+            }
+        }, 1500)
+    }
+
+    private fun markSelectedUnread() {
+        val lowest = selectedChaptersInOrder()
+            .mapNotNull { chapterNumberValue(it) }
+            .minOrNull() ?: run {
+            toast("Couldn't read the chapter number")
+            return
+        }
+        val current = media.userProgress ?: 0
+        if (lowest > current.toFloat()) {
+            toast("Selected chapters are already unread")
+            return
+        }
+        // Chapters up to the progress number count as read, so step back to just before the lowest one
+        val newProgress = (kotlin.math.ceil(lowest).toInt() - 1).coerceAtLeast(0)
+        if (PrefManager.getVal<Boolean>(PrefName.Incognito)) {
+            toast("Not available in incognito mode")
+            return
+        }
+        if (PrefManager.getVal<Boolean>(PrefName.RescueMode) || Anilist.userid == null) {
+            toast("Can't change progress right now")
+            return
+        }
+        requireContext().customAlertDialog().apply {
+            setTitle("Mark as unread")
+            setMessage("AniList only tracks one progress number, so this sets your progress back to chapter $newProgress. Continue?")
+            setPosButton(R.string.yes) {
+                val status = if (media.userStatus == "REPEATING") "REPEATING" else "CURRENT"
+                chapterAdapter.clearSelection()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        Anilist.mutation.editList(media.id, newProgress, status = status)
+                        MAL.query.editList(media.idMAL, media.anime != null, newProgress, null, status)
+                        media.userProgress = newProgress
+                        Anilist.query.invalidateHomePageCache()
+                        Anilist.query.invalidateUserStatusCache()
+                        Refresh.all()
+                        withContext(Dispatchers.Main) {
+                            if (_binding != null && ::chapterAdapter.isInitialized) {
+                                chapterAdapter.notifyDataSetChanged()
+                            }
+                            toast("Progress set to chapter $newProgress")
+                        }
+                    } catch (e: Exception) {
+                        Logger.log(e)
+                        toast("Couldn't update progress")
+                    }
+                }
+            }
+            setNegButton(R.string.no)
+            show()
+        }
+    }
+
+    private fun downloadSelectedChapters() {
+        val toDownload = selectedChaptersInOrder().filter {
+            !isChapterDownloading(it) && !chapterAdapter.isDownloaded(it)
+        }
+        if (toDownload.isEmpty()) {
+            toast("Selected chapters are already downloaded")
+            return
+        }
+        chapterAdapter.clearSelection()
+        toDownload.forEach { onMangaChapterDownloadClick(it) }
+    }
+
+    /** Deletes finished downloads and cancels any that are still in progress. */
+    private fun deleteSelectedChapters() {
+        val affected = selectedChaptersInOrder().filter {
+            isChapterDownloading(it) || chapterAdapter.isDownloaded(it)
+        }
+        if (affected.isEmpty()) {
+            toast("None of the selected chapters are downloaded")
+            return
+        }
+        requireContext().customAlertDialog().apply {
+            setTitle("Delete downloads")
+            setMessage("Delete or cancel the downloads of ${affected.size} chapter(s)?")
+            setPosButton(R.string.yes) {
+                chapterAdapter.clearSelection()
+                affected.forEach {
+                    if (isChapterDownloading(it)) onMangaChapterStopDownloadClick(it)
+                    else onMangaChapterRemoveDownloadClick(it)
+                }
+            }
+            setNegButton(R.string.no)
+            show()
+        }
     }
 
     fun multiDownload(n: Int) {
@@ -709,6 +919,7 @@ open class MangaReadFragment : Fragment(), ScanlatorSelectionListener {
 
         model.saveSelected(media.id, selected)
         headerAdapter.handleChapters()
+        chapterAdapter.clearSelection()
         chapterAdapter.notifyItemRangeRemoved(0, chapterAdapter.arr.size)
         var arr: ArrayList<MangaChapter> = arrayListOf()
         if (media.manga!!.chapters != null) {
@@ -744,6 +955,10 @@ open class MangaReadFragment : Fragment(), ScanlatorSelectionListener {
         if (::headerAdapter.isInitialized) {
             headerAdapter.clearBinding()
         }
+        selectionBar?.let { (it.view.parent as? ViewGroup)?.removeView(it.view) }
+        selectionBar = null
+        recyclerBasePaddingBottom = -1
+        selectionInset = 0
         super.onDestroyView()
         _binding?.mediaSourceRecycler?.adapter = null
         _binding = null

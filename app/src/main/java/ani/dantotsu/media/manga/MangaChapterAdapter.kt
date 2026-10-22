@@ -14,6 +14,7 @@ import ani.dantotsu.databinding.ItemChapterListBinding
 import ani.dantotsu.databinding.ItemEpisodeCompactBinding
 import ani.dantotsu.media.Media
 import ani.dantotsu.media.MediaNameAdapter
+import ani.dantotsu.media.anime.applySelectionStyle
 import ani.dantotsu.setAnimation
 import ani.dantotsu.util.SizeFormatter
 import ani.dantotsu.util.customAlertDialog
@@ -29,6 +30,59 @@ class MangaChapterAdapter(
     private val fragment: MangaReadFragment,
     var arr: ArrayList<MangaChapter> = arrayListOf(),
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+    companion object {
+        /** Partial bind: only refresh the selected/unselected look of a card. */
+        private const val PAYLOAD_SELECTION = "selection"
+    }
+
+    /** Chapters picked in multi-select mode, keyed by uniqueNumber() (number + scanlator). */
+    val selectedChapters = LinkedHashSet<String>()
+    var onSelectionChanged: ((Int) -> Unit)? = null
+
+    fun isSelecting(): Boolean = selectedChapters.isNotEmpty()
+
+    fun toggleSelection(chapter: MangaChapter) {
+        val key = chapter.uniqueNumber()
+        if (!selectedChapters.remove(key)) selectedChapters.add(key)
+        val index = arr.indexOfFirst { it.uniqueNumber() == key }
+        if (index >= 0) notifyItemChanged(index, PAYLOAD_SELECTION)
+        onSelectionChanged?.invoke(selectedChapters.size)
+    }
+
+    fun selectAll() {
+        arr.forEach { selectedChapters.add(it.uniqueNumber()) }
+        notifyItemRangeChanged(0, arr.size, PAYLOAD_SELECTION)
+        onSelectionChanged?.invoke(selectedChapters.size)
+    }
+
+    fun clearSelection() {
+        if (selectedChapters.isEmpty()) return
+        selectedChapters.clear()
+        notifyItemRangeChanged(0, arr.size, PAYLOAD_SELECTION)
+        onSelectionChanged?.invoke(0)
+    }
+
+    private fun applySelection(holder: RecyclerView.ViewHolder, chapter: MangaChapter, animate: Boolean) {
+        val card: android.widget.FrameLayout = when (holder) {
+            is ChapterCompactViewHolder -> holder.binding.itemEpisodeCont
+            is ChapterListViewHolder -> holder.binding.root
+            else -> return
+        }
+        applySelectionStyle(card, selectedChapters.contains(chapter.uniqueNumber()), animate)
+    }
+
+    override fun onBindViewHolder(
+        holder: RecyclerView.ViewHolder,
+        position: Int,
+        payloads: MutableList<Any>
+    ) {
+        if (payloads.contains(PAYLOAD_SELECTION)) {
+            if (position in arr.indices) applySelection(holder, arr[position], true)
+            return
+        }
+        super.onBindViewHolder(holder, position, payloads)
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
@@ -62,8 +116,16 @@ class MangaChapterAdapter(
         RecyclerView.ViewHolder(binding.root) {
         init {
             itemView.setOnClickListener {
-                if (0 <= bindingAdapterPosition && bindingAdapterPosition < arr.size)
-                    fragment.onMangaChapterClick(arr[bindingAdapterPosition])
+                val pos = bindingAdapterPosition
+                if (pos >= 0 && pos < arr.size) {
+                    if (isSelecting()) toggleSelection(arr[pos])
+                    else fragment.onMangaChapterClick(arr[pos])
+                }
+            }
+            itemView.setOnLongClickListener {
+                val pos = bindingAdapterPosition
+                if (pos >= 0 && pos < arr.size) toggleSelection(arr[pos])
+                true
             }
         }
     }
@@ -277,8 +339,16 @@ class MangaChapterAdapter(
 
         init {
             itemView.setOnClickListener {
-                if (0 <= bindingAdapterPosition && bindingAdapterPosition < arr.size)
-                    fragment.onMangaChapterClick(arr[bindingAdapterPosition])
+                val pos = bindingAdapterPosition
+                if (pos >= 0 && pos < arr.size) {
+                    if (isSelecting()) toggleSelection(arr[pos])
+                    else fragment.onMangaChapterClick(arr[pos])
+                }
+            }
+            itemView.setOnLongClickListener {
+                val pos = bindingAdapterPosition
+                if (pos >= 0 && pos < arr.size) toggleSelection(arr[pos])
+                true
             }
             binding.itemDownload.setOnClickListener {
                 if (0 <= bindingAdapterPosition && bindingAdapterPosition < arr.size) {
@@ -368,13 +438,7 @@ class MangaChapterAdapter(
                         binding.itemEpisodeViewedCover.visibility = View.VISIBLE
                     else {
                         binding.itemEpisodeViewedCover.visibility = View.GONE
-                        binding.itemEpisodeCont.setOnLongClickListener {
-                            updateProgress(
-                                media,
-                                MediaNameAdapter.findChapterNumber(ep.number).toString()
-                            )
-                            true
-                        }
+                        // long-press now selects the chapter (see the view holders)
                     }
                 }
             }
@@ -415,13 +479,7 @@ class MangaChapterAdapter(
                     } else {
                         binding.itemEpisodeViewedCover.visibility = View.GONE
                         binding.itemEpisodeViewed.visibility = View.GONE
-                        binding.root.setOnLongClickListener {
-                            updateProgress(
-                                media,
-                                MediaNameAdapter.findChapterNumber(ep.number).toString()
-                            )
-                            true
-                        }
+                        // long-press now selects the chapter (see the view holders)
                     }
                 } else {
                     binding.itemEpisodeViewedCover.visibility = View.GONE
@@ -429,13 +487,14 @@ class MangaChapterAdapter(
                 }
             }
         }
+        if (position in arr.indices) applySelection(holder, arr[position], false)
     }
 
     fun updateType(t: Int) {
         type = t
     }
 
-    private fun formatDate(timestamp: Long?): String {
+    fun formatDate(timestamp: Long?): String {
         timestamp ?: return "" // Return empty string if timestamp is null
 
         val targetDate = Date(timestamp)
