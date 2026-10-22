@@ -28,8 +28,8 @@ class EpisodeSelectionBar(
     onClose: () -> Unit,
     onSelectAll: () -> Unit,
     onInfo: () -> Unit,
-    onWatched: () -> Unit,
-    onUnwatched: () -> Unit,
+    onWatched: (() -> Unit)? = null,
+    onUnwatched: (() -> Unit)? = null,
     onDownload: () -> Unit,
     onDelete: () -> Unit,
     watchedLabel: String = "Watched",
@@ -38,6 +38,10 @@ class EpisodeSelectionBar(
     private val card = MaterialCardView(context)
     private val countText = TextView(context)
     private var shown = false
+
+    // Extra body below the bar. It sits behind the Info/Watch/Comments bar, and only shows
+    // when the pop-up bounce overshoots, so the list never peeks through underneath.
+    private val skirt: Int get() = dp(32)
 
     val view: View get() = card
 
@@ -142,8 +146,13 @@ class EpisodeSelectionBar(
                 })
             }
         actions.addView(action(R.drawable.ic_round_info_24, "Info") { onInfo() })
-        actions.addView(action(R.drawable.ic_check, watchedLabel) { onWatched() })
-        actions.addView(action(R.drawable.ic_round_remove_red_eye_24, unwatchedLabel) { onUnwatched() })
+        // Read / watched actions are optional (novels have no per-item progress)
+        if (onWatched != null) {
+            actions.addView(action(R.drawable.ic_check, watchedLabel) { onWatched() })
+        }
+        if (onUnwatched != null) {
+            actions.addView(action(R.drawable.ic_round_remove_red_eye_24, unwatchedLabel) { onUnwatched() })
+        }
         actions.addView(action(R.drawable.ic_download_24, "Download") { onDownload() })
         actions.addView(action(R.drawable.ic_round_delete_24, "Delete") { onDelete() })
 
@@ -157,7 +166,10 @@ class EpisodeSelectionBar(
                 dp(1)
             )
         }
-        val wrapper = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+        val wrapper = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 0, 0, skirt)
+        }
         wrapper.addView(divider)
         wrapper.addView(column)
         card.addView(wrapper)
@@ -170,7 +182,7 @@ class EpisodeSelectionBar(
         )
         val h = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
         card.measure(w, h)
-        return card.measuredHeight
+        return card.measuredHeight - skirt
     }
 
     /** Called with the current number of selected episodes. */
@@ -188,7 +200,7 @@ class EpisodeSelectionBar(
         shown = true
         (card.layoutParams as? FrameLayout.LayoutParams)?.let {
             // sit directly on top of the Info / Watch / Comments tab bar (64dp + system nav bar)
-            it.bottomMargin = dp(64) + navBarHeight
+            it.bottomMargin = dp(64) + navBarHeight - skirt
             card.layoutParams = it
         }
         card.animate().cancel()
@@ -215,11 +227,16 @@ class EpisodeSelectionBar(
     }
 }
 
+private val selectionAnimators = java.util.WeakHashMap<View, android.animation.ValueAnimator>()
+
 /**
- * Shared look for a selected episode / chapter card: a tinted outline, plus a bouncy
+ * Shared look for a selected episode / chapter / novel card: a tinted outline, plus a bouncy
  * "zoom out" so it visibly sinks in. Pass animate = false when just (re)binding a row.
+ *
+ * The zoom uses a ValueAnimator on purpose: RecyclerView's item animator cancels
+ * view.animate() animations on rows that change, which made the zoom not play.
  */
-fun applySelectionStyle(card: FrameLayout, selected: Boolean, animate: Boolean) {
+fun applySelectionStyle(card: View, selected: Boolean, animate: Boolean) {
     val density = card.resources.displayMetrics.density
     card.foreground = if (selected) {
         val primary = MaterialColors.getColor(card, androidx.appcompat.R.attr.colorPrimary)
@@ -231,15 +248,20 @@ fun applySelectionStyle(card: FrameLayout, selected: Boolean, animate: Boolean) 
     } else {
         null
     }
-    val target = if (selected) 0.93f else 1f
-    card.animate().cancel()
+    val target = if (selected) 0.9f else 1f
+    selectionAnimators.remove(card)?.cancel()
     if (animate) {
-        card.animate()
-            .scaleX(target)
-            .scaleY(target)
-            .setDuration(450)
-            .setInterpolator(OvershootInterpolator(3.2f))
-            .start()
+        val animator = android.animation.ValueAnimator.ofFloat(card.scaleX, target).apply {
+            duration = 500
+            interpolator = OvershootInterpolator(4f)
+            addUpdateListener {
+                val v = it.animatedValue as Float
+                card.scaleX = v
+                card.scaleY = v
+            }
+        }
+        selectionAnimators[card] = animator
+        animator.start()
     } else {
         card.scaleX = target
         card.scaleY = target
