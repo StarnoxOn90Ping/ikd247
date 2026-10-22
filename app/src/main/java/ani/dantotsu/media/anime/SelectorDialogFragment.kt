@@ -63,6 +63,7 @@ import ani.dantotsu.tryWith
 import ani.dantotsu.util.Logger
 import ani.dantotsu.util.customAlertDialog
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -308,14 +309,20 @@ class SelectorDialogFragment : BottomSheetDialogFragment() {
                     if (ep == null) return false
                     episode = ep
 
-                    var success = false
-                    scope.launch(Dispatchers.IO) {
-                        success = model.loadEpisodeSingleVideo(
-                            ep,
-                            media!!.selected!!,
-                            selectedServerName = selectedServerName
-                        )
-                    }.join()
+                    val success = try {
+                        withContext(Dispatchers.IO) {
+                            model.loadEpisodeSingleVideo(
+                                ep,
+                                media!!.selected!!,
+                                selectedServerName = selectedServerName
+                            )
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Logger.log(e)
+                        false
+                    }
                     Log.d("AnimeDownloader", "Loading Episode Server State: $success")
                     return success
                 }
@@ -484,6 +491,8 @@ class SelectorDialogFragment : BottomSheetDialogFragment() {
 
                     Log.d("AnimeDownloader", "Downloading Episode: ${ep.number}, server: $selectedServerName")
 
+                    // Some sources leave null entries in this list, which crashed the batch download.
+                    ep.extractors?.removeAll { java.util.Objects.isNull(it) }
                     val selectedExtractor = ep.extractors?.find { it.server.name == selectedServerName }
                     if (selectedExtractor == null)
                         fail(R.string.auto_select_server_error)
@@ -597,21 +606,46 @@ class SelectorDialogFragment : BottomSheetDialogFragment() {
                                 binding.selectorCancel.visibility = View.GONE
 
                                 scope.launch(Dispatchers.IO) {
-                                    val currentEpisodes = episodes ?: return@launch
-                                    val serverSelectionScope = CoroutineScope(Dispatchers.IO)
-                                    val serverSelectionTasks = mutableListOf<Deferred<Unit>>()
-                                    for (episodeName in currentEpisodes.drop(1)) {
-                                        serverSelectionTasks.add(serverSelectionScope.async {
-                                            if(!loadEpisodeSingleServer(episodeName, selectedServerName)){
-                                                Log.d("AnimeDownloader", "Error loading server $selectedServerName for episode $episodeName")
-                                                fail(R.string.auto_select_server_error)
+                                    try {
+                                        val currentEpisodes = episodes ?: return@launch
+                                        val failedEpisodes = mutableSetOf<String>()
+                                        // Load one episode at a time: firing every request at once
+                                        // gets rate-limited by sources and used to crash the app.
+                                        for (episodeName in currentEpisodes.drop(1)) {
+                                            val ok = try {
+                                                loadEpisodeSingleServer(episodeName, selectedServerName)
+                                            } catch (e: CancellationException) {
+                                                throw e
+                                            } catch (e: Exception) {
+                                                Logger.log(e)
+                                                false
                                             }
-                                        })
-                                    }
-                                    serverSelectionTasks.awaitAll()
+                                            if (!ok) {
+                                                Log.d("AnimeDownloader", "Error loading server $selectedServerName for episode $episodeName")
+                                                failedEpisodes.add(episodeName)
+                                            }
+                                        }
 
-                                    for(episodeName in currentEpisodes){
-                                        startEpisodeDownload(episodeName, selectedServerName, selectedSubtitles, selectedAudioTracks)
+                                        for (episodeName in currentEpisodes) {
+                                            if (episodeName in failedEpisodes) continue
+                                            try {
+                                                startEpisodeDownload(episodeName, selectedServerName, selectedSubtitles, selectedAudioTracks)
+                                            } catch (e: CancellationException) {
+                                                throw e
+                                            } catch (e: Exception) {
+                                                Logger.log(e)
+                                                failedEpisodes.add(episodeName)
+                                            }
+                                        }
+                                        if (failedEpisodes.isNotEmpty()) {
+                                            snackString("Could not start ${failedEpisodes.size} episode(s): ${failedEpisodes.joinToString()}")
+                                        }
+                                    } catch (e: CancellationException) {
+                                        throw e
+                                    } catch (e: Exception) {
+                                        Logger.log(e)
+                                        fail(R.string.auto_select_server_error)
+                                        return@launch
                                     }
                                     withContext(Dispatchers.Main) {
                                         tryWith{
