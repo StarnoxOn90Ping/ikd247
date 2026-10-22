@@ -100,26 +100,14 @@ class EpisodeAdapter(
         onSelectionChanged?.invoke(0)
     }
 
-    private fun selectionOverlay(v: View): android.graphics.drawable.Drawable {
-        val primary = com.google.android.material.color.MaterialColors.getColor(
-            v, androidx.appcompat.R.attr.colorPrimary
-        )
-        val density = v.resources.displayMetrics.density
-        return android.graphics.drawable.GradientDrawable().apply {
-            cornerRadius = 16f * density
-            setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(primary, 70))
-            setStroke((3 * density).toInt(), primary)
-        }
-    }
-
-    private fun applySelection(holder: RecyclerView.ViewHolder, ep: Episode) {
+    private fun applySelection(holder: RecyclerView.ViewHolder, ep: Episode, animate: Boolean) {
         val card: android.widget.FrameLayout = when (holder) {
             is EpisodeListViewHolder -> holder.binding.itemEpisodeCont
             is EpisodeGridViewHolder -> holder.binding.itemEpisodeCont
             is EpisodeCompactViewHolder -> holder.binding.itemEpisodeCont
             else -> return
         }
-        card.foreground = if (selectedEpisodes.contains(ep.number)) selectionOverlay(card) else null
+        applySelectionStyle(card, selectedEpisodes.contains(ep.number), animate)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -168,7 +156,7 @@ class EpisodeAdapter(
         if (position !in arr.indices) return
         val ep = arr[position]
         if (payloads.contains(PAYLOAD_SELECTION)) {
-            applySelection(holder, ep)
+            applySelection(holder, ep, true)
             return
         }
         val listHolder = holder as? EpisodeListViewHolder ?: return
@@ -351,7 +339,7 @@ class EpisodeAdapter(
                 )
             }
         }
-        applySelection(holder, ep)
+        applySelection(holder, ep, false)
     }
 
     override fun getItemCount(): Int = arr.size
@@ -575,10 +563,19 @@ class EpisodeAdapter(
                 true
             }
             binding.itemEpisodeDesc.setOnClickListener {
-                if (binding.itemEpisodeDesc.maxLines == 3)
+                val pos = bindingAdapterPosition
+                if (isSelecting() && pos >= 0 && pos < arr.size) {
+                    toggleSelection(arr[pos].number)
+                } else if (binding.itemEpisodeDesc.maxLines == 3) {
                     binding.itemEpisodeDesc.maxLines = 100
-                else
+                } else {
                     binding.itemEpisodeDesc.maxLines = 3
+                }
+            }
+            binding.itemEpisodeDesc.setOnLongClickListener {
+                val pos = bindingAdapterPosition
+                if (pos >= 0 && pos < arr.size) toggleSelection(arr[pos].number)
+                true
             }
         }
 
@@ -594,14 +591,15 @@ class EpisodeAdapter(
                 binding.itemDownloadStatus.visibility = View.GONE
                 return
             }
-            binding.itemEpisodeDesc.visibility = View.GONE
             binding.itemDownloadStatus.visibility = View.VISIBLE
             binding.itemDownloadStatus.text = progress
         }
 
         fun bind(episodeNumber: String, progress: String?, desc: String?) {
+            // Keep the description visible while downloading and after the download finishes
+            binding.itemEpisodeDesc.visibility =
+                if (!desc.isNullOrBlank()) View.VISIBLE else View.GONE
             if (progress != null) {
-                binding.itemEpisodeDesc.visibility = View.GONE
                 if (progress == "")
                     binding.itemDownloadStatus.visibility = View.GONE
                 else
@@ -619,10 +617,8 @@ class EpisodeAdapter(
                     stopDownloadAnimation()
                     binding.itemDownload.setImageResource(R.drawable.ic_sync)
                     startOrContinueRotation(episodeNumber)
-                    binding.itemEpisodeDesc.visibility = View.GONE
                 } else if (downloadedEpisodes.contains(episodeNumber)) {
                     stopDownloadAnimation()
-                    binding.itemEpisodeDesc.visibility = View.GONE
                     binding.itemDownloadStatus.visibility = View.VISIBLE
 
                     binding.itemDownload.setImageResource(R.drawable.ic_circle_check)
@@ -633,8 +629,6 @@ class EpisodeAdapter(
                 } else {
                     stopDownloadAnimation()
                     binding.itemDownloadStatus.visibility = View.GONE
-                    binding.itemEpisodeDesc.visibility =
-                        if (desc != null && desc.trim(' ') != "") View.VISIBLE else View.GONE
 
                     binding.itemDownload.setImageResource(R.drawable.ic_download_24)
                 }

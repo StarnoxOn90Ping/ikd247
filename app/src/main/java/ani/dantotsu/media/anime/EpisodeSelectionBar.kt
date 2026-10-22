@@ -7,6 +7,8 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AnticipateInterpolator
+import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -29,7 +31,9 @@ class EpisodeSelectionBar(
     onWatched: () -> Unit,
     onUnwatched: () -> Unit,
     onDownload: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    watchedLabel: String = "Watched",
+    unwatchedLabel: String = "Unwatched"
 ) {
     private val card = MaterialCardView(context)
     private val countText = TextView(context)
@@ -138,8 +142,8 @@ class EpisodeSelectionBar(
                 })
             }
         actions.addView(action(R.drawable.ic_round_info_24, "Info") { onInfo() })
-        actions.addView(action(R.drawable.ic_check, "Watched") { onWatched() })
-        actions.addView(action(R.drawable.ic_round_remove_red_eye_24, "Unwatched") { onUnwatched() })
+        actions.addView(action(R.drawable.ic_check, watchedLabel) { onWatched() })
+        actions.addView(action(R.drawable.ic_round_remove_red_eye_24, unwatchedLabel) { onUnwatched() })
         actions.addView(action(R.drawable.ic_download_24, "Download") { onDownload() })
         actions.addView(action(R.drawable.ic_round_delete_24, "Delete") { onDelete() })
 
@@ -190,16 +194,54 @@ class EpisodeSelectionBar(
         card.animate().cancel()
         card.visibility = View.VISIBLE
         card.alpha = 0f
-        card.translationY = dp(24).toFloat()
-        card.animate().alpha(1f).translationY(0f).setDuration(200).start()
+        card.translationY = dp(56).toFloat()
+        // Springy pop-up: overshoots a little, then settles
+        card.animate().alpha(1f).translationY(0f)
+            .setDuration(450)
+            .setInterpolator(OvershootInterpolator(2.2f))
+            .start()
     }
 
     private fun hide() {
         if (!shown) return
         shown = false
         card.animate().cancel()
-        card.animate().alpha(0f).translationY(dp(24).toFloat()).setDuration(160)
+        // Pulls back slightly before dropping away
+        card.animate().alpha(0f).translationY(dp(56).toFloat())
+            .setDuration(260)
+            .setInterpolator(AnticipateInterpolator(1.6f))
             .withEndAction { if (!shown) card.visibility = View.GONE }
             .start()
+    }
+}
+
+/**
+ * Shared look for a selected episode / chapter card: a tinted outline, plus a bouncy
+ * "zoom out" so it visibly sinks in. Pass animate = false when just (re)binding a row.
+ */
+fun applySelectionStyle(card: FrameLayout, selected: Boolean, animate: Boolean) {
+    val density = card.resources.displayMetrics.density
+    card.foreground = if (selected) {
+        val primary = MaterialColors.getColor(card, androidx.appcompat.R.attr.colorPrimary)
+        android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = 16f * density
+            setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(primary, 70))
+            setStroke((3 * density).toInt(), primary)
+        }
+    } else {
+        null
+    }
+    val target = if (selected) 0.93f else 1f
+    card.animate().cancel()
+    if (animate) {
+        card.animate()
+            .scaleX(target)
+            .scaleY(target)
+            .setDuration(450)
+            .setInterpolator(OvershootInterpolator(3.2f))
+            .start()
+    } else {
+        card.scaleX = target
+        card.scaleY = target
     }
 }
