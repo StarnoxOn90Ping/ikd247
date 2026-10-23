@@ -194,7 +194,10 @@
             android:ellipsize="marquee"
             android:fontFamily="@font/poppins_bold"
             android:maxLines="5"
-            android:padding="16dp"
+            android:paddingStart="16dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="0dp"
             android:text=""
             android:visibility="gone"
             app:lineHeight="15sp" />
