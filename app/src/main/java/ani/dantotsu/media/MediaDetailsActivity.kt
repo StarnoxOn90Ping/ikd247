@@ -85,6 +85,55 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
     private var adult = false
     lateinit var media: Media
 
+    // Custom cover/banner (kept on-device only; the Media object and tracking are never touched)
+    private var pendingImageKind: ani.dantotsu.others.CustomMediaImages.Kind? = null
+    private var pendingImageDialog: ImageViewDialog? = null
+    private var applyMediaImages: (() -> Unit)? = null
+    private val pickCustomImage =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            val kind = pendingImageKind
+            val dialog = pendingImageDialog
+            pendingImageKind = null
+            pendingImageDialog = null
+            if (uri == null || kind == null || !::media.isInitialized) return@registerForActivityResult
+            scope.launch {
+                val ok = ani.dantotsu.others.CustomMediaImages.save(
+                    this@MediaDetailsActivity, media.id, kind, uri
+                )
+                if (ok) {
+                    applyMediaImages?.invoke()
+                    runCatching { dialog?.dismissAllowingStateLoss() }
+                    snackString("Image updated")
+                } else {
+                    snackString("Couldn't use that image")
+                }
+            }
+        }
+
+    private fun showImageViewer(kind: ani.dantotsu.others.CustomMediaImages.Kind) {
+        val isCover = kind == ani.dantotsu.others.CustomMediaImages.Kind.COVER
+        val title = getString(if (isCover) R.string.cover else R.string.banner, media.userPreferredName)
+        val custom = ani.dantotsu.others.CustomMediaImages.path(this, media.id, kind)
+        val current = custom ?: if (isCover) media.cover else (media.banner ?: media.cover)
+        val canCustomize = media.id != 0
+        ImageViewDialog.newInstance(
+            this,
+            title,
+            current,
+            if (canCustomize) { dialog ->
+                pendingImageKind = kind
+                pendingImageDialog = dialog
+                pickCustomImage.launch("image/*")
+            } else null,
+            if (canCustomize && custom != null) { dialog ->
+                ani.dantotsu.others.CustomMediaImages.remove(this, media.id, kind)
+                applyMediaImages?.invoke()
+                dialog.dismissAllowingStateLoss()
+                snackString("Original image restored")
+            } else null
+        )
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         if (::media.isInitialized && media.name != "No media found") {
@@ -201,17 +250,22 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         val isDownload = intent.getBooleanExtra("download", false)
         media.selected = model.loadSelected(media, isDownload)
 
-        binding.mediaCoverImage.loadImage(media.cover)
-        binding.mediaCoverImage.setOnLongClickListener {
-            val coverTitle = getString(R.string.cover, media.userPreferredName)
-            ImageViewDialog.newInstance(
-                this,
-                coverTitle,
-                media.cover
+        applyMediaImages = {
+            val customCover = ani.dantotsu.others.CustomMediaImages.path(
+                this, media.id, ani.dantotsu.others.CustomMediaImages.Kind.COVER
             )
+            val customBanner = ani.dantotsu.others.CustomMediaImages.path(
+                this, media.id, ani.dantotsu.others.CustomMediaImages.Kind.BANNER
+            )
+            binding.mediaCoverImage.loadImage(customCover ?: media.cover)
+            blurImage(banner, customBanner ?: media.banner ?: customCover ?: media.cover)
+        }
+        applyMediaImages?.invoke()
+        binding.mediaCoverImage.setOnLongClickListener {
+            showImageViewer(ani.dantotsu.others.CustomMediaImages.Kind.COVER)
+            true
         }
 
-        blurImage(banner, media.banner ?: media.cover)
         val gestureDetector = GestureDetector(this, object : GesturesListener() {
             override fun onDoubleClick(event: MotionEvent) {
                 if (!(PrefManager.getVal(PrefName.BannerAnimations) as Boolean))
@@ -223,12 +277,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             }
 
             override fun onLongClick(event: MotionEvent) {
-                val bannerTitle = getString(R.string.banner, media.userPreferredName)
-                ImageViewDialog.newInstance(
-                    this@MediaDetailsActivity,
-                    bannerTitle,
-                    media.banner ?: media.cover
-                )
+                showImageViewer(ani.dantotsu.others.CustomMediaImages.Kind.BANNER)
                 banner.performClick()
             }
         })
@@ -429,24 +478,13 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
                 }
 
 
-                binding.mediaNotify.setOnClickListener {
-                    val i = Intent(Intent.ACTION_SEND)
-                    i.type = "text/plain"
-                    i.putExtra(Intent.EXTRA_TEXT, media.shareLink)
-                    startActivity(Intent.createChooser(i, media.userPreferredName))
-                }
-                binding.mediaNotify.setOnLongClickListener {
-                    openLinkInBrowser(media.shareLink)
-                    true
-                }
                 binding.mediaCover.setOnClickListener {
                     openLinkInBrowser(media.shareLink)
                 }
 
                 if (oldId == 0 && media.id != 0) {
                     if (media.format?.startsWith("LOCAL") == true) {
-                        binding.mediaCoverImage.loadImage(media.cover)
-                        blurImage(if (bannerAnimations) binding.mediaBanner else binding.mediaBannerNoKen, media.banner ?: media.cover)
+                        applyMediaImages?.invoke()
                     }
                 }
                 progress()

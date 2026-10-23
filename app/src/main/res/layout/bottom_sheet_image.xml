@@ -38,6 +38,7 @@
             android:layout_height="wrap_content">
 
             <FrameLayout
+                android:id="@+id/bottomImageContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="72dp"
@@ -77,13 +78,64 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/bottomImageBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:layout_marginTop="16dp"
         android:background="@drawable/linear_gradient_bg"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:padding="8dp">
+
+        <!-- Only shown when the caller allows replacing the picture (media info cover/banner) -->
+        <LinearLayout
+            android:id="@+id/bottomImageCustomRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <Button
+                android:id="@+id/bottomImageChange"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_margin="8dp"
+                android:layout_weight="1"
+                android:fontFamily="@font/poppins_bold"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:padding="8dp"
+                android:text="Change image"
+                android:textSize="16sp"
+                app:cornerRadius="16dp"
+                tools:ignore="HardcodedText,SpeakableTextPresentCheck" />
+
+            <Button
+                android:id="@+id/bottomImageResetCustom"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_margin="8dp"
+                android:layout_weight="1"
+                android:fontFamily="@font/poppins_bold"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:padding="8dp"
+                android:text="@string/reset"
+                android:textSize="16sp"
+                android:visibility="gone"
+                app:cornerRadius="16dp"
+                app:strokeColor="?attr/colorPrimaryContainer"
+                tools:ignore="SpeakableTextPresentCheck"
+                tools:visibility="visible" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
 
         <Button
             android:id="@+id/bottomImageReload"
@@ -140,5 +192,6 @@
             app:strokeColor="?attr/colorPrimaryContainer"
             tools:ignore="SpeakableTextPresentCheck" />
 
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>

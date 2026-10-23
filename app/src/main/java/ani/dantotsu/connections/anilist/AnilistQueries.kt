@@ -33,6 +33,7 @@ import ani.dantotsu.tryWithSuspend
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -84,6 +85,33 @@ class AnilistQueries {
 
     fun invalidateHomePageCache() {
         PrefManager.setCustomVal("home_page_cache", null)
+    }
+
+    /** Re-fetches only the watched-episodes / read-chapters totals shown on the home header. */
+    suspend fun refreshUserStats(): Boolean {
+        val response: Query.Viewer? = executeQuery(
+            """{Viewer{id name statistics{anime{episodesWatched} manga{chaptersRead}}}}""",
+            force = true
+        )
+        val stats = response?.data?.user?.statistics ?: return false
+        Anilist.episodesWatched = stats.anime?.episodesWatched ?: Anilist.episodesWatched
+        Anilist.chapterRead = stats.manga?.chaptersRead ?: Anilist.chapterRead
+        Anilist.userStatsChanged.postValue(System.currentTimeMillis())
+        return true
+    }
+
+    /**
+     * Called after a list entry changed. AniList recalculates its statistics a moment after the
+     * mutation, so the totals are fetched once right away and once more a few seconds later.
+     */
+    fun scheduleUserStatsRefresh() {
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            runCatching {
+                refreshUserStats()
+                kotlinx.coroutines.delay(3000)
+                refreshUserStats()
+            }
+        }
     }
 
     suspend fun getUserData(): Boolean {

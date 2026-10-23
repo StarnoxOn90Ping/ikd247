@@ -42,6 +42,9 @@ object Anilist {
     var chapterRead: Int? = null
     var unreadNotificationCount: Int = 0
 
+    /** Fires whenever [episodesWatched] / [chapterRead] were re-fetched, so the home header can redraw. */
+    val userStatsChanged = androidx.lifecycle.MutableLiveData<Long>()
+
     var genres: ArrayList<String>? = null
     var tags: Map<Boolean, List<String>>? = null
 

@@ -40,6 +40,12 @@ class ImageViewDialog : BottomSheetDialogFragment() {
     private var _image2: FileUrl? = null
 
     var onReloadPressed: ((ImageViewDialog) -> Unit)? = null
+
+    /** When set, a "Change image" button is shown. */
+    var onChangeImage: ((ImageViewDialog) -> Unit)? = null
+
+    /** When set, a "Reset" button is shown next to "Change image". */
+    var onResetImage: ((ImageViewDialog) -> Unit)? = null
     var trans1: List<BitmapTransformation>? = null
     var trans2: List<BitmapTransformation>? = null
 
@@ -74,6 +80,19 @@ class ImageViewDialog : BottomSheetDialogFragment() {
             binding.bottomImageReload.setSafeOnClickListener {
                 onReloadPressed?.invoke(this)
             }
+        }
+
+        val change = onChangeImage
+        if (change != null) {
+            binding.bottomImageCustomRow.visibility = View.VISIBLE
+            binding.bottomImageChange.setSafeOnClickListener { change(this) }
+            onResetImage?.let { reset ->
+                binding.bottomImageResetCustom.visibility = View.VISIBLE
+                binding.bottomImageResetCustom.setSafeOnClickListener { reset(this) }
+            }
+            // The extra button row needs room under the picture too.
+            (binding.bottomImageContent.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin =
+                (144 * resources.displayMetrics.density).toInt()
         }
 
         binding.bottomImageTitle.text = title
@@ -161,6 +180,25 @@ class ImageViewDialog : BottomSheetDialogFragment() {
                 putSerializable("image", image)
                 putSerializable("image2", image2)
             }
+        }
+
+        fun newInstance(
+            activity: FragmentActivity,
+            title: String?,
+            image: String?,
+            onChange: ((ImageViewDialog) -> Unit)?,
+            onReset: ((ImageViewDialog) -> Unit)? = null
+        ): Boolean {
+            ImageViewDialog().apply {
+                onChangeImage = onChange
+                onResetImage = onReset
+                arguments = Bundle().apply {
+                    putString("title", title ?: return false)
+                    putSerializable("image", FileUrl(image ?: return false))
+                }
+                show(activity.supportFragmentManager, "image")
+            }
+            return true
         }
 
         fun newInstance(activity: FragmentActivity, title: String?, image: String?): Boolean {

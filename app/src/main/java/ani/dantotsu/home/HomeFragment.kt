@@ -587,6 +587,14 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
         var running = false
         val live = Refresh.activity.getOrPut(1) { MutableLiveData(true) }
 
+        Anilist.userStatsChanged.observe(viewLifecycleOwner) {
+            val b = _binding ?: return@observe
+            if (!PrefManager.getVal<Boolean>(PrefName.RescueMode)) {
+                b.homeUserEpisodesWatched.text = Anilist.episodesWatched?.toString() ?: "—"
+                b.homeUserChaptersRead.text = Anilist.chapterRead?.toString() ?: "—"
+            }
+        }
+
         PrefManager.getLiveVal(PrefName.RescueMode, false).asLiveBool()
             .observe(viewLifecycleOwner) { inRescueMode ->
 
@@ -630,6 +638,9 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
                             }
                             withContext(Dispatchers.Main) { load() }
                         } else {
+                            // The header totals used to be fetched only once at login, so they
+                            // went stale until the next re-login. Re-fetch on every refresh.
+                            if (Anilist.initialized) tryWithSuspend { Anilist.query.refreshUserStats() }
                             Anilist.userid =
                                 PrefManager.getNullableVal<String>(PrefName.AnilistUserId, null)
                                     ?.toIntOrNull()
@@ -732,6 +743,12 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
                     && Anilist.unreadNotificationCount > 0
                     && PrefManager.getVal<Boolean>(PrefName.ShowNotificationRedDot) == true
             binding.homeNotificationCount.text = Anilist.unreadNotificationCount.toString()
+            // Coming back from a media page / the player: pick up progress made in the meantime.
+            if (!rescueMode && Anilist.initialized) {
+                viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                    tryWithSuspend { Anilist.query.refreshUserStats() }
+                }
+            }
         }
         super.onResume()
     }

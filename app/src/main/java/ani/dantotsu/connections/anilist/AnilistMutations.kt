@@ -277,6 +277,7 @@ class AnilistMutations {
         executeQuery<JsonObject>(query, variables, show = true)
         Anilist.query.invalidateUserStatusCache()
         Anilist.query.invalidateHomePageCache()
+        Anilist.query.scheduleUserStatsRefresh()
     }
 
     suspend fun deleteList(listId: Int) {
@@ -292,6 +293,7 @@ class AnilistMutations {
         executeQuery<JsonObject>(query, variables)
         Anilist.query.invalidateUserStatusCache()
         Anilist.query.invalidateHomePageCache()
+        Anilist.query.scheduleUserStatsRefresh()
     }
 
     suspend fun rateReview(reviewId: Int, rating: String): Query.RateReviewResponse? {
