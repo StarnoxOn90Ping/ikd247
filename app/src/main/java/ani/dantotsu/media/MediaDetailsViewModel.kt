@@ -103,6 +103,10 @@ class MediaDetailsViewModel : ViewModel() {
 
     private val media: MutableLiveData<Media> = MutableLiveData<Media>(null)
     fun getMedia(): LiveData<Media> = media
+
+    private val detailsOutdated = MutableLiveData(false)
+    fun getDetailsOutdated(): LiveData<Boolean> = detailsOutdated
+    fun clearDetailsOutdated() = detailsOutdated.postValue(false)
     fun loadMedia(m: Media) {
         if (!loading) {
             loading = true
@@ -216,7 +220,16 @@ class MediaDetailsViewModel : ViewModel() {
                 } else if (rescueMode) {
                     media.postValue(m)
                 } else {
+                    val servedFromCache = ani.dantotsu.connections.anilist.MediaDetailsCache.has(m.id)
                     media.postValue(Anilist.query.mediaDetails(m))
+                    if (servedFromCache) {
+                        // Check quietly in the background whether AniList has newer info.
+                        viewModelScope.launch(Dispatchers.IO) {
+                            val changed = runCatching { Anilist.query.detailsChangedSinceCache(m.id) }
+                                .getOrDefault(false)
+                            if (changed) detailsOutdated.postValue(true)
+                        }
+                    }
                 }
                 loading = false
             }

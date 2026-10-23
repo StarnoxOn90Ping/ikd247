@@ -383,6 +383,19 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         }
         progress()
 
+        model.getDetailsOutdated().observe(this) { outdated ->
+            if (outdated == true) {
+                model.clearDetailsOutdated()
+                com.google.android.material.snackbar.Snackbar.make(
+                    binding.root,
+                    "Info on this page is outdated",
+                    com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE
+                ).setAction("Refresh") {
+                    Refresh.activity[this.hashCode()]?.postValue(true)
+                }.show()
+            }
+        }
+
         model.getMedia().observe(this) {
             if (it != null) {
                 val oldId = media.id

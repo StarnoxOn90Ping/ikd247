@@ -84,6 +84,7 @@ class AnilistMutations {
     }
 
     suspend fun toggleFav(anime: Boolean = true, id: Int) {
+        MediaDetailsCache.remove(id)
         val query = """
             mutation (${"$"}animeId: Int, ${"$"}mangaId: Int) {
                 ToggleFavourite(animeId: ${"$"}animeId, mangaId: ${"$"}mangaId) {
@@ -105,6 +106,7 @@ class AnilistMutations {
     }
 
     suspend fun toggleFav(type: FavType, id: Int): Boolean {
+        MediaDetailsCache.remove(id)
         val filter = when (type) {
             FavType.ANIME -> "animeId"
             FavType.MANGA -> "mangaId"
@@ -195,6 +197,7 @@ class AnilistMutations {
         customList: List<String>? = null,
         advancedScores: List<Double>? = null
     ) {
+        MediaDetailsCache.remove(mediaID)
         val headerParams = mutableListOf(
             "${"$"}mediaID: Int",
             "${"$"}progress: Int",
@@ -277,6 +280,7 @@ class AnilistMutations {
     }
 
     suspend fun deleteList(listId: Int) {
+        MediaDetailsCache.clear()
         val query = """
             mutation(${"$"}id: Int) {
                 DeleteMediaListEntry(id: ${"$"}id) {

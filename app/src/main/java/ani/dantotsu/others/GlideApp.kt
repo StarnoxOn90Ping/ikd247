@@ -19,9 +19,9 @@ class DantotsuGlideApp : AppGlideModule() {
     @SuppressLint("CheckResult")
     override fun applyOptions(context: Context, builder: GlideBuilder) {
         super.applyOptions(context, builder)
-        val diskCacheSizeBytes = 1024 * 1024 * 100 // 100 MiB
+        val diskCacheSizeBytes = SmartCache.glideBudgetBytes()
         builder.apply {
-            setDiskCache(InternalCacheDiskCacheFactory(context, "img", diskCacheSizeBytes.toLong()))
+            setDiskCache(InternalCacheDiskCacheFactory(context, "img", diskCacheSizeBytes))
         }
     }
 

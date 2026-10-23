@@ -78,6 +78,8 @@ enum class PrefName(val data: Pref) {
     SmartDownloadManga(Pref(Location.General, Boolean::class, false)),
     AutoBackupInterval(Pref(Location.General, Int::class, 0)),
     AutoBackupMaxCopies(Pref(Location.General, Int::class, 3)),
+    SmartCacheEnabled(Pref(Location.General, Boolean::class, false)),
+    SmartCacheLimitMb(Pref(Location.General, Int::class, 500)),
     LastAutoBackupTimestamp(Pref(Location.General, Long::class, 0L)),
 
     //User Interface

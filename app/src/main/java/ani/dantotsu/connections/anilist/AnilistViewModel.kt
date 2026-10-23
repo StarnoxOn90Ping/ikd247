@@ -188,6 +188,14 @@ class AnilistHomeViewModel : ViewModel() {
     }
 
     private fun postHomePageData(res: Map<String, ArrayList<Media>>) {
+        val library = listOf("currentAnime", "currentAnimePlanned", "currentManga", "currentMangaPlanned")
+            .map { res[it] }
+        if (library.any { it != null }) {
+            ani.dantotsu.others.PinnedImages.setLibrary(library)
+            ani.dantotsu.connections.anilist.MediaDetailsCache.setLibrary(
+                library.flatMap { it.orEmpty() }.map { it.id }.filter { it != 0 }
+            )
+        }
         res["currentAnime"]?.let { animeContinue.postValue(it) }
         res["favoriteAnime"]?.let { animeFav.postValue(it) }
         res["currentAnimePlanned"]?.let { animePlanned.postValue(it) }
@@ -378,7 +386,12 @@ class AnilistAnimeViewModel : ViewModel() {
     lateinit var aniMangaSearchResults: AniMangaSearchResults
     private val type = "ANIME"
     private val trending: MutableLiveData<MutableList<Media>> =
-        MutableLiveData<MutableList<Media>>(null)
+        object : MutableLiveData<MutableList<Media>>(null) {
+            override fun postValue(value: MutableList<Media>?) {
+                super.postValue(value)
+                ani.dantotsu.others.PinnedImages.setTrending(true, value)
+            }
+        }
 
     fun getTrending(): LiveData<MutableList<Media>> = trending
     suspend fun loadTrending(i: Int) {
@@ -590,7 +603,12 @@ class AnilistMangaViewModel : ViewModel() {
     lateinit var aniMangaSearchResults: AniMangaSearchResults
     private val type = "MANGA"
     private val trending: MutableLiveData<MutableList<Media>> =
-        MutableLiveData<MutableList<Media>>(null)
+        object : MutableLiveData<MutableList<Media>>(null) {
+            override fun postValue(value: MutableList<Media>?) {
+                super.postValue(value)
+                ani.dantotsu.others.PinnedImages.setTrending(false, value)
+            }
+        }
 
     fun getTrending(): LiveData<MutableList<Media>> = trending
     suspend fun loadTrending() {

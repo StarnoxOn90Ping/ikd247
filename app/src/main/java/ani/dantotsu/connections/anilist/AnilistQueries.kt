@@ -159,12 +159,26 @@ class AnilistQueries {
         }
     }
 
+    /**
+     * Fetches the title's details again and compares them with the cached copy. If something that
+     * matters changed, the cache is updated and true is returned so the page can offer a refresh.
+     */
+    suspend fun detailsChangedSinceCache(id: Int): Boolean {
+        val cached = MediaDetailsCache.get(id) ?: return false
+        val fresh = executeQuery<Query.Media>(fullMediaInformation(id), force = true) ?: return false
+        if (fresh.data?.media == null) return false
+        if (MediaDetailsCache.fingerprint(fresh) == MediaDetailsCache.fingerprint(cached)) return false
+        MediaDetailsCache.put(id, fresh)
+        return true
+    }
+
     fun mediaDetails(media: Media): Media {
         media.cameFromContinue = false
         runBlocking {
             val anilist = async {
-                var response =
-                    executeQuery<Query.Media>(fullMediaInformation(media.id), force = true)
+                var response = MediaDetailsCache.get(media.id)
+                    ?: executeQuery<Query.Media>(fullMediaInformation(media.id), force = true)
+                        ?.also { if (it.data?.media != null) MediaDetailsCache.put(media.id, it) }
                 if (response != null) {
                     fun parse() {
                         val fetchedMedia = response?.data?.media ?: return

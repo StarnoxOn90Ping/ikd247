@@ -99,6 +99,7 @@ import ani.dantotsu.media.MediaDetailsActivity
 import ani.dantotsu.notifications.IncognitoNotificationClickReceiver
 import ani.dantotsu.others.AlignTagHandler
 import ani.dantotsu.others.ImageViewDialog
+import ani.dantotsu.others.PinnedImages
 import ani.dantotsu.others.SpoilerPlugin
 import ani.dantotsu.parsers.ShowResponse
 import ani.dantotsu.profile.ProfileActivity
@@ -833,9 +834,15 @@ fun ImageView.loadImage(file: FileUrl?, size: Int = 0) {
                 Glide.with(this.context).load(file.url.toUri()).transition(withCrossFade())
                     .override(size).into(this)
             } else {
-                val glideUrl = GlideUrl(file.url) { file.headers }
-                Glide.with(this.context).load(glideUrl).transition(withCrossFade()).override(size)
-                    .into(this)
+                val pinned = PinnedImages.fileFor(file.url)
+                if (pinned != null) {
+                    Glide.with(this.context).load(pinned).transition(withCrossFade())
+                        .override(size).into(this)
+                } else {
+                    val glideUrl = GlideUrl(file.url) { file.headers }
+                    Glide.with(this.context).load(glideUrl).transition(withCrossFade()).override(size)
+                        .into(this)
+                }
             }
         }
     }
@@ -849,10 +856,16 @@ fun ImageView.loadImage(file: FileUrl?, width: Int = 0, height: Int = 0) {
                 Glide.with(this.context).load(file.url.toUri()).transition(withCrossFade())
                     .override(width, height).into(this)
             } else {
-                val glideUrl = GlideUrl(file.url) { file.headers }
-                Glide.with(this.context).load(glideUrl).transition(withCrossFade())
-                    .override(width, height)
-                    .into(this)
+                val pinned = PinnedImages.fileFor(file.url)
+                if (pinned != null) {
+                    Glide.with(this.context).load(pinned).transition(withCrossFade())
+                        .override(width, height).into(this)
+                } else {
+                    val glideUrl = GlideUrl(file.url) { file.headers }
+                    Glide.with(this.context).load(glideUrl).transition(withCrossFade())
+                        .override(width, height)
+                        .into(this)
+                }
             }
         }
     }
