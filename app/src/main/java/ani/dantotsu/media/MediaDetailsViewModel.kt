@@ -776,7 +776,8 @@ class MediaDetailsViewModel : ViewModel() {
         val link = ep.link ?: return
         if (!ep.allStreams || ep.extractors.isNullOrEmpty()) {
             val existingExtractors = ep.extractors?.toMutableList() ?: mutableListOf()
-            val list = mutableListOf<VideoExtractor>()
+            val list: MutableList<VideoExtractor> =
+                java.util.Collections.synchronizedList(mutableListOf<VideoExtractor>())
             ep.extractors = list
             watchSources?.get(i)?.apply {
                 if (!post && !allowsPreloading) return@apply
