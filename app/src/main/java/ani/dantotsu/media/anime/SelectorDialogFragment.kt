@@ -223,6 +223,7 @@ class SelectorDialogFragment : BottomSheetDialogFragment() {
                         if (epKey != null) {
                             media!!.anime?.episodes?.set(epKey, ep)
                         }
+                        ep.dropNullExtractors()
                         adapter.addAll(ep.extractors)
                         if (ep.extractors?.size == 0) {
                             fail(R.string.stream_selection_empty)
@@ -261,6 +262,7 @@ class SelectorDialogFragment : BottomSheetDialogFragment() {
                     }
 
                     if (ep.allStreams) {
+                        ep.dropNullExtractors()
                         val extractors = ep.extractors ?: emptyList()
                         val validExtractor = extractors.firstOrNull { it.isPreferred && it.videos.isNotEmpty() }
                             ?: extractors.firstOrNull { it.videos.isNotEmpty() }
@@ -693,6 +695,7 @@ class SelectorDialogFragment : BottomSheetDialogFragment() {
         prevEpisode = null
 
         episode?.let { ep ->
+            ep.dropNullExtractors()
             val video = ep.extractors?.find {
                 it.server.name == ep.selectedExtractor
             }?.videos?.getOrNull(ep.selectedVideo)

@@ -721,6 +721,7 @@ class ExoplayerView : AppCompatActivity(), Player.Listener {
             if (ep != null && (!epChanging || ep.extractors?.isNotEmpty() == true)) {
                 epChanging = false
                 val currentPos = playerManager.exoPlayer?.currentPosition
+                ep.dropNullExtractors()
                 episode = ep
                 media.selected = model.loadSelected(media)
                 model.setMedia(media)
@@ -934,6 +935,7 @@ class ExoplayerView : AppCompatActivity(), Player.Listener {
 
         lifecycleScope.launch(Dispatchers.IO) { extractor?.onVideoStopped(video) }
 
+        episode.dropNullExtractors()
         val ext = episode.extractors?.find { it.server.name == episode.selectedExtractor }
             ?: episode.extractors?.firstOrNull { it.isPreferred }
             ?: episode.extractors?.firstOrNull() ?: return
@@ -1204,6 +1206,7 @@ class ExoplayerView : AppCompatActivity(), Player.Listener {
                 val success = if (serverName.isNotBlank()) {
                     model.loadEpisodeSingleVideo(nextEpisode, media.selected!!, selectedServerName = serverName)
                 } else false
+                nextEpisode.dropNullExtractors()
 
                 val extractorToUse = if (success) {
                     nextEpisode.extractors?.find { it.server.name == serverName }

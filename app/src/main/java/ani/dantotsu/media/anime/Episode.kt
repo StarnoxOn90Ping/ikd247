@@ -27,3 +27,14 @@ data class Episode(
 ) : Serializable
 
 
+
+/**
+ * Removes null entries from [Episode.extractors]. The list is filled by several loaders at once,
+ * which can leave null slots behind; reading `it.server` on one of those crashes the player.
+ */
+fun Episode.dropNullExtractors() {
+    val list = extractors ?: return
+    runCatching {
+        synchronized(list) { list.removeAll { java.util.Objects.isNull(it) } }
+    }
+}
