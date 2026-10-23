@@ -309,12 +309,19 @@ class ExoplayerView : AppCompatActivity(), Player.Listener {
         super.onAttachedToWindow()
     }
 
+    /** Closes the player and tells the user (and the log) why, instead of exiting silently. */
+    private fun exitWithReason(reason: String) {
+        Logger.log("ExoplayerView exiting: $reason")
+        runCatching { toast("Player closed: $reason") }
+        startMainActivity(this)
+        finish()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         if (!initialized) {
-            startMainActivity(this)
-            finish()
+            exitWithReason("player was opened without being set up (initialized=false)")
             return
         }
 
@@ -642,8 +649,7 @@ class ExoplayerView : AppCompatActivity(), Player.Listener {
         title = media.userPreferredName
         val eps = media.anime?.episodes
         if (eps.isNullOrEmpty()) {
-            startMainActivity(this)
-            finish()
+            exitWithReason("this title has no episodes loaded")
             return
         }
         episodes = eps.toMutableMap()
@@ -656,8 +662,7 @@ class ExoplayerView : AppCompatActivity(), Player.Listener {
         episodeArr = episodes.keys.toList()
         val currentSelected = episodes.getEpisodeKey(media.anime?.selectedEpisode)
             ?: episodeArr.firstOrNull() ?: run {
-                startMainActivity(this)
-                finish()
+                exitWithReason("no selectable episode found")
                 return
             }
         media.anime!!.selectedEpisode = currentSelected
@@ -855,8 +860,7 @@ class ExoplayerView : AppCompatActivity(), Player.Listener {
         val selectedEpKey = media.anime?.selectedEpisode ?: episodeArr.firstOrNull()
         val initialEp = selectedEpKey?.let { episodes[it] } ?: episodes.values.firstOrNull()
         if (initialEp == null) {
-            startMainActivity(this)
-            finish()
+            exitWithReason("selected episode \"$selectedEpKey\" not found in episode list")
             return
         }
 
@@ -1960,10 +1964,10 @@ class ExoplayerView : AppCompatActivity(), Player.Listener {
                 ani.dantotsu.addons.torrent.TorrentServerService.stop()
             } catch (_: Exception) {}
         }
-        aniSkipManager.stopTracking()
-        progressManager.stopTracking()
+        if (this::aniSkipManager.isInitialized) aniSkipManager.stopTracking()
+        if (this::progressManager.isInitialized) progressManager.stopTracking()
         try {
-            if (playerManager.isInitialized) {
+            if (this::playerManager.isInitialized && playerManager.isInitialized) {
                 progressManager.updateAniProgress()
                 val episodeId = "${media.id}-${media.anime?.selectedEpisode ?: ""}"
                 subtitleManager.clearTransientSubtitleCache(episodeId, media.id)
@@ -1972,7 +1976,7 @@ class ExoplayerView : AppCompatActivity(), Player.Listener {
                 playerView.player = null
             }
         } catch (_: Exception) {}
-        castManager.release()
+        if (this::castManager.isInitialized) castManager.release()
         pipReceiver?.let {
             try {
                 unregisterReceiver(it)

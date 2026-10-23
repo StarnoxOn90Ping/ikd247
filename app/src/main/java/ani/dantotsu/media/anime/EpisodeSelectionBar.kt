@@ -248,11 +248,11 @@ fun applySelectionStyle(card: View, selected: Boolean, animate: Boolean) {
     } else {
         null
     }
-    val target = if (selected) 0.9f else 1f
+    val target = if (selected) 0.91f else 1f
     selectionAnimators.remove(card)?.cancel()
     if (animate) {
         val animator = android.animation.ValueAnimator.ofFloat(card.scaleX, target).apply {
-            duration = 500
+            duration = 380
             interpolator = OvershootInterpolator(4f)
             addUpdateListener {
                 val v = it.animatedValue as Float

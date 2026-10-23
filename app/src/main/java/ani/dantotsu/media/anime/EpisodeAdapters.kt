@@ -585,14 +585,27 @@ class EpisodeAdapter(
             binding.itemDownload.rotation = 0f
         }
 
+        /** Remove the double gap between the status line and description when status is shown. */
+        private fun updateDescSpacing() {
+            val d = binding.itemEpisodeDesc
+            val top = if (binding.itemDownloadStatus.isVisible) {
+                (4 * d.resources.displayMetrics.density).toInt()
+            } else {
+                (16 * d.resources.displayMetrics.density).toInt()
+            }
+            if (d.paddingTop != top) d.setPadding(d.paddingLeft, top, d.paddingRight, d.paddingBottom)
+        }
+
         /** Progress-only update: status text, no icon/animation/Glide side effects. */
         fun bindProgressText(progress: String?) {
             if (progress.isNullOrEmpty()) {
                 binding.itemDownloadStatus.visibility = View.GONE
+                updateDescSpacing()
                 return
             }
             binding.itemDownloadStatus.visibility = View.VISIBLE
             binding.itemDownloadStatus.text = progress
+            updateDescSpacing()
         }
 
         fun bind(episodeNumber: String, progress: String?, desc: String?) {
@@ -633,6 +646,7 @@ class EpisodeAdapter(
                     binding.itemDownload.setImageResource(R.drawable.ic_download_24)
                 }
             }
+            updateDescSpacing()
         }
 
         private fun startOrContinueRotation(episodeNumber: String) {
