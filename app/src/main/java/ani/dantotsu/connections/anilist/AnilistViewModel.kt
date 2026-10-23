@@ -15,7 +15,6 @@ import ani.dantotsu.media.Media
 import ani.dantotsu.media.Character
 import ani.dantotsu.media.Studio
 import ani.dantotsu.media.Author
-import ani.dantotsu.others.AppUpdater
 import ani.dantotsu.profile.User
 import ani.dantotsu.settings.saving.PrefManager
 import ani.dantotsu.settings.saving.PrefName
@@ -344,12 +343,6 @@ class AnilistHomeViewModel : ViewModel() {
         Anilist.getSavedToken()
         MAL.getSavedToken()
         Discord.getSavedToken()
-        if (!BuildConfig.FLAVOR.contains("fdroid")) {
-            if (PrefManager.getVal(PrefName.CheckUpdate))
-                context.lifecycleScope.launch(Dispatchers.IO) {
-                    AppUpdater.check(context, false)
-                }
-        }
         val rescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
         if (rescueMode) {
             if (MAL.token != null) tryWithSuspend { MAL.query.getUserData() }

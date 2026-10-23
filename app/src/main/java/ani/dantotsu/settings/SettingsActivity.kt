@@ -26,7 +26,6 @@ import ani.dantotsu.databinding.ActivitySettingsBinding
 import ani.dantotsu.initActivity
 import ani.dantotsu.navBarHeight
 import ani.dantotsu.openLinkInBrowser
-import ani.dantotsu.others.AppUpdater
 import ani.dantotsu.others.CustomBottomDialog
 import ani.dantotsu.pop
 import ani.dantotsu.setSafeOnClickListener
@@ -253,15 +252,6 @@ class SettingsActivity : AppCompatActivity() {
                 override fun afterTextChanged(s: android.text.Editable?) {}
             })
 
-            if (!BuildConfig.FLAVOR.contains("fdroid")) {
-                settingsLogo.setOnLongClickListener {
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        AppUpdater.check(this@SettingsActivity, true)
-                    }
-                    true
-                }
-            }
-
             settingBuyMeCoffee.setOnClickListener {
                 lifecycleScope.launch {
                     it.pop()
@@ -303,31 +293,6 @@ class SettingsActivity : AppCompatActivity() {
                     snackString(array[(Math.random() * array.size).toInt()], context)
                 }
 
-            }
-
-            lifecycleScope.launch(Dispatchers.IO) {
-                delay(2000)
-                runOnUiThread {
-                    if (Random.nextInt(0, 100) > 69) {
-                        CustomBottomDialog.newInstance().apply {
-                            title = this@SettingsActivity.getString(R.string.enjoying_app)
-                            addView(TextView(this@SettingsActivity).apply {
-                                text = context.getString(R.string.consider_donating)
-                            })
-
-                            setNegativeButton(this@SettingsActivity.getString(R.string.no_moners)) {
-                                snackString(R.string.you_be_rich)
-                                dismiss()
-                            }
-
-                            setPositiveButton(this@SettingsActivity.getString(R.string.donate)) {
-                                settingBuyMeCoffee.performClick()
-                                dismiss()
-                            }
-                            show(supportFragmentManager, "dialog")
-                        }
-                    }
-                }
             }
         }
     }

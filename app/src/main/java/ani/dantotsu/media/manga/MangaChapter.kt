@@ -40,6 +40,15 @@ data class MangaChapter(
     private val dualPages = mutableListOf<Pair<MangaImage, MangaImage?>>()
     fun dualPages(): List<Pair<MangaImage, MangaImage?>> = dualPages
 
+    /** True when [images] came from a downloaded copy rather than the online source. */
+    @Transient
+    var loadedFromDownload: Boolean = false
+
+    fun resetImages() {
+        images.clear()
+        dualPages.clear()
+    }
+
     fun uniqueNumber(): String = "${number}-${scanlator ?: "Unknown"}"
 
 }

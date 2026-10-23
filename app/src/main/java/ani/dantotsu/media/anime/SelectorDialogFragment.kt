@@ -516,7 +516,19 @@ class SelectorDialogFragment : BottomSheetDialogFragment() {
                     media?.anime?.selectedEpisode = actualKey
                     episode = ep
                     if (ep != null) {
-                        if (selected != null && media?.format != "LOCAL") {
+                        // A stale "downloaded" extractor must not leak into the online list
+                        // once the episode has been deleted.
+                        if (ep.extractors?.any { it?.server?.offline == true } == true) {
+                            ep.extractors = null
+                            ep.allStreams = false
+                        }
+                        val downloadedEpisode =
+                            if (media?.format != "LOCAL" &&
+                                !model.watchSources!!.isDownloadedSource(media!!.selected!!.sourceIndex)
+                            ) findDownloadedEpisode(actualKey) else null
+                        if (downloadedEpisode != null) {
+                            playDownloadedEpisode(ep, downloadedEpisode)
+                        } else if (selected != null && media?.format != "LOCAL") {
                             binding.selectorListContainer.visibility = View.GONE
                             binding.selectorAutoListContainer.visibility = View.VISIBLE
                             binding.selectorAutoText.text = selected
@@ -690,6 +702,42 @@ class SelectorDialogFragment : BottomSheetDialogFragment() {
 
     @OptIn(DelicateCoroutinesApi::class)
     @SuppressLint("UnsafeOptInUsageError")
+    /** The downloaded copy of [episodeKey] for the current media, if there is one. */
+    private fun findDownloadedEpisode(episodeKey: String?): DownloadedType? {
+        val m = media ?: return null
+        if (episodeKey == null) return null
+        return Injekt.get<ani.dantotsu.download.DownloadsManager>().animeDownloadedTypes.firstOrNull {
+            with(ani.dantotsu.download.DownloadsManager.Companion) { m.compareName(it.titleName) } && it.chapterName.equals(episodeKey, ignoreCase = true)
+        }
+    }
+
+    /** Skips the quality/server list and plays the downloaded file straight away. */
+    private fun playDownloadedEpisode(ep: Episode, downloaded: DownloadedType) {
+        binding.selectorListContainer.visibility = View.GONE
+        binding.selectorAutoListContainer.visibility = View.GONE
+        binding.selectorProgressBar.visibility = View.VISIBLE
+        scope.launch(Dispatchers.IO) {
+            val server = ani.dantotsu.parsers.VideoServer(
+                ani.dantotsu.download.anime.AnimeDownloaderService.AnimeDownloadTask.getTaskName(
+                    downloaded.titleName,
+                    downloaded.chapterName
+                ),
+                true,
+                mapOf("title" to downloaded.titleName, "episode" to downloaded.chapterName)
+            )
+            val extractor = ani.dantotsu.parsers.OfflineVideoExtractor(server)
+            extractor.load()
+            withContext(Dispatchers.Main) {
+                if (_binding == null || !isAdded) return@withContext
+                ep.extractors = mutableListOf<ani.dantotsu.parsers.VideoExtractor>(extractor)
+                ep.allStreams = true
+                ep.selectedExtractor = server.name
+                ep.selectedVideo = 0
+                startExoplayer(media!!)
+            }
+        }
+    }
+
     fun startExoplayer(media: Media) {
         if (!isAdded || _binding == null) return
         prevEpisode = null

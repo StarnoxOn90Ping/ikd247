@@ -17,6 +17,8 @@ import ani.dantotsu.media.anime.Episode
 import ani.dantotsu.media.anime.SelectorDialogFragment
 import ani.dantotsu.media.anime.getEpisode
 import ani.dantotsu.media.manga.MangaChapter
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import ani.dantotsu.media.mangaupdates.MangaAnimeUtil
 import ani.dantotsu.others.AniSkip
 import ani.dantotsu.others.Anify
@@ -1041,13 +1043,51 @@ class MediaDetailsViewModel : ViewModel() {
     ): Boolean {
 
         return tryWithSuspend(true) {
-            chapter.addImages(
-                mangaReadSources?.get(selected.sourceIndex)
-                    ?.loadImages(chapter.link, chapter.sChapter) ?: return@tryWithSuspend false
-            )
+            val parser = mangaReadSources?.get(selected.sourceIndex) ?: return@tryWithSuspend false
+
+            // Downloaded chapters always win over the online source.
+            val downloaded = if (parser !is OfflineMangaParser) findDownloadedMangaChapter(chapter) else null
+            if (downloaded != null) {
+                val offlineImages = OfflineMangaParser().loadImages(
+                    "${downloaded.titleName}/${downloaded.chapterName}",
+                    chapter.sChapter
+                )
+                if (offlineImages.isNotEmpty()) {
+                    chapter.resetImages()
+                    chapter.addImages(offlineImages)
+                    chapter.loadedFromDownload = true
+                    if (post) mangaChapter.postValue(chapter)
+                    return@tryWithSuspend true
+                }
+            }
+            // The download may have been deleted since the images were cached.
+            if (chapter.loadedFromDownload && parser !is OfflineMangaParser) {
+                chapter.resetImages()
+                chapter.loadedFromDownload = false
+            }
+
+            chapter.addImages(parser.loadImages(chapter.link, chapter.sChapter))
             if (post) mangaChapter.postValue(chapter)
             true
         } ?: false
+    }
+
+    private fun findDownloadedMangaChapter(chapter: MangaChapter): ani.dantotsu.download.DownloadedType? {
+        val current = media.value ?: return null
+        if (current.format == "LOCAL") return null
+        val candidates = listOfNotNull(
+            chapter.number,
+            chapter.title,
+            chapter.uniqueNumber(),
+            chapter.title?.let { "$it-${chapter.scanlator ?: "Unknown"}" }
+        )
+        return Injekt.get<ani.dantotsu.download.DownloadsManager>().mangaDownloadedTypes.firstOrNull { d ->
+            with(ani.dantotsu.download.DownloadsManager.Companion) { current.compareName(d.titleName) } &&
+                    candidates.any {
+                        it.equals(d.chapterName, ignoreCase = true) ||
+                                it.equals(d.uniqueName, ignoreCase = true)
+                    }
+        }
     }
 
     fun loadTransformation(mangaImage: MangaImage, source: Int): BitmapTransformation? {
