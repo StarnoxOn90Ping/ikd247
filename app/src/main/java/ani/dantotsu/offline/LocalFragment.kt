@@ -461,34 +461,7 @@ class LocalFragment : Fragment(), OfflineAnimeSearchListener {
                     )
                 } ?: emptyList()
 
-                val appDownloadsManager = ani.dantotsu.download.DownloadsManager(requireContext())
-                val appDownloadedAnime = appDownloadsManager.animeDownloadedTypes
-                    .groupBy { it.titleName }
-                    .map { (title, eps) ->
-                        val firstEp = eps.firstOrNull()
-                        val totalEps = eps.size.toString()
-                        val cachedCover = ani.dantotsu.settings.saving.PrefManager
-                            .getCustomVal<String>("local_cover_${title}", "")
-                            .takeIf { s -> s.isNotEmpty() && s != "null" }
-                        val coverUri = if (cachedCover != null) Uri.parse(cachedCover) else null
-
-                        OfflineAnimeModel(
-                            title = title,
-                            folderName = title,
-                            score = "0",
-                            totalEpisode = totalEps,
-                            totalEpisodeList = totalEps,
-                            watchedEpisode = "~",
-                            type = "downloaded",
-                            episodes = " Episodes",
-                            isOngoing = false,
-                            isUserScored = false,
-                            image = coverUri,
-                            banner = null
-                        )
-                    }
-
-                val merged = (appDownloadedAnime + localItems).distinctBy { it.title.trim().lowercase() }
+                val merged = localItems.distinctBy { it.title.trim().lowercase() }
                 downloads = merged
                 animeDownloadsCache = merged
                 withContext(Dispatchers.Main) {
@@ -575,33 +548,7 @@ class LocalFragment : Fragment(), OfflineAnimeSearchListener {
                     )
                 } ?: emptyList()
 
-                val appDownloadsManager = ani.dantotsu.download.DownloadsManager(requireContext())
-                val appDownloadedManga = appDownloadsManager.mangaDownloadedTypes
-                    .groupBy { it.titleName }
-                    .map { (title, chaps) ->
-                        val totalChaps = chaps.size.toString()
-                        val cachedCover = ani.dantotsu.settings.saving.PrefManager
-                            .getCustomVal<String>("local_cover_${title}", "")
-                            .takeIf { s -> s.isNotEmpty() && s != "null" }
-                        val coverUri = if (cachedCover != null) Uri.parse(cachedCover) else null
-
-                        OfflineAnimeModel(
-                            title = title,
-                            folderName = title,
-                            score = "0",
-                            totalEpisode = totalChaps,
-                            totalEpisodeList = totalChaps,
-                            watchedEpisode = "~",
-                            type = "downloaded",
-                            episodes = " Chapters",
-                            isOngoing = false,
-                            isUserScored = false,
-                            image = coverUri,
-                            banner = null
-                        )
-                    }
-
-                val merged = (appDownloadedManga + localItems).distinctBy { it.title.trim().lowercase() }
+                val merged = localItems.distinctBy { it.title.trim().lowercase() }
                 downloads = merged
                 mangaDownloadsCache = merged
                 withContext(Dispatchers.Main) {

@@ -314,7 +314,7 @@ class SettingsDataActivity : AppCompatActivity() {
             Settings(
                 type = 2,
                 name = "Smart cache",
-                desc = "Save library and trending covers, banners and title info on this device so they open instantly",
+                desc = "Save covers, banners and info",
                 icon = R.drawable.ic_round_auto_awesome_24,
                 isChecked = PrefManager.getVal(PrefName.SmartCacheEnabled),
                 switch = { isChecked, view ->
