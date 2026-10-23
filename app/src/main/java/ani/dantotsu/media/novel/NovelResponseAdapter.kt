@@ -149,6 +149,17 @@ class NovelResponseAdapter(
             val desc = novel.extra?.get("2")
             binding.itemEpisodeDesc.isVisible = !desc.isNullOrBlank()
             binding.itemEpisodeDesc.text = desc ?: ""
+            // When a status line (e.g. "Downloaded") is showing, pull the description up
+            // closer to it instead of leaving a two-line gap.
+            val density = binding.itemEpisodeDesc.resources.displayMetrics.density
+            val descTop = if (binding.itemEpisodeFiller.text.isNotBlank()) (4 * density).toInt()
+            else (16 * density).toInt()
+            binding.itemEpisodeDesc.setPadding(
+                binding.itemEpisodeDesc.paddingLeft,
+                descTop,
+                binding.itemEpisodeDesc.paddingRight,
+                binding.itemEpisodeDesc.paddingBottom
+            )
 
             setupClickListeners(binding.root, novel)
         }
