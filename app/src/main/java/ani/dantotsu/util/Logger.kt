@@ -96,12 +96,17 @@ object Logger {
     }
 
     fun uncaughtException(t: Thread, e: Throwable) {
-        loggerExecutor.execute {
-            if (file == null) e.printStackTrace() else {
-                file?.appendText("---------------------------Uncaught Exception---------------------------\n")
-                file?.appendText("thread: ${t.name}\n")
-                file?.appendText("date/time: ${Date()} |  ${e.message}\n")
-                file?.appendText("trace: ${e.stackTraceToString()}\n")
+        // Written on the calling thread: the process is killed right after a crash, so a
+        // queued write would be lost and the stack trace would never reach the log file.
+        val f = file
+        if (f == null) {
+            e.printStackTrace()
+        } else {
+            runCatching {
+                f.appendText("---------------------------Uncaught Exception---------------------------\n")
+                f.appendText("thread: ${t.name}\n")
+                f.appendText("date/time: ${Date()} |  ${e.message}\n")
+                f.appendText("trace: ${e.stackTraceToString()}\n")
             }
         }
     }
