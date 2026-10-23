@@ -68,7 +68,7 @@ class LocalFragment : Fragment(), OfflineAnimeSearchListener {
     private lateinit var gridView: GridView
     private lateinit var adapter: OfflineAnimeAdapter
     private lateinit var total: TextView
-    private lateinit var noAnimeText: TextView
+    private lateinit var emptyState: OfflineEmptyState
     private var scanJob: Job = Job()
 
     enum class LocalMediaType { ANIME, MANGA, NOVEL }
@@ -182,7 +182,7 @@ class LocalFragment : Fragment(), OfflineAnimeSearchListener {
         gridView =
             if (style == 0) view.findViewById(R.id.gridView) else view.findViewById(R.id.gridView1)
         total = view.findViewById(R.id.total)
-        noAnimeText = view.findViewById(R.id.noMangaOffline)
+        emptyState = OfflineEmptyState(view)
 
         // Anime/Manga/Novel tabs
         val titleContainer = view.findViewById<android.widget.LinearLayout>(R.id.animeTitleContainer)
@@ -333,51 +333,35 @@ class LocalFragment : Fragment(), OfflineAnimeSearchListener {
     }
 
     private fun updateEmptyState() {
+        val dirSet = PrefManager.getVal<String>(PrefName.LocalDir).isNotBlank()
+        val label: String
+        val plural: String
+        val icon: Int
         when (currentMode) {
-            LocalMediaType.ANIME -> {
-                val dirSet = PrefManager.getVal<String>(PrefName.LocalDir).isNotBlank()
-                if (!dirSet) {
-                    noAnimeText.text = "Tap the folder icon to select your local anime folder"
-                    noAnimeText.visibility = View.VISIBLE
-                    total.text = "Local Anime"
-                } else if (downloads.isEmpty()) {
-                    noAnimeText.text = "No local anime found in selected folder"
-                    noAnimeText.visibility = View.VISIBLE
-                    total.text = "Local Anime (0)"
-                } else {
-                    noAnimeText.visibility = View.GONE
-                    total.text = "Local Anime (${downloads.size})"
-                }
+            LocalMediaType.ANIME -> { label = "Local Anime"; plural = "anime"; icon = R.drawable.ic_round_video_library_24 }
+            LocalMediaType.MANGA -> { label = "Local Manga"; plural = "manga"; icon = R.drawable.ic_round_library_books_24 }
+            LocalMediaType.NOVEL -> { label = "Local Novel"; plural = "novels"; icon = R.drawable.ic_round_menu_book_24 }
+        }
+        when {
+            !dirSet -> {
+                total.text = label
+                emptyState.show(
+                    R.drawable.ic_round_folder_24,
+                    "No folder selected",
+                    "Tap the folder icon above to choose where your local $plural live."
+                )
             }
-            LocalMediaType.MANGA -> {
-                val dirSet = PrefManager.getVal<String>(PrefName.LocalDir).isNotBlank()
-                if (!dirSet) {
-                    noAnimeText.text = "Tap the folder icon to select your local manga folder"
-                    noAnimeText.visibility = View.VISIBLE
-                    total.text = "Local Manga"
-                } else if (downloads.isEmpty()) {
-                    noAnimeText.text = "No local manga found in selected folder"
-                    noAnimeText.visibility = View.VISIBLE
-                    total.text = "Local Manga (0)"
-                } else {
-                    noAnimeText.visibility = View.GONE
-                    total.text = "Local Manga (${downloads.size})"
-                }
+            downloads.isEmpty() -> {
+                total.text = "$label (0)"
+                emptyState.show(
+                    icon,
+                    "No local $plural found",
+                    "We couldn't find anything in the selected folder.\nPull down to rescan, or pick a different folder."
+                )
             }
-            LocalMediaType.NOVEL -> {
-                val dirSet = PrefManager.getVal<String>(PrefName.LocalDir).isNotBlank()
-                if (!dirSet) {
-                    noAnimeText.text = "Tap the folder icon to select your local novel folder"
-                    noAnimeText.visibility = View.VISIBLE
-                    total.text = "Local Novel"
-                } else if (downloads.isEmpty()) {
-                    noAnimeText.text = "No local novels found in selected folder"
-                    noAnimeText.visibility = View.VISIBLE
-                    total.text = "Local Novel (0)"
-                } else {
-                    noAnimeText.visibility = View.GONE
-                    total.text = "Local Novel (${downloads.size})"
-                }
+            else -> {
+                total.text = "$label (${downloads.size})"
+                emptyState.hide()
             }
         }
     }
@@ -400,7 +384,7 @@ class LocalFragment : Fragment(), OfflineAnimeSearchListener {
 
         downloads = listOf()
         adapter.setItems(downloads)
-        noAnimeText.visibility = View.GONE
+        emptyState.hide()
         total.text = "Local Anime (Scanning...)"
         if (scanJob.isActive) {
             scanJob.cancel()
@@ -488,7 +472,7 @@ class LocalFragment : Fragment(), OfflineAnimeSearchListener {
 
         downloads = listOf()
         adapter.setItems(downloads)
-        noAnimeText.visibility = View.GONE
+        emptyState.hide()
         total.text = "Local Manga (Scanning...)"
         if (scanJob.isActive) {
             scanJob.cancel()
@@ -635,7 +619,7 @@ class LocalFragment : Fragment(), OfflineAnimeSearchListener {
 
         downloads = listOf()
         adapter.setItems(downloads)
-        noAnimeText.visibility = View.GONE
+        emptyState.hide()
         total.text = "Local Novel (Scanning...)"
         if (scanJob.isActive) {
             scanJob.cancel()

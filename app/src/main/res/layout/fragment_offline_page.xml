@@ -129,45 +129,42 @@
                     tools:ignore="ContentDescription,ImageContrastCheck" />
 
             </LinearLayout>
-            <!-- This TextView might overlap with GridView if GridView has items -->
-            <TextView
-                android:id="@+id/noMangaOffline"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/no_offline_manga_found"
-                android:textColor="?attr/colorOnSurface"
-                android:textSize="18sp"
-                android:visibility="gone" />
-            <!-- for large view  -->
-            <GridView
-                android:id="@+id/gridView"
+            <!-- List area: grids + centered empty state share the remaining space -->
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:horizontalSpacing="10dp"
-                android:numColumns="1"
-                android:paddingStart="25dp"
-                android:paddingEnd="25dp"
-                android:scrollbars="none"
-                android:verticalSpacing="20dp"
-                android:visibility="gone" />
-            <!-- for compact view -->
-            <GridView
-                android:id="@+id/gridView1"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:columnWidth="138dp"
-                android:gravity="center"
-                android:horizontalSpacing="-30dp"
-                android:numColumns="auto_fit"
-                android:paddingStart="-10dp"
-                android:paddingEnd="-10dp"
-                android:scrollbars="none"
-                android:verticalSpacing="20dp"
-                android:visibility="gone" />
+                android:layout_weight="1">
+
+                <!-- for large view  -->
+                <GridView
+                    android:id="@+id/gridView"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:horizontalSpacing="10dp"
+                    android:numColumns="1"
+                    android:paddingStart="25dp"
+                    android:paddingEnd="25dp"
+                    android:scrollbars="none"
+                    android:verticalSpacing="20dp"
+                    android:visibility="gone" />
+                <!-- for compact view -->
+                <GridView
+                    android:id="@+id/gridView1"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:columnWidth="138dp"
+                    android:gravity="center"
+                    android:horizontalSpacing="-30dp"
+                    android:numColumns="auto_fit"
+                    android:paddingStart="-10dp"
+                    android:paddingEnd="-10dp"
+                    android:scrollbars="none"
+                    android:verticalSpacing="20dp"
+                    android:visibility="gone" />
+
+                <include layout="@layout/layout_offline_empty_state" />
+            </FrameLayout>
         </LinearLayout>
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
     </FrameLayout>

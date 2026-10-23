@@ -74,6 +74,7 @@ class OfflineAnimeFragment : Fragment(), OfflineAnimeSearchListener {
     private val downloadManager = Injekt.get<DownloadsManager>()
     private var downloads: List<OfflineAnimeModel> = listOf()
     private lateinit var gridView: GridView
+    private lateinit var emptyState: ani.dantotsu.offline.OfflineEmptyState
     private lateinit var adapter: OfflineAnimeAdapter
     private lateinit var total: TextView
     private var downloadsJob: Job = Job()
@@ -158,6 +159,7 @@ class OfflineAnimeFragment : Fragment(), OfflineAnimeSearchListener {
         gridView =
             if (style == 0) view.findViewById(R.id.gridView) else view.findViewById(R.id.gridView1)
         total = view.findViewById(R.id.total)
+        emptyState = ani.dantotsu.offline.OfflineEmptyState(view)
 
         val swipeRefresh = view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.localRefresh)
         swipeRefresh.setOnChildScrollUpCallback { _, _ ->
@@ -313,6 +315,11 @@ class OfflineAnimeFragment : Fragment(), OfflineAnimeSearchListener {
             withContext(Dispatchers.Main) {
                 adapter.setItems(downloads)
                 total.text = if (gridView.count > 0) "Anime (${gridView.count})" else "Empty List"
+                if (gridView.count > 0) emptyState.hide() else emptyState.show(
+                    R.drawable.ic_round_video_library_24,
+                    "No downloaded anime",
+                    "Episodes you download will appear here for offline watching."
+                )
                 adapter.notifyDataSetChanged()
             }
         }

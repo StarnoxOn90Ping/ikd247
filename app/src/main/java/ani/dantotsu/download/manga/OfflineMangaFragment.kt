@@ -68,6 +68,7 @@ class OfflineMangaFragment : Fragment(), OfflineMangaSearchListener {
     private val downloadManager = Injekt.get<DownloadsManager>()
     private var downloads: List<OfflineMangaModel> = listOf()
     private lateinit var gridView: GridView
+    private lateinit var emptyState: ani.dantotsu.offline.OfflineEmptyState
     private lateinit var adapter: OfflineMangaAdapter
     private lateinit var total: TextView
     private var downloadsJob: Job = Job()
@@ -152,6 +153,7 @@ class OfflineMangaFragment : Fragment(), OfflineMangaSearchListener {
         gridView =
             if (style == 0) view.findViewById(R.id.gridView) else view.findViewById(R.id.gridView1)
         total = view.findViewById(R.id.total)
+        emptyState = ani.dantotsu.offline.OfflineEmptyState(view)
 
         val swipeRefresh = view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.localRefresh)
         swipeRefresh.setOnChildScrollUpCallback { _, _ ->
@@ -315,6 +317,11 @@ class OfflineMangaFragment : Fragment(), OfflineMangaSearchListener {
                 adapter.setItems(downloads)
                 total.text =
                     if (gridView.count > 0) "Manga and Novels (${gridView.count})" else "Empty List"
+                if (gridView.count > 0) emptyState.hide() else emptyState.show(
+                    R.drawable.ic_round_library_books_24,
+                    "No downloaded manga or novels",
+                    "Chapters you download will appear here for offline reading."
+                )
                 adapter.notifyDataSetChanged()
             }
         }
