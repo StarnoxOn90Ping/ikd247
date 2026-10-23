@@ -61,7 +61,7 @@ For inquiries, join our [Discord server](https://discord.gg/4HPZ5nAWwM). Pull re
 
 ## Acknowledgments
 A heartfelt thank you to everyone who has contributed to the development of Dantotsu.  
-Your efforts are invaluable.
+Your efforts are invaluable.lol
 
 <a href="https://git.rebelonion.dev/rebelonion/Dantotsu/activity/contributors">
   <img alt="GitHub contributors" src="https://img.shields.io/github/contributors/itsmechinmoy/dantotsu?style=flat-square&label=Contributors%20%3A&labelColor=%230f1318&color=%230f1318" align="left">
