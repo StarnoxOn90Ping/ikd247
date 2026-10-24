@@ -209,6 +209,20 @@
                             app:tint="@color/bg_opp"
                             tools:ignore="ContentDescription,ImageContrastCheck" />
 
+                        <ImageView
+                            android:id="@+id/mediaNotify"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginVertical="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:padding="8dp"
+                            android:tintMode="src_atop"
+                            android:visibility="gone"
+                            app:srcCompat="@drawable/ic_round_notifications_none_24"
+                            app:tint="@color/bg_opp"
+                            tools:ignore="ContentDescription,ImageContrastCheck"
+                            tools:visibility="visible" />
+
                     </LinearLayout>
                 </FrameLayout>
 

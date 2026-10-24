@@ -186,7 +186,7 @@ object AiringAlarmScheduler {
             .setConstraints(
                 Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
             )
-            .setBackoffPolicy(BackoffPolicy.LINEAR, 2, TimeUnit.MINUTES)
+            .setBackoffCriteria(BackoffPolicy.LINEAR, 2, TimeUnit.MINUTES)
             .apply { if (delayMinutes > 0) setInitialDelay(delayMinutes, TimeUnit.MINUTES) }
             .build()
         WorkManager.getInstance(context).enqueueUniqueWork(
