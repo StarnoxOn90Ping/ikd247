@@ -77,6 +77,64 @@
             android:textColor="#F2FFFFFF"
             android:textSize="17sp" />
 
+        <!-- disclaimer highlight -->
+        <TextView
+            android:id="@+id/noteCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/bg_onboarding_chip"
+            android:drawableStart="@drawable/ic_onboarding_check"
+            android:drawablePadding="12dp"
+            android:drawableTint="#7CFFB2"
+            android:fontFamily="@font/kanit_medium"
+            android:gravity="center_vertical"
+            android:lineSpacingExtra="2dp"
+            android:padding="18dp"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <!-- unified permissions checklist -->
+        <LinearLayout
+            android:id="@+id/permissionList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:orientation="vertical"
+            android:visibility="gone" />
+
+        <!-- theme picker -->
+        <GridLayout
+            android:id="@+id/themeGrid"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:columnCount="5"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/themeName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:fontFamily="@font/kanit_semibold"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/themeHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="@font/kanit_light"
+            android:gravity="center"
+            android:text="@string/onboarding_themes_hint"
+            android:textColor="#B3FFFFFF"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/statusChip"
             android:layout_width="wrap_content"

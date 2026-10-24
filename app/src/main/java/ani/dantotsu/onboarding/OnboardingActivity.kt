@@ -10,6 +10,12 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import android.view.Gravity
+import android.widget.GridLayout
+import androidx.documentfile.provider.DocumentFile
+import ani.dantotsu.databinding.ItemOnboardingPermissionBinding
+import ani.dantotsu.settings.saving.internal.PreferencePackager
+import ani.dantotsu.toast
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
@@ -57,7 +63,34 @@ import kotlin.math.abs
  */
 class OnboardingActivity : AppCompatActivity() {
 
-    private enum class Kind { INFO, NOTIFICATIONS, BATTERY, ALARMS, STORAGE, DONE }
+    private enum class Kind { INFO, RESTORE, DISCLAIMER, PERMISSIONS, THEMES, DONE }
+
+    private enum class Perm(
+        @DrawableRes val icon: Int,
+        @StringRes val title: Int,
+        @StringRes val desc: Int,
+        @StringRes val action: Int
+    ) {
+        NOTIFICATIONS(
+            R.drawable.ic_round_notifications_active_24, R.string.onboarding_perm_notifications,
+            R.string.onboarding_perm_notifications_desc, R.string.onboarding_perm_allow
+        ),
+        BATTERY(
+            R.drawable.ic_onboarding_battery, R.string.onboarding_perm_battery,
+            R.string.onboarding_perm_battery_desc, R.string.onboarding_perm_allow
+        ),
+        ALARMS(
+            R.drawable.ic_onboarding_alarm, R.string.onboarding_perm_alarms,
+            R.string.onboarding_perm_alarms_desc, R.string.onboarding_perm_allow
+        ),
+        STORAGE(
+            R.drawable.ic_round_folder_24, R.string.onboarding_perm_storage,
+            R.string.onboarding_perm_storage_desc, R.string.onboarding_perm_choose
+        );
+
+        /** Exact alarms only need a grant on Android 12+. */
+        fun isRelevant() = this != ALARMS || Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    }
 
     /** The idle animation of an icon; picked to match what the icon means. */
     private enum class Motion { FLOAT, BELL, SHAKE, PULSE, HOP, SPIN }
@@ -69,45 +102,62 @@ class OnboardingActivity : AppCompatActivity() {
         @StringRes val title: Int,
         @StringRes val description: Int,
         val motion: Motion,
-        val tintIcon: Boolean = true
+        val tintIcon: Boolean = true,
+        /** Size of the icon and of its glow container, in dp. */
+        val iconDp: Int = 128,
+        val containerDp: Int = 240
     )
 
     private val pages = listOf(
         Page(
             Kind.INFO, R.drawable.ic_dantotsu_round, R.string.onboarding_eyebrow_welcome,
             R.string.onboarding_welcome_title, R.string.onboarding_welcome_desc,
-            Motion.FLOAT, tintIcon = false
+            Motion.FLOAT, tintIcon = false, iconDp = 200, containerDp = 300
         ),
         Page(
-            Kind.INFO, R.drawable.ic_round_movie_filter_24, R.string.onboarding_eyebrow_discover,
-            R.string.onboarding_discover_title, R.string.onboarding_discover_desc, Motion.FLOAT
+            Kind.INFO, R.drawable.ic_round_movie_filter_24, R.string.onboarding_eyebrow_track,
+            R.string.onboarding_track_title, R.string.onboarding_track_desc, Motion.FLOAT
         ),
         Page(
-            Kind.INFO, R.drawable.ic_round_notifications_active_24, R.string.onboarding_eyebrow_alerts,
-            R.string.onboarding_alerts_title, R.string.onboarding_alerts_desc, Motion.BELL
+            Kind.RESTORE, R.drawable.backup_restore, R.string.onboarding_eyebrow_restore,
+            R.string.onboarding_restore_title, R.string.onboarding_restore_desc, Motion.SPIN,
+            iconDp = 112, containerDp = 200
         ),
         Page(
-            Kind.NOTIFICATIONS, R.drawable.ic_round_notifications_active_24,
-            R.string.onboarding_eyebrow_notifications,
-            R.string.onboarding_notifications_title, R.string.onboarding_notifications_desc,
-            Motion.BELL
+            Kind.DISCLAIMER, R.drawable.ic_shield, R.string.onboarding_eyebrow_disclaimer,
+            R.string.onboarding_disclaimer_title, R.string.onboarding_disclaimer_desc,
+            Motion.PULSE, iconDp = 104, containerDp = 190
         ),
         Page(
-            Kind.BATTERY, R.drawable.ic_onboarding_battery, R.string.onboarding_eyebrow_battery,
-            R.string.onboarding_battery_title, R.string.onboarding_battery_desc, Motion.PULSE
+            Kind.PERMISSIONS, R.drawable.ic_onboarding_battery, R.string.onboarding_eyebrow_permissions,
+            R.string.onboarding_permissions_title, R.string.onboarding_permissions_desc,
+            Motion.PULSE, iconDp = 72, containerDp = 140
         ),
         Page(
-            Kind.ALARMS, R.drawable.ic_onboarding_alarm, R.string.onboarding_eyebrow_alarms,
-            R.string.onboarding_alarm_title, R.string.onboarding_alarm_desc, Motion.SHAKE
-        ),
-        Page(
-            Kind.STORAGE, R.drawable.ic_round_folder_24, R.string.onboarding_eyebrow_storage,
-            R.string.onboarding_storage_title, R.string.onboarding_storage_desc, Motion.HOP
+            Kind.THEMES, R.drawable.ic_palette, R.string.onboarding_eyebrow_themes,
+            R.string.onboarding_themes_title, R.string.onboarding_themes_desc,
+            Motion.FLOAT, iconDp = 80, containerDp = 150
         ),
         Page(
             Kind.DONE, R.drawable.ic_onboarding_sparkle, R.string.onboarding_eyebrow_done,
-            R.string.onboarding_done_title, R.string.onboarding_done_desc, Motion.SPIN
+            R.string.onboarding_done_title, R.string.onboarding_done_desc, Motion.SPIN,
+            iconDp = 144, containerDp = 260
         )
+    )
+
+    private val disclaimerIndex = pages.indexOfFirst { it.kind == Kind.DISCLAIMER }
+
+    /** Accent colour shown for each theme in the picker. */
+    private val themeSwatches = mapOf(
+        "BLUE" to R.color.md_theme_dark_1_primary,
+        "GREEN" to R.color.md_theme_dark_2_primary,
+        "PURPLE" to R.color.md_theme_dark_3_primary,
+        "PINK" to R.color.md_theme_dark_4_primary,
+        "SAIKOU" to R.color.md_theme_dark_5_primary,
+        "RED" to R.color.md_theme_dark_6_primary,
+        "LAVENDER" to R.color.md_theme_dark_7_primary,
+        "OCEAN" to R.color.md_theme_dark_8_primary,
+        "ORIAX" to R.color.md_theme_dark_9_primary
     )
 
     private lateinit var binding: ActivityOnboardingBinding
@@ -123,6 +173,34 @@ class OnboardingActivity : AppCompatActivity() {
                 openNotificationSettings()
             }
             refreshStatuses()
+        }
+
+    private val restoreLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri == null) return@registerForActivityResult
+            try {
+                val bytes = contentResolver.openInputStream(uri)?.readBytes()
+                    ?: throw Exception("Error reading file")
+                val name = DocumentFile.fromSingleUri(this, uri)?.name ?: ""
+                if (!name.endsWith(".ani")) {
+                    toast(getString(R.string.unknown_file_type))
+                    return@registerForActivityResult
+                }
+                if (PreferencePackager.unpack(bytes.toString(Charsets.UTF_8))) {
+                    // The backup replaces every preference, including this flag
+                    PrefManager.setVal(PrefName.OnboardingDone, true)
+                    startActivity(
+                        Intent(this, MainActivity::class.java)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    )
+                    finish()
+                } else {
+                    toast(getString(R.string.error_importing_settings))
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                toast(getString(R.string.error_importing_settings))
+            }
         }
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
@@ -260,19 +338,22 @@ class OnboardingActivity : AppCompatActivity() {
             else pager.setCurrentItem(pager.currentItem + 1, true)
         }
         binding.skipButton.setOnClickListener {
-            binding.onboardingPager.setCurrentItem(pages.lastIndex, true)
+            // Skips the intro, but never the disclaimer
+            binding.onboardingPager.setCurrentItem(disclaimerIndex, true)
         }
     }
 
     private fun updateButtons(position: Int) {
         val page = pages[position]
         val last = position == pages.lastIndex
-        binding.skipButton.animate().alpha(if (last) 0f else 1f).setDuration(200).start()
-        binding.skipButton.isEnabled = !last
+        val showSkip = position < disclaimerIndex
+        binding.skipButton.animate().alpha(if (showSkip) 1f else 0f).setDuration(200).start()
+        binding.skipButton.isEnabled = showSkip
         binding.nextButton.setText(
             when {
                 last -> R.string.onboarding_get_started
-                isActionable(page.kind) && !isGranted(page.kind) -> R.string.onboarding_maybe_later
+                page.kind == Kind.RESTORE -> R.string.onboarding_start_fresh
+                page.kind == Kind.PERMISSIONS && !allPermsGranted() -> R.string.onboarding_maybe_later
                 else -> R.string.onboarding_next
             }
         )
@@ -282,30 +363,22 @@ class OnboardingActivity : AppCompatActivity() {
 
     // region permission state / actions
 
-    private fun isActionable(kind: Kind) = kind != Kind.INFO && kind != Kind.DONE
+    private fun relevantPerms() = Perm.entries.filter { it.isRelevant() }
 
-    private fun isGranted(kind: Kind): Boolean = when (kind) {
-        Kind.NOTIFICATIONS -> hasNotificationPermission(this)
-        Kind.BATTERY -> (getSystemService(POWER_SERVICE) as PowerManager)
+    private fun allPermsGranted() = relevantPerms().all { isGranted(it) }
+
+    private fun isGranted(perm: Perm): Boolean = when (perm) {
+        Perm.NOTIFICATIONS -> hasNotificationPermission(this)
+        Perm.BATTERY -> (getSystemService(POWER_SERVICE) as PowerManager)
             .isIgnoringBatteryOptimizations(packageName)
 
-        Kind.ALARMS -> AiringAlarmScheduler.canScheduleExact(this)
-        Kind.STORAGE -> StoragePermissions.hasDirAccess(this)
-        else -> true
+        Perm.ALARMS -> AiringAlarmScheduler.canScheduleExact(this)
+        Perm.STORAGE -> StoragePermissions.hasDirAccess(this)
     }
 
-    @StringRes
-    private fun actionLabel(kind: Kind): Int = when (kind) {
-        Kind.NOTIFICATIONS -> R.string.onboarding_notifications_action
-        Kind.BATTERY -> R.string.onboarding_battery_action
-        Kind.ALARMS -> R.string.onboarding_alarm_action
-        Kind.STORAGE -> R.string.onboarding_storage_action
-        else -> R.string.onboarding_next
-    }
-
-    private fun performAction(kind: Kind) {
-        when (kind) {
-            Kind.NOTIFICATIONS -> {
+    private fun performAction(perm: Perm) {
+        when (perm) {
+            Perm.NOTIFICATIONS -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 } else {
@@ -313,7 +386,7 @@ class OnboardingActivity : AppCompatActivity() {
                 }
             }
 
-            Kind.BATTERY -> {
+            Perm.BATTERY -> {
                 try {
                     startActivity(
                         Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
@@ -328,7 +401,7 @@ class OnboardingActivity : AppCompatActivity() {
                 }
             }
 
-            Kind.ALARMS -> {
+            Perm.ALARMS -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     try {
                         startActivity(
@@ -341,12 +414,11 @@ class OnboardingActivity : AppCompatActivity() {
                 }
             }
 
-            Kind.STORAGE -> {
+            Perm.STORAGE -> {
                 folderLauncher.registerForCallback { refreshStatuses() }
                 folderLauncher.launch()
             }
 
-            else -> Unit
         }
     }
 
@@ -375,7 +447,7 @@ class OnboardingActivity : AppCompatActivity() {
     private fun refreshStatuses() {
         if (!::binding.isInitialized) return
         pages.forEachIndexed { index, page ->
-            if (isActionable(page.kind)) pageAdapter.notifyItemChanged(index, PAYLOAD_STATUS)
+            if (page.kind == Kind.PERMISSIONS) pageAdapter.notifyItemChanged(index, PAYLOAD_STATUS)
         }
         updateButtons(binding.onboardingPager.currentItem)
     }
@@ -403,7 +475,7 @@ class OnboardingActivity : AppCompatActivity() {
         val b = holder.b
         listOf<View>(
             b.iconContainer, b.pageEyebrow, b.pageTitle, b.pageDescription,
-            b.statusChip, b.actionButton
+            b.noteCard, b.permissionList, b.themeGrid, b.themeName, b.themeHint, b.actionButton
         )
             .forEachIndexed { index, view ->
                 if (!view.isVisible) return@forEachIndexed
@@ -444,38 +516,120 @@ class OnboardingActivity : AppCompatActivity() {
         private val idleAnimators = mutableListOf<Animator>()
 
         fun bind(page: Page) {
+            b.iconContainer.updateLayoutParams { width = dp(page.containerDp); height = dp(page.containerDp) }
+            b.pageIcon.updateLayoutParams { width = dp(page.iconDp); height = dp(page.iconDp) }
             b.pageIcon.setImageResource(page.icon)
             b.pageIcon.imageTintList =
-                if (page.tintIcon) android.content.res.ColorStateList.valueOf(Color.WHITE) else null
+                if (page.tintIcon) ColorStateList.valueOf(Color.WHITE) else null
             b.pageEyebrow.setText(page.eyebrow)
             b.pageTitle.setText(page.title)
             b.pageDescription.setText(page.description)
-            bindStatus(page)
+
+            b.noteCard.isVisible = page.kind == Kind.DISCLAIMER
+            b.noteCard.setText(R.string.onboarding_disclaimer_note)
+            b.permissionList.isVisible = page.kind == Kind.PERMISSIONS
+            b.themeGrid.isVisible = page.kind == Kind.THEMES
+            b.themeName.isVisible = page.kind == Kind.THEMES
+            b.themeHint.isVisible = page.kind == Kind.THEMES
+            b.statusChip.isVisible = false
+
+            when (page.kind) {
+                Kind.RESTORE -> {
+                    b.actionButton.isVisible = true
+                    b.actionButton.setText(R.string.onboarding_restore_action)
+                    b.actionButton.setOnClickListener { restoreLauncher.launch(arrayOf("*/*")) }
+                }
+
+                Kind.PERMISSIONS -> {
+                    b.actionButton.isVisible = false
+                    buildPermissionRows()
+                }
+
+                Kind.THEMES -> {
+                    b.actionButton.isVisible = false
+                    buildThemeGrid()
+                }
+
+                else -> b.actionButton.isVisible = false
+            }
+        }
+
+        private fun buildPermissionRows() {
+            b.permissionList.removeAllViews()
+            relevantPerms().forEach { perm ->
+                val row = ItemOnboardingPermissionBinding.inflate(
+                    LayoutInflater.from(b.root.context), b.permissionList, false
+                )
+                row.permIcon.setImageResource(perm.icon)
+                row.permTitle.setText(perm.title)
+                row.permDesc.setText(perm.desc)
+                row.permButton.setText(perm.action)
+                row.permButton.setOnClickListener { performAction(perm) }
+                row.root.tag = perm
+                b.permissionList.addView(row.root)
+            }
+            refreshPermissionRows()
         }
 
         fun bindStatus(page: Page) {
-            if (!isActionable(page.kind)) {
-                b.statusChip.isVisible = false
-                b.actionButton.isVisible = false
-                return
+            if (page.kind == Kind.PERMISSIONS) refreshPermissionRows()
+        }
+
+        private fun refreshPermissionRows() {
+            for (i in 0 until b.permissionList.childCount) {
+                val row = b.permissionList.getChildAt(i)
+                val perm = row.tag as? Perm ?: continue
+                val granted = isGranted(perm)
+                row.findViewById<View>(R.id.permButton).isVisible = !granted
+                row.findViewById<View>(R.id.permCheck).isVisible = granted
             }
-            val granted = isGranted(page.kind)
-            b.statusChip.isVisible = true
-            b.statusChip.setText(
-                if (granted) R.string.onboarding_status_enabled else R.string.onboarding_status_pending
-            )
-            b.statusChip.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                if (granted) R.drawable.ic_onboarding_check else R.drawable.ic_onboarding_dot,
-                0, 0, 0
-            )
-            TextViewCompat.setCompoundDrawableTintList(
-                b.statusChip,
-                ColorStateList.valueOf(if (granted) 0xFF7CFFB2.toInt() else 0xFFFFC857.toInt())
-            )
-            // Exact alarms need no grant below Android 12, nothing to ask for then.
-            b.actionButton.isVisible = !granted
-            b.actionButton.setText(actionLabel(page.kind))
-            b.actionButton.setOnClickListener { performAction(page.kind) }
+        }
+
+        private fun buildThemeGrid() {
+            val grid = b.themeGrid
+            grid.removeAllViews()
+            val current: String = PrefManager.getVal(PrefName.Theme)
+            val entries = themeSwatches.keys.toList() + "MONOCHROME (BETA)"
+            val circles = mutableMapOf<String, View>()
+
+            fun style(key: String, selected: Boolean) {
+                val color = themeSwatches[key]?.let { getColor(it) } ?: 0xFF9E9E9E.toInt()
+                circles[key]?.background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(color)
+                    setStroke(
+                        dp(if (selected) 4 else 1),
+                        if (selected) Color.WHITE else 0x66FFFFFF
+                    )
+                }
+                circles[key]?.animate()?.scaleX(if (selected) 1.15f else 1f)
+                    ?.scaleY(if (selected) 1.15f else 1f)?.setDuration(180)?.start()
+            }
+
+            fun label(key: String) = key.substring(0, 1) + key.substring(1).lowercase()
+
+            entries.forEach { key ->
+                val circle = View(b.root.context).apply {
+                    layoutParams = GridLayout.LayoutParams().apply {
+                        width = dp(48); height = dp(48)
+                        setMargins(dp(8), dp(8), dp(8), dp(8))
+                        setGravity(Gravity.CENTER)
+                    }
+                    contentDescription = label(key)
+                    setOnClickListener {
+                        // A hand-picked theme should win over Material You / custom colours
+                        PrefManager.setVal(PrefName.Theme, key)
+                        PrefManager.setVal(PrefName.UseMaterialYou, false)
+                        PrefManager.setVal(PrefName.UseCustomTheme, false)
+                        entries.forEach { style(it, it == key) }
+                        b.themeName.text = label(key)
+                    }
+                }
+                circles[key] = circle
+                grid.addView(circle)
+                style(key, key == current)
+            }
+            b.themeName.text = label(if (current in themeSwatches) current else "PURPLE")
         }
 
         /** Soft light behind the icon that slowly breathes. */
