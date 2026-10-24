@@ -767,14 +767,6 @@
     <string name="onboarding_eyebrow_alarms">PRECISION</string>
     <string name="onboarding_eyebrow_storage">STORAGE</string>
     <string name="onboarding_eyebrow_done">READY</string>
-    <string name="onboarding_feature_anime">🎬 Anime</string>
-    <string name="onboarding_feature_manga">📖 Manga</string>
-    <string name="onboarding_feature_anilist">🔗 AniList</string>
-    <string name="onboarding_feature_stream">📺 Stream</string>
-    <string name="onboarding_feature_read">📚 Read</string>
-    <string name="onboarding_feature_offline">💾 Offline</string>
-    <string name="onboarding_feature_exact">⏱ Exact timing</string>
-    <string name="onboarding_feature_closed">📴 App closed? Fine</string>
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_next">Next</string>
     <string name="onboarding_maybe_later">Maybe later</string>

@@ -2,10 +2,7 @@ package ani.dantotsu.onboarding
 
 import android.animation.ValueAnimator
 import android.content.Context
-import android.graphics.RenderEffect
-import android.graphics.Shader
 import android.graphics.drawable.GradientDrawable
-import android.os.Build
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.ViewGroup
@@ -14,15 +11,20 @@ import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import ani.dantotsu.R
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade
 import kotlin.math.ceil
 import kotlin.math.hypot
 
 /**
- * A tilted wall of anime poster tiles. Neighbouring columns drift in opposite directions forever
- * (seamless marquee), the whole wall is lightly blurred and sits behind the onboarding pages.
- * Until posters arrive (or when offline) the tiles are soft gradient placeholders.
+ * A tilted wall of poster tiles. Neighbouring columns drift in opposite directions forever
+ * (seamless marquee) and every tile is blurred by [SoftBlurTransformation].
+ *
+ * The wall always has artwork: it starts with the illustrated tiles bundled in the app (so it also
+ * works offline) and swaps in real posters via [setImages] if they can be downloaded. A tile whose
+ * poster fails to load falls back to bundled artwork.
  */
 class AnimeTileWall @JvmOverloads constructor(
     context: Context,
@@ -31,31 +33,16 @@ class AnimeTileWall @JvmOverloads constructor(
 
     private val container = FrameLayout(context)
     private val animators = mutableListOf<ValueAnimator>()
-    private val tiles = mutableListOf<Pair<ImageView, Int>>() // tile, poster index
-    private var urls: List<String> = emptyList()
+    private val tiles = mutableListOf<Pair<ImageView, Int>>() // tile, source index
+    private var sources: List<Any> = BUNDLED
     private var built = false
     private var wantRunning = false
     private var tileWidth = 0
     private var tileHeight = 0
 
-    private val placeholderPalette = listOf(
-        0xFF6A3FD1.toInt() to 0xFF3B1E78.toInt(),
-        0xFF1F8FA8.toInt() to 0xFF0F3C5F.toInt(),
-        0xFFD1457B.toInt() to 0xFF4A1259.toInt(),
-        0xFF2BAE66.toInt() to 0xFF14532D.toInt(),
-        0xFFE8903A.toInt() to 0xFF7C2D12.toInt(),
-        0xFF3B82F6.toInt() to 0xFF1E3A8A.toInt()
-    )
-
     init {
         clipChildren = true
         addView(container)
-        // "A bit blurred, but not too much"
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            container.setRenderEffect(
-                RenderEffect.createBlurEffect(dp(2.2f), dp(2.2f), Shader.TileMode.CLAMP)
-            )
-        }
     }
 
     private fun dp(v: Float) = v * resources.displayMetrics.density
@@ -85,12 +72,13 @@ class AnimeTileWall @JvmOverloads constructor(
                 leftMargin = gap + c * (tileWidth + gap)
             }
             for (i in 0 until perColumn * 2) {
-                val posterIndex = c * 5 + i % perColumn
+                // the second half repeats the first so the loop is seamless
+                val sourceIndex = c * 5 + i % perColumn
                 val tile = ImageView(context).apply {
                     scaleType = ImageView.ScaleType.CENTER_CROP
-                    val (top, bottom) = placeholderPalette[(c + i % perColumn) % placeholderPalette.size]
                     background = GradientDrawable(
-                        GradientDrawable.Orientation.TL_BR, intArrayOf(top, bottom)
+                        GradientDrawable.Orientation.TL_BR,
+                        intArrayOf(0xFF2A2A3A.toInt(), 0xFF14141F.toInt())
                     ).apply { cornerRadius = dp(16f) }
                     outlineProvider = ViewOutlineProvider.BACKGROUND
                     clipToOutline = true
@@ -99,34 +87,38 @@ class AnimeTileWall @JvmOverloads constructor(
                     }
                 }
                 column.addView(tile)
-                tiles.add(tile to posterIndex)
+                tiles.add(tile to sourceIndex)
             }
             container.addView(column)
-            column.tag = Triple(perColumn * unit, c % 2 == 0, 30_000L + c * 4_500L)
+            column.tag = Triple(perColumn * unit, c % 2 == 0, 32_000L + c * 4_500L)
             column.translationY = if (c % 2 == 0) 0f else -(perColumn * unit).toFloat()
         }
         bindImages()
         if (wantRunning) startAnimators()
     }
 
+    /** Replaces the bundled artwork with downloaded poster urls. */
     fun setImages(posterUrls: List<String>) {
-        urls = posterUrls
+        if (posterUrls.isEmpty()) return
+        sources = posterUrls
         if (built) bindImages()
     }
 
     private fun bindImages() {
-        if (urls.isEmpty()) return
-        // Android 12+ blurs with RenderEffect; below that decode tiny and let the upscale soften it
-        val downscale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) 1 else 5
+        // Decode at half size: it gets blurred anyway and the upscale of a blurred image is smooth
+        val w = (tileWidth / 2).coerceAtLeast(16)
+        val h = (tileHeight / 2).coerceAtLeast(16)
         tiles.forEach { (view, index) ->
+            val fallback = Glide.with(view)
+                .load(BUNDLED[index % BUNDLED.size])
+                .override(w, h)
+                .transform(CenterCrop(), SoftBlurTransformation(BLUR_RADIUS))
             Glide.with(view)
-                .load(urls[index % urls.size])
-                .override(
-                    (tileWidth / downscale).coerceAtLeast(8),
-                    (tileHeight / downscale).coerceAtLeast(8)
-                )
-                .centerCrop()
-                .transition(withCrossFade(600))
+                .load(sources[index % sources.size])
+                .override(w, h)
+                .transform(CenterCrop(), SoftBlurTransformation(BLUR_RADIUS))
+                .error(fallback)
+                .transition(withCrossFade(500))
                 .into(view)
         }
     }
@@ -174,5 +166,18 @@ class AnimeTileWall @JvmOverloads constructor(
     override fun onDetachedFromWindow() {
         stop()
         super.onDetachedFromWindow()
+    }
+
+    companion object {
+        /** Blur strength in pixels of the half-size decoded poster. Raise for blurrier tiles. */
+        private const val BLUR_RADIUS = 4
+
+        /** Original illustrated artwork shipped with the app, used offline / as fallback. */
+        private val BUNDLED: List<Int> = listOf(
+            R.drawable.onb_tile_01, R.drawable.onb_tile_02, R.drawable.onb_tile_03,
+            R.drawable.onb_tile_04, R.drawable.onb_tile_05, R.drawable.onb_tile_06,
+            R.drawable.onb_tile_07, R.drawable.onb_tile_08, R.drawable.onb_tile_09,
+            R.drawable.onb_tile_10, R.drawable.onb_tile_11, R.drawable.onb_tile_12
+        )
     }
 }

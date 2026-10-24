@@ -180,7 +180,7 @@
                     android:layout_gravity="end"
                     android:gravity="center_horizontal|center_vertical"
                     android:paddingStart="32dp"
-                    android:paddingEnd="32dp">
+                    android:paddingEnd="10dp">
 
                     <TextView
                         android:id="@+id/mediaTotal"

@@ -19,18 +19,21 @@
 
         <FrameLayout
             android:id="@+id/iconContainer"
-            android:layout_width="260dp"
-            android:layout_height="260dp">
+            android:layout_width="240dp"
+            android:layout_height="240dp"
+            android:clipChildren="false">
 
-            <ani.dantotsu.onboarding.OrbitalIconView
-                android:id="@+id/orbital"
+            <!-- soft white light behind the icon -->
+            <View
+                android:id="@+id/iconGlow"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_onboarding_glow" />
 
             <ImageView
                 android:id="@+id/pageIcon"
-                android:layout_width="96dp"
-                android:layout_height="96dp"
+                android:layout_width="128dp"
+                android:layout_height="128dp"
                 android:layout_gravity="center"
                 android:importantForAccessibility="no"
                 app:tint="#FFFFFF" />
@@ -40,9 +43,9 @@
             android:id="@+id/pageEyebrow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:fontFamily="@font/poppins_semi_bold"
-            android:letterSpacing="0.22"
+            android:layout_marginTop="12dp"
+            android:fontFamily="@font/kanit_medium"
+            android:letterSpacing="0.28"
             android:textColor="#B3FFFFFF"
             android:textSize="12sp" />
 
@@ -50,39 +53,29 @@
             android:id="@+id/pageTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:fontFamily="@font/poppins_bold"
+            android:layout_marginTop="6dp"
+            android:fontFamily="@font/kanit_semibold"
             android:gravity="center"
-            android:letterSpacing="-0.02"
             android:lineSpacingExtra="-2dp"
-            android:shadowColor="#66000000"
-            android:shadowDy="4"
-            android:shadowRadius="14"
+            android:shadowColor="#80000000"
+            android:shadowDy="3"
+            android:shadowRadius="12"
             android:textColor="#FFFFFF"
-            android:textSize="31sp" />
+            android:textSize="34sp" />
 
         <TextView
             android:id="@+id/pageDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:fontFamily="@font/poppins_family"
+            android:fontFamily="@font/kanit_light"
             android:gravity="center"
-            android:lineSpacingExtra="5dp"
-            android:shadowColor="#40000000"
+            android:lineSpacingExtra="4dp"
+            android:shadowColor="#80000000"
             android:shadowDy="2"
             android:shadowRadius="8"
-            android:textColor="#E6FFFFFF"
-            android:textSize="15sp" />
-
-        <LinearLayout
-            android:id="@+id/featureRow"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:visibility="gone" />
+            android:textColor="#F2FFFFFF"
+            android:textSize="17sp" />
 
         <TextView
             android:id="@+id/statusChip"
@@ -91,14 +84,14 @@
             android:layout_marginTop="24dp"
             android:background="@drawable/bg_onboarding_chip"
             android:drawablePadding="8dp"
-            android:fontFamily="@font/poppins_semi_bold"
+            android:fontFamily="@font/kanit_medium"
             android:gravity="center_vertical"
             android:paddingStart="16dp"
-            android:paddingTop="9dp"
+            android:paddingTop="8dp"
             android:paddingEnd="18dp"
-            android:paddingBottom="9dp"
+            android:paddingBottom="8dp"
             android:textColor="#FFFFFF"
-            android:textSize="13sp"
+            android:textSize="14sp"
             android:visibility="gone" />
 
         <com.google.android.material.button.MaterialButton
@@ -106,10 +99,10 @@
             android:layout_width="wrap_content"
             android:layout_height="54dp"
             android:layout_marginTop="16dp"
-            android:fontFamily="@font/poppins_bold"
+            android:fontFamily="@font/kanit_semibold"
             android:minWidth="220dp"
             android:textColor="#FFFFFF"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:visibility="gone"
             app:backgroundTint="#33FFFFFF"
             app:cornerRadius="27dp"
