@@ -723,12 +723,13 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
         }
     }
 
-    fun onSourceChange(i: Int): AnimeParser {
+    fun onSourceChange(i: Int, userChosen: Boolean = false): AnimeParser {
         media.anime?.episodes = null
         reload()
         val selected = model.loadSelected(media)
         model.watchSources?.get(selected.sourceIndex)?.showUserTextListener = null
         selected.sourceIndex = i
+        if (userChosen) selected.sourceChosen = true
         selected.server = null
         selected.scanlators = null
         model.saveSelected(media.id, selected)

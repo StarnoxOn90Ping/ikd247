@@ -77,6 +77,17 @@ class SettingsMangaActivity : AppCompatActivity() {
                     ),
                     Settings(
                         type = 1,
+                        name = getString(R.string.default_manga_extension),
+                        desc = DefaultSourceDialog.summary(context, false),
+                        icon = R.drawable.ic_extension,
+                        onClick = { item ->
+                            DefaultSourceDialog.show(context, false) {
+                                item.settingsDesc.text = DefaultSourceDialog.summary(context, false)
+                            }
+                        }
+                    ),
+                    Settings(
+                        type = 1,
                         name = getString(R.string.purge_manga_downloads),
                         desc = getString(R.string.purge_manga_downloads_desc),
                         icon = R.drawable.ic_round_delete_24,

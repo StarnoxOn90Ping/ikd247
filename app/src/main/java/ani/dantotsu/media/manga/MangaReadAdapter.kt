@@ -157,7 +157,7 @@ class MangaReadAdapter(
         binding.mediaSourceTitle.isSelected = true
         binding.mediaSource.setOnItemClickListener { _, _, i, _ ->
             val actualIndex = mangaReadSources.names.indexOf(displayNames[i])
-            fragment.onSourceChange(actualIndex).apply {
+            fragment.onSourceChange(actualIndex, true).apply {
                 binding.mediaSourceTitle.text = showUserText
                 showUserTextListener = { MainScope().launch { binding.mediaSourceTitle.text = it } }
                 source = actualIndex
@@ -476,7 +476,7 @@ class MangaReadAdapter(
                             binding.mediaSource.adapter
                                 .getItem(nextIndex).toString(), false
                         )
-                        fragment.onSourceChange(nextIndex).apply {
+                        fragment.onSourceChange(nextIndex, true).apply {
                             binding.mediaSourceTitle.text = showUserText
                             showUserTextListener =
                                 { MainScope().launch { binding.mediaSourceTitle.text = it } }

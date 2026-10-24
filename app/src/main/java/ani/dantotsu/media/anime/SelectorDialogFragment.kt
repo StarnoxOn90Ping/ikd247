@@ -893,29 +893,30 @@ class SelectorDialogFragment : BottomSheetDialogFragment() {
 
         override fun getItemCount(): Int = links.size
 
+        private fun sourceName(): String? =
+            model.watchSources?.get(media?.selected?.sourceIndex ?: 0)?.name
+
         fun add(videoExtractor: VideoExtractor) {
             if (videoExtractor.videos.isNotEmpty()) {
                 val existingIndex = links.indexOfFirst {
                     it.server.name == videoExtractor.server.name
                 }
                 if (existingIndex >= 0) {
-                    links[existingIndex] = videoExtractor
-                    notifyItemChanged(existingIndex)
-                } else {
-                    if (videoExtractor.isPreferred) {
-                        links.add(0, videoExtractor)
-                        notifyItemInserted(0)
-                    } else {
-                        links.add(videoExtractor)
-                        notifyItemInserted(links.size - 1)
-                    }
+                    links.removeAt(existingIndex)
+                    notifyItemRemoved(existingIndex)
                 }
+                // keep the list in the user's resolution priority order
+                val comparator = ResolutionPriority.comparator(sourceName())
+                val index = links.indexOfFirst { comparator.compare(videoExtractor, it) < 0 }
+                    .let { if (it < 0) links.size else it }
+                links.add(index, videoExtractor)
+                notifyItemInserted(index)
             }
         }
 
         fun addAll(extractors: List<VideoExtractor>?) {
             if (extractors == null) return
-            val sorted = extractors.sortedByDescending { it.isPreferred }
+            val sorted = ResolutionPriority.sort(extractors, sourceName())
             links.addAll(sorted)
             notifyItemRangeInserted(0, sorted.size)
         }

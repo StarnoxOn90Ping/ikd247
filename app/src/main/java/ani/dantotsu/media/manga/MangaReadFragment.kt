@@ -605,12 +605,13 @@ open class MangaReadFragment : Fragment(), ScanlatorSelectionListener {
         return scanlators.distinct()
     }
 
-    fun onSourceChange(i: Int): MangaParser {
+    fun onSourceChange(i: Int, userChosen: Boolean = false): MangaParser {
         media.manga?.chapters = null
         reload()
         val selected = model.loadSelected(media)
         model.mangaReadSources?.get(selected.sourceIndex)?.showUserTextListener = null
         selected.sourceIndex = i
+        if (userChosen) selected.sourceChosen = true
         selected.server = null
         model.saveSelected(media.id, selected)
         media.selected = selected

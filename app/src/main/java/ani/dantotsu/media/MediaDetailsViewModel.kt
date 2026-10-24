@@ -70,6 +70,18 @@ class MediaDetailsViewModel : ViewModel() {
     }
 
 
+    /** Index (in the source list) of the extension chosen as default in settings, or null if none/not installed. */
+    private fun defaultSourceIndex(media: Media): Int? {
+        val (pref, list) = when {
+            media.anime != null -> PrefName.DefaultAnimeSource to AnimeSources.list
+            media.format == "MANGA" || media.format == "ONE_SHOT" -> PrefName.DefaultMangaSource to MangaSources.list
+            else -> return null
+        }
+        val name = PrefManager.getVal<String>(pref)
+        if (name.isBlank()) return null
+        return list.indexOfFirst { it.name == name }.takeIf { it >= 0 }
+    }
+
     fun loadSelected(media: Media, isDownload: Boolean = false): Selected {
         if ((media.format == "LOCAL" || media.format == "LOCAL_NOVEL") && media.selected != null) {
             return media.selected!!
@@ -82,6 +94,17 @@ class MediaDetailsViewModel : ViewModel() {
                     saveSelected(media.id, it)
                     it
                 }
+        if (!isDownload && !data.sourceChosen) {
+            // no source picked by hand for this title: use the default extension from settings
+            defaultSourceIndex(media)?.let { idx ->
+                if (data.sourceIndex != idx) {
+                    data.sourceIndex = idx
+                    data.server = null
+                    data.scanlators = null
+                    saveSelected(media.id, data)
+                }
+            }
+        }
         if (isDownload) {
             data.sourceIndex = when {
                 media.anime != null -> {
@@ -805,6 +828,12 @@ class MediaDetailsViewModel : ViewModel() {
                     }
                 }
                 ep.extractorCallback = null
+                // streams arrive in whatever order the servers answer; put them in the user's priority order
+                synchronized(list) {
+                    val sorted = ani.dantotsu.media.anime.ResolutionPriority.sort(list, name)
+                    list.clear()
+                    list.addAll(sorted)
+                }
                 if (list.isNotEmpty())
                     ep.allStreams = true
                 else if (existingExtractors.isNotEmpty())

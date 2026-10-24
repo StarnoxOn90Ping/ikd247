@@ -544,7 +544,8 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             )
             anime = false
         }
-        selected = if (PrefManager.getVal<Int>(PrefName.CommentsEnabled) != 1 && media.selected!!.window == 2 || rescueMode && media.selected!!.window == 2) 1 else media.selected!!.window
+        // always open on the Info tab, whatever tab was used last
+        selected = 0
         binding.mediaTitle.translationX = -screenWidth
 
         val infoTab = navBar.createTab(R.drawable.ic_round_info_24, R.string.info, R.id.info)
@@ -564,7 +565,6 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         }
         if (model.continueMedia == null && media.cameFromContinue) {
             model.continueMedia = PrefManager.getVal(PrefName.ContinueMedia)
-            selected = 1
         }
         if (intent.getStringExtra("FRAGMENT_TO_LOAD") != null && PrefManager.getVal<Int>(PrefName.CommentsEnabled) == 1 && !rescueMode) selected = 2
         if (viewPager.currentItem != selected) viewPager.post {

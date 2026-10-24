@@ -187,7 +187,7 @@ class AnimeWatchAdapter(
         binding.mediaSource.setOnItemClickListener { _, _, i, _ ->
             val actualIndex = watchSources.names.indexOf(displayNames[i])
             val isOffline = watchSources.isDownloadedSource(actualIndex)
-            fragment.onSourceChange(actualIndex).apply {
+            fragment.onSourceChange(actualIndex, true).apply {
                 binding.mediaSourceTitle.text = showUserText
                 showUserTextListener = { MainScope().launch { binding.mediaSourceTitle.text = it } }
                 changing = true
@@ -637,7 +637,7 @@ class AnimeWatchAdapter(
                             binding.mediaSource.adapter
                                 .getItem(nextIndex).toString(), false
                         )
-                        fragment.onSourceChange(nextIndex).apply {
+                        fragment.onSourceChange(nextIndex, true).apply {
                             binding.mediaSourceTitle.text = showUserText
                             showUserTextListener =
                                 { MainScope().launch { binding.mediaSourceTitle.text = it } }

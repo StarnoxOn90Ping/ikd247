@@ -936,8 +936,8 @@ class ExoplayerView : AppCompatActivity(), Player.Listener {
         lifecycleScope.launch(Dispatchers.IO) { extractor?.onVideoStopped(video) }
 
         episode.dropNullExtractors()
+        // extractors are already sorted by the user's resolution priority, so the first one is the best match
         val ext = episode.extractors?.find { it.server.name == episode.selectedExtractor }
-            ?: episode.extractors?.firstOrNull { it.isPreferred }
             ?: episode.extractors?.firstOrNull() ?: return
         extractor = ext
         video = ext.videos.getOrNull(episode.selectedVideo) ?: ext.videos.firstOrNull() ?: return

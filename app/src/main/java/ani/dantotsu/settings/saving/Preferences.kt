@@ -71,9 +71,11 @@ enum class PrefName(val data: Pref) {
         Pref(
             Location.General,
             List::class,
-            listOf("1080p", "720p", "480p", "360p", "240p", "144p")
+            listOf("2160p", "1440p", "1080p", "720p", "480p", "360p", "240p", "144p")
         )
     ),
+    DefaultAnimeSource(Pref(Location.General, String::class, "")),
+    DefaultMangaSource(Pref(Location.General, String::class, "")),
     SmartDownloadAnime(Pref(Location.General, Boolean::class, false)),
     SmartDownloadManga(Pref(Location.General, Boolean::class, false)),
     AutoBackupInterval(Pref(Location.General, Int::class, 0)),

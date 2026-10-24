@@ -73,6 +73,17 @@ class SettingsAnimeActivity : AppCompatActivity() {
                     ),
                     Settings(
                         type = 1,
+                        name = getString(R.string.default_anime_extension),
+                        desc = DefaultSourceDialog.summary(context, true),
+                        icon = R.drawable.ic_extension,
+                        onClick = { item ->
+                            DefaultSourceDialog.show(context, true) {
+                                item.settingsDesc.text = DefaultSourceDialog.summary(context, true)
+                            }
+                        }
+                    ),
+                    Settings(
+                        type = 1,
                         name = getString(R.string.preferred_download_resolutions),
                         desc = (PrefManager.getVal<List<String>>(PrefName.PreferredDownloadResolutions)).joinToString(", "),
                         icon = R.drawable.ic_round_high_quality_24,
@@ -172,29 +183,124 @@ class SettingsAnimeActivity : AppCompatActivity() {
 }
 
 object ResolutionPriorityDialog {
-    val ALL_RESOLUTIONS = listOf("1080p", "720p", "480p", "360p", "240p", "144p")
+    val ALL_RESOLUTIONS = listOf("2160p", "1440p", "1080p", "720p", "480p", "360p", "240p", "144p")
+
+    private fun number(res: String) = Regex("""\d+""").find(res)?.value?.toIntOrNull() ?: 0
+
+    /** Saved order first; resolutions missing from it are slotted in by size (never dumped last). */
+    private fun buildList(saved: List<String>): MutableList<String> {
+        val list = saved.toMutableList()
+        ALL_RESOLUTIONS.filter { it !in list }.forEach { missing ->
+            val idx = list.indexOfFirst { number(it) < number(missing) }
+            if (idx >= 0) list.add(idx, missing) else list.add(missing)
+        }
+        return list
+    }
 
     fun show(
         context: android.content.Context,
         extensionName: String? = null,
         onUpdated: ((List<String>) -> Unit)? = null
     ) {
-        val currentResolutions = PrefManager.getPreferredDownloadResolutions(extensionName).toMutableList()
-        val fullList = currentResolutions + ALL_RESOLUTIONS.filter { it !in currentResolutions }
-        val checkedItems = fullList.map { it in currentResolutions }.toBooleanArray()
+        val items = buildList(PrefManager.getPreferredDownloadResolutions(extensionName))
+
+        val listAdapter = object : androidx.recyclerview.widget.RecyclerView.Adapter<ResViewHolder>() {
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = ResViewHolder(
+                android.view.LayoutInflater.from(parent.context)
+                    .inflate(R.layout.item_resolution_priority, parent, false)
+            )
+
+            override fun getItemCount() = items.size
+
+            override fun onBindViewHolder(holder: ResViewHolder, position: Int) {
+                holder.position.text = "${position + 1}."
+                holder.name.text = items[position]
+            }
+        }
+
+        val touchHelper = androidx.recyclerview.widget.ItemTouchHelper(
+            object : androidx.recyclerview.widget.ItemTouchHelper.SimpleCallback(
+                androidx.recyclerview.widget.ItemTouchHelper.UP or
+                        androidx.recyclerview.widget.ItemTouchHelper.DOWN, 0
+            ) {
+                // long press anywhere on a row starts the drag
+                override fun isLongPressDragEnabled() = true
+
+                override fun onMove(
+                    recyclerView: androidx.recyclerview.widget.RecyclerView,
+                    viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+                    target: androidx.recyclerview.widget.RecyclerView.ViewHolder
+                ): Boolean {
+                    val from = viewHolder.bindingAdapterPosition
+                    val to = target.bindingAdapterPosition
+                    if (from < 0 || to < 0) return false
+                    items.add(to, items.removeAt(from))
+                    listAdapter.notifyItemMoved(from, to)
+                    return true
+                }
+
+                override fun onSwiped(
+                    viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+                    direction: Int
+                ) {
+                }
+
+                override fun onSelectedChanged(
+                    viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder?,
+                    actionState: Int
+                ) {
+                    super.onSelectedChanged(viewHolder, actionState)
+                    if (actionState == androidx.recyclerview.widget.ItemTouchHelper.ACTION_STATE_DRAG) {
+                        viewHolder?.itemView?.alpha = 0.6f
+                    }
+                }
+
+                override fun clearView(
+                    recyclerView: androidx.recyclerview.widget.RecyclerView,
+                    viewHolder: androidx.recyclerview.widget.RecyclerView.ViewHolder
+                ) {
+                    super.clearView(recyclerView, viewHolder)
+                    viewHolder.itemView.alpha = 1f
+                    // refresh the 1. 2. 3. numbers once the item is dropped
+                    recyclerView.post { listAdapter.notifyDataSetChanged() }
+                }
+            })
+
+        val recycler = androidx.recyclerview.widget.RecyclerView(context).apply {
+            layoutManager = LinearLayoutManager(context)
+            this.adapter = listAdapter
+            overScrollMode = View.OVER_SCROLL_NEVER
+        }
+        touchHelper.attachToRecyclerView(recycler)
+
+        val density = context.resources.displayMetrics.density
+        val hint = android.widget.TextView(context).apply {
+            setText(R.string.resolution_priority_hint)
+            textSize = 13f
+            setTextColor(
+                androidx.core.content.ContextCompat.getColor(context, android.R.color.darker_gray)
+            )
+        }
+        val content = android.widget.LinearLayout(context).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            val pad = (20 * density).toInt()
+            setPadding(pad, (8 * density).toInt(), pad, 0)
+            addView(hint)
+            addView(
+                recycler,
+                android.widget.LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = (8 * density).toInt() }
+            )
+        }
+        val scroll = android.widget.ScrollView(context).apply { addView(content) }
 
         context.customAlertDialog().apply {
             setTitle(R.string.preferred_download_resolutions)
-            multiChoiceItems(fullList.toTypedArray(), checkedItems) { updatedSelection ->
-                currentResolutions.clear()
-                fullList.forEachIndexed { index, res ->
-                    if (updatedSelection[index]) {
-                        currentResolutions.add(res)
-                    }
-                }
-            }
+            setCustomView(scroll)
             setPosButton(R.string.ok) {
-                val toSave = if (currentResolutions.isEmpty()) ALL_RESOLUTIONS else currentResolutions
+                val toSave = items.toList()
                 PrefManager.setPreferredDownloadResolutions(extensionName, toSave)
                 onUpdated?.invoke(toSave)
             }
@@ -205,5 +311,42 @@ object ResolutionPriorityDialog {
             setNegButton(R.string.cancel)
             show()
         }
+    }
+
+    private class ResViewHolder(view: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {
+        val position: android.widget.TextView = view.findViewById(R.id.resolutionPosition)
+        val name: android.widget.TextView = view.findViewById(R.id.resolutionName)
+    }
+}
+
+/** "Default extension" picker shared by the anime and manga settings pages. */
+object DefaultSourceDialog {
+    fun show(
+        context: android.content.Context,
+        anime: Boolean,
+        onUpdated: () -> Unit
+    ) {
+        val pref = if (anime) PrefName.DefaultAnimeSource else PrefName.DefaultMangaSource
+        val special = setOf("Torrent", "Local", "Downloaded")
+        val names = (if (anime) ani.dantotsu.parsers.AnimeSources.list else ani.dantotsu.parsers.MangaSources.list)
+            .map { it.name }
+            .filter { it !in special }
+        val current = PrefManager.getVal<String>(pref)
+        val items = (listOf(context.getString(R.string.default_extension_none)) + names).toTypedArray()
+        val selected = names.indexOf(current).let { if (it < 0) 0 else it + 1 }
+        context.customAlertDialog().apply {
+            setTitle(if (anime) R.string.default_anime_extension else R.string.default_manga_extension)
+            singleChoiceItems(items, selected) { which ->
+                PrefManager.setVal(pref, if (which == 0) "" else names[which - 1])
+                onUpdated()
+            }
+            setNegButton(R.string.cancel)
+            show()
+        }
+    }
+
+    fun summary(context: android.content.Context, anime: Boolean): String {
+        val name = PrefManager.getVal<String>(if (anime) PrefName.DefaultAnimeSource else PrefName.DefaultMangaSource)
+        return name.ifBlank { context.getString(R.string.default_extension_none) }
     }
 }

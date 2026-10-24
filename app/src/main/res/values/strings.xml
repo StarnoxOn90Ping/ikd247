@@ -1446,6 +1446,10 @@ Non quae tempore quo provident laudantium qui illo dolor vel quia dolor et exerc
     <string name="transition_no_previous">There\'s no previous chapter</string>
 
     <!-- Download Resolution & Server Priority -->
+    <string name="default_anime_extension">Default Anime Extension</string>
+    <string name="default_manga_extension">Default Manga Extension</string>
+    <string name="default_extension_none">None (first in the list)</string>
+    <string name="resolution_priority_hint">Press and hold a resolution, then drag it up or down. The top one has the highest priority. This order is used for stream lists and downloads.</string>
     <string name="preferred_download_resolutions">Preferred Download Resolutions</string>
     <string name="preferred_download_resolutions_desc">Priority list of video resolutions for downloads. If a resolution is missing, the next one is picked automatically.</string>
     <string name="auto_select_server_title">Auto Server Selection</string>
