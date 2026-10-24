@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import ani.dantotsu.notifications.TaskScheduler.TaskType
+import ani.dantotsu.notifications.airing.AiringAlarmScheduler
 import ani.dantotsu.notifications.anilist.AnilistNotificationWorker
 import ani.dantotsu.notifications.comment.CommentNotificationWorker
 import ani.dantotsu.notifications.subscription.SubscriptionNotificationWorker
@@ -15,6 +16,12 @@ import ani.dantotsu.util.Logger
 
 class BootCompletedReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
+        if (intent?.action == Intent.ACTION_BOOT_COMPLETED ||
+            intent?.action == Intent.ACTION_MY_PACKAGE_REPLACED
+        ) {
+            // alarms are wiped on reboot / app update, re-arm the episode alerts
+            AiringAlarmScheduler.restoreAll(context)
+        }
         if (intent?.action == Intent.ACTION_BOOT_COMPLETED) {
             val scheduler = AlarmManagerScheduler(context)
             PrefManager.init(context)
@@ -62,6 +69,7 @@ class AlarmPermissionStateReceiver : BroadcastReceiver() {
                 TaskScheduler.create(context, false).scheduleAllTasks(context)
             }
             PrefManager.setVal(PrefName.UseAlarmManager, canScheduleExactAlarms)
+            AiringAlarmScheduler.restoreAll(context)
         }
     }
 }

@@ -98,6 +98,15 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        // First launch: show the animated intro + permission setup before anything else
+        if (!PrefManager.getVal<Boolean>(PrefName.OnboardingDone)) {
+            startActivity(
+                Intent(this, ani.dantotsu.onboarding.OnboardingActivity::class.java)
+            )
+            finish()
+            return
+        }
+
         ThemeManager(this).applyTheme()
 
         //get FRAGMENT_CLASS_NAME from intent
@@ -121,6 +130,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
         TaskScheduler.scheduleSingleWork(this)
+        // keep the episode-release alarms armed (cheap; refreshes airing times from AniList)
+        ani.dantotsu.notifications.airing.AiringAlarmScheduler.restoreAll(applicationContext)
 
         if (Intent.ACTION_VIEW == intent.action) {
             handleViewIntent(intent)

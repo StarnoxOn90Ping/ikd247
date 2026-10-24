@@ -59,7 +59,8 @@ class SubscriptionNotificationTask : Task {
                         Logger.log("SubscriptionNotificationTask: timed out waiting for sources initialization")
                         return@withContext false
                     }
-                    val subscriptions = SubscriptionHelper.getSubscriptions()
+                    // Anime are handled by the airing alarm (fires when the info page countdown hits zero)
+                    val subscriptions = SubscriptionHelper.getSubscriptions().filterValues { !it.isAnime }
                     var i = 0
                     val index = subscriptions.map { i++; it.key to i }.toMap()
                     val notificationManager = NotificationManagerCompat.from(context)

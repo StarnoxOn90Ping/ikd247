@@ -227,9 +227,6 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
                     media.selected!!.sourceIndex = localSourceIndex
                 }
 
-                subscribed =
-                    SubscriptionHelper.getSubscriptions().containsKey(media.id)
-
                 style = media.selected!!.recyclerStyle
                 reverse = media.selected!!.recyclerReversed
 
@@ -498,7 +495,6 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
                         position
                     )
                 }
-                headerAdapter.subscribeButton(true)
                 reload()
             }
         }
@@ -784,16 +780,6 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
         end = e
         model.saveSelected(media.id, media.selected!!)
         reload()
-    }
-
-    var subscribed = false
-    fun onNotificationPressed(subscribed: Boolean, source: String) {
-        this.subscribed = subscribed
-        saveSubscription(media, subscribed)
-        snackString(
-            if (subscribed) getString(R.string.subscribed_notification, source)
-            else getString(R.string.unsubscribed_notification)
-        )
     }
 
     fun openSettings(pkg: AnimeExtension.Installed) {
@@ -1205,14 +1191,6 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
         binding.mediaSourceRecycler.layoutManager?.onRestoreInstanceState(state)
 
         requireActivity().setNavigationTheme()
-
-        if (this::media.isInitialized && this::headerAdapter.isInitialized) {
-            val isCurrentlySubscribed = SubscriptionHelper.getSubscriptions().containsKey(media.id)
-            if (subscribed != isCurrentlySubscribed) {
-                subscribed = isCurrentlySubscribed
-                headerAdapter.subscribe?.setState(isCurrentlySubscribed)
-            }
-        }
     }
 
     override fun onPause() {

@@ -5,6 +5,7 @@ import ani.dantotsu.currContext
 import ani.dantotsu.media.Media
 import ani.dantotsu.media.MediaNameAdapter
 import ani.dantotsu.media.Selected
+import ani.dantotsu.notifications.airing.AiringAlarmScheduler
 import ani.dantotsu.parsers.AnimeParser
 import ani.dantotsu.parsers.AnimeSources
 import ani.dantotsu.parsers.BaseParser
@@ -180,6 +181,7 @@ class SubscriptionHelper {
                 ?: mutableMapOf()
             data.remove(id)
             PrefManager.setCustomVal(SUBSCRIPTIONS, data)
+            currContext()?.applicationContext?.let { AiringAlarmScheduler.cancel(it, id) }
             if (showSnack) toast(R.string.subscription_deleted)
         }
 
@@ -219,6 +221,38 @@ class SubscriptionHelper {
                 data.remove(media.id)
             }
             PrefManager.setCustomVal(SUBSCRIPTIONS, data)
+            updateAiringAlarm(media, subscribed)
+        }
+
+        /**
+         * Anime are notified from the airing countdown (an alarm that fires at the exact release time),
+         * so every (un)subscription has to arm or cancel that alarm too.
+         */
+        private fun updateAiringAlarm(media: Media, subscribed: Boolean) {
+            val context = currContext()?.applicationContext ?: return
+            val anime = media.anime ?: return
+            if (!subscribed) {
+                AiringAlarmScheduler.cancel(context, media.id)
+                return
+            }
+            val airingAt = anime.nextAiringEpisodeTime
+            val next = anime.nextAiringEpisode
+            if (airingAt != null && next != null) {
+                AiringAlarmScheduler.schedule(
+                    context,
+                    AiringAlarmScheduler.Alarm(
+                        mediaId = media.id,
+                        name = media.userPreferredName,
+                        image = media.cover,
+                        banner = media.banner,
+                        // nextAiringEpisode holds the last aired episode, same as the info page countdown
+                        episode = next + 1,
+                        airingAtSec = airingAt
+                    )
+                )
+            }
+            // AniList is the source of truth for the exact time, so always verify it too
+            AiringAlarmScheduler.enqueueSync(context, media.id)
         }
     }
 }

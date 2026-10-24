@@ -60,18 +60,15 @@ class AnimeWatchAdapter(
     private val watchSources: WatchSources
 ) : RecyclerView.Adapter<AnimeWatchAdapter.ViewHolder>() {
     private var autoSelect = true
-    var subscribe: MediaDetailsActivity.PopImageButton? = null
     private var _binding: ItemMediaSourceBinding? = null
 
     fun clearBinding() {
         _binding = null
-        subscribe = null
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
         super.onViewRecycled(holder)
         _binding = null
-        subscribe = null
     }
 
     var options: List<String> = listOf()
@@ -200,7 +197,6 @@ class AnimeWatchAdapter(
                 source = actualIndex
                 setLanguageList(0, actualIndex)
             }
-            subscribeButton(false)
             fragment.loadEpisodes(actualIndex, isOffline)
         }
 
@@ -219,7 +215,6 @@ class AnimeWatchAdapter(
                     binding.animeSourceDubbedCont.isVisible = isDubAvailableSeparately()
                     setLanguageList(i, source)
                 }
-                subscribeButton(false)
                 fragment.loadEpisodes(media.selected!!.sourceIndex, true)
             } ?: run { }
         }
@@ -233,25 +228,6 @@ class AnimeWatchAdapter(
 
         // Icons
 
-        // Subscribe
-        subscribe = MediaDetailsActivity.PopImageButton(
-            fragment.lifecycleScope,
-            binding.mediaSourceSubscribe,
-            R.drawable.ic_round_notifications_active_24,
-            R.drawable.ic_round_notifications_none_24,
-            R.color.bg_opp,
-            R.color.violet_400,
-            fragment.subscribed,
-            true
-        ) {
-            fragment.onNotificationPressed(it, binding.mediaSource.text.toString())
-        }
-
-        subscribeButton(false)
-
-        binding.mediaSourceSubscribe.setOnLongClickListener {
-            openSettings(fragment.requireContext(), CHANNEL_SUBSCRIPTION_CHECK)
-        }
 
         // Play via Torrent / Magnet Button
         binding.mediaTorrentButton.setOnClickListener {
@@ -444,10 +420,6 @@ class AnimeWatchAdapter(
             }
             true
         }
-    }
-
-    fun subscribeButton(enabled: Boolean) {
-        subscribe?.enabled(enabled)
     }
 
     // Chips
@@ -673,7 +645,6 @@ class AnimeWatchAdapter(
                             binding.animeSourceDubbedCont.isVisible = isDubAvailableSeparately()
                             setLanguageList(0, nextIndex)
                         }
-                        subscribeButton(false)
                         fragment.loadEpisodes(nextIndex, false)
                     }
                 }

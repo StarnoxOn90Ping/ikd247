@@ -85,6 +85,13 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
     private var adult = false
     lateinit var media: Media
 
+    // New episode / chapter alert button (next to the favourite button)
+    private var notifyButton: PopImageButton? = null
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (!granted) snackString(getString(R.string.notifications_permission_denied))
+        }
+
     // Custom cover/banner (kept on-device only; the Media object and tracking are never touched)
     private var pendingImageKind: ani.dantotsu.others.CustomMediaImages.Kind? = null
     private var pendingImageDialog: ImageViewDialog? = null
@@ -335,6 +342,31 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
                 null
             }
         }
+        fun setupNotifyButton(media: Media): PopImageButton {
+            val subscribed =
+                ani.dantotsu.notifications.subscription.SubscriptionHelper.getSubscriptions()
+                    .containsKey(media.id)
+            binding.mediaNotify.visibility = View.VISIBLE
+            if (subscribed) {
+                binding.mediaNotify.setImageDrawable(
+                    AppCompatResources.getDrawable(this, R.drawable.ic_round_notifications_active_24)
+                )
+                binding.mediaNotify.setColorFilter(getColor(R.color.violet_400))
+            }
+            return PopImageButton(
+                scope,
+                binding.mediaNotify,
+                R.drawable.ic_round_notifications_active_24,
+                R.drawable.ic_round_notifications_none_24,
+                R.color.bg_opp,
+                R.color.violet_400,
+                subscribed
+            ) { enabled ->
+                ani.dantotsu.notifications.subscription.SubscriptionHelper
+                    .saveSubscription(media, enabled)
+                withContext(Dispatchers.Main) { onNotifyToggled(media, enabled) }
+            }
+        }
         var isFavSyncRunning = false
         fun syncMediaFavStateIfNeeded(favButton: PopImageButton?) {
             if (rescueMode || Anilist.userid == null || favButton == null || media.isFav || isFavSyncRunning) return
@@ -471,6 +503,8 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
                     }
                 }
 
+                notifyButton = setupNotifyButton(it)
+
                 scope.launch {
                     val favIcon = fav(it)
                     syncMediaFavStateIfNeeded(favIcon)
@@ -584,9 +618,51 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         params.updateMargins(right = rightMargin, bottom = bottomMargin)
     }
 
+    private fun onNotifyToggled(media: Media, enabled: Boolean) {
+        if (!enabled) {
+            snackString(getString(R.string.unsubscribed_notification))
+            return
+        }
+        // Without these the alert could not reach the user while the app is closed
+        if (!ani.dantotsu.hasNotificationPermission(this) &&
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU
+        ) {
+            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+        if (!ani.dantotsu.notifications.airing.AiringAlarmScheduler.canScheduleExact(this) &&
+            !PrefManager.getCustomVal("exact_alarm_prompted", false)
+        ) {
+            PrefManager.setCustomVal("exact_alarm_prompted", true)
+            try {
+                startActivity(
+                    Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                        .setData(android.net.Uri.parse("package:$packageName"))
+                )
+            } catch (e: Exception) {
+            }
+        }
+        val airingAt = media.anime?.nextAiringEpisodeTime
+        val next = media.anime?.nextAiringEpisode
+        snackString(
+            when {
+                media.anime == null -> getString(R.string.chapter_alert_enabled)
+                airingAt != null && next != null ->
+                    getString(R.string.episode_alert_enabled, next + 1)
+
+                else -> getString(R.string.episode_alert_enabled_unscheduled)
+            }
+        )
+    }
+
     override fun onResume() {
         super.onResume()
         if (!::binding.isInitialized) return
+        if (::media.isInitialized) {
+            notifyButton?.setState(
+                ani.dantotsu.notifications.subscription.SubscriptionHelper.getSubscriptions()
+                    .containsKey(media.id)
+            )
+        }
         syncExtensionPrefsUi()
         binding.root.requestLayout()
     }

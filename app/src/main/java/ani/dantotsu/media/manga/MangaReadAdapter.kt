@@ -58,18 +58,15 @@ class MangaReadAdapter(
     private val mangaReadSources: MangaReadSources
 ) : RecyclerView.Adapter<MangaReadAdapter.ViewHolder>() {
 
-    var subscribe: MediaDetailsActivity.PopImageButton? = null
     private var _binding: ItemMediaSourceBinding? = null
 
     fun clearBinding() {
         _binding = null
-        subscribe = null
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
         super.onViewRecycled(holder)
         _binding = null
-        subscribe = null
     }
     val hiddenScanlators = mutableListOf<String>()
     var scanlatorSelectionListener: ScanlatorSelectionListener? = null
@@ -166,7 +163,6 @@ class MangaReadAdapter(
                 source = actualIndex
                 setLanguageList(0, actualIndex)
             }
-            subscribeButton(false)
             // Invalidate if it's the last source
             val invalidate = actualIndex == mangaReadSources.names.size - 1
             fragment.loadChapters(actualIndex, invalidate)
@@ -183,7 +179,6 @@ class MangaReadAdapter(
                         { MainScope().launch { binding.mediaSourceTitle.text = it } }
                     setLanguageList(i, source)
                 }
-                subscribeButton(false)
                 fragment.loadChapters(media.selected!!.sourceIndex, true)
             } ?: run {
             }
@@ -197,24 +192,6 @@ class MangaReadAdapter(
         }
 
         // Grids
-        subscribe = MediaDetailsActivity.PopImageButton(
-            fragment.lifecycleScope,
-            binding.mediaSourceSubscribe,
-            R.drawable.ic_round_notifications_active_24,
-            R.drawable.ic_round_notifications_none_24,
-            R.color.bg_opp,
-            R.color.violet_400,
-            fragment.subscribed,
-            true
-        ) {
-            fragment.onNotificationPressed(it, binding.mediaSource.text.toString())
-        }
-
-        subscribeButton(false)
-
-        binding.mediaSourceSubscribe.setOnLongClickListener {
-            openSettings(fragment.requireContext(), CHANNEL_SUBSCRIPTION_CHECK)
-        }
 
         binding.mediaTorrentButton.visibility = View.GONE
 
@@ -356,10 +333,6 @@ class MangaReadAdapter(
         }
         // Chapter Handling
         handleChapters()
-    }
-
-    fun subscribeButton(enabled: Boolean) {
-        subscribe?.enabled(enabled)
     }
 
     // Chips
@@ -509,7 +482,6 @@ class MangaReadAdapter(
                                 { MainScope().launch { binding.mediaSourceTitle.text = it } }
                             setLanguageList(0, nextIndex)
                         }
-                        subscribeButton(false)
                         // Invalidate if it's the last source
                         val invalidate = nextIndex == mangaReadSources.names.size - 1
                         fragment.loadChapters(nextIndex, invalidate)

@@ -78,6 +78,11 @@ object Notifications {
     const val ID_SUBSCRIPTION_CHECK = -1001
     const val ID_SUBSCRIPTION_CHECK_PROGRESS = -1002
 
+    /**
+     * Notification channel used when the countdown of a subscribed anime hits zero.
+     */
+    const val CHANNEL_AIRING = "airing_alarm_channel"
+
 
     /**
      * Notification channel and ids used for app and extension updates.
@@ -177,6 +182,10 @@ object Notifications {
                 },
                 buildNotificationChannel(CHANNEL_SUBSCRIPTION_CHECK, IMPORTANCE_LOW) {
                     setName("Subscription Checks")
+                    setGroup(GROUP_SUBSCRIPTION_CHECK)
+                },
+                buildNotificationChannel(CHANNEL_AIRING, IMPORTANCE_HIGH) {
+                    setName("New Episode Alerts")
                     setGroup(GROUP_SUBSCRIPTION_CHECK)
                 },
                 buildNotificationChannel(CHANNEL_SUBSCRIPTION_CHECK_PROGRESS, IMPORTANCE_DEFAULT) {
