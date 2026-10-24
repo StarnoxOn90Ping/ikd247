@@ -94,8 +94,10 @@ class AnilistQueries {
             force = true
         )
         val stats = response?.data?.user?.statistics ?: return false
-        Anilist.episodesWatched = stats.anime?.episodesWatched ?: Anilist.episodesWatched
-        Anilist.chapterRead = stats.manga?.chaptersRead ?: Anilist.chapterRead
+        Anilist.episodesWatched = Anilist.reconcileStat(true, stats.anime?.episodesWatched)
+            ?: Anilist.episodesWatched
+        Anilist.chapterRead = Anilist.reconcileStat(false, stats.manga?.chaptersRead)
+            ?: Anilist.chapterRead
         Anilist.userStatsChanged.postValue(System.currentTimeMillis())
         return true
     }
@@ -129,8 +131,8 @@ class AnilistQueries {
         Anilist.username = user.name
         Anilist.bg = user.bannerImage
         Anilist.avatar = user.avatar?.medium
-        Anilist.episodesWatched = user.statistics?.anime?.episodesWatched
-        Anilist.chapterRead = user.statistics?.manga?.chaptersRead
+        Anilist.episodesWatched = Anilist.reconcileStat(true, user.statistics?.anime?.episodesWatched)
+        Anilist.chapterRead = Anilist.reconcileStat(false, user.statistics?.manga?.chaptersRead)
         Anilist.adult = user.options?.displayAdultContent ?: false
         val anilistCount = user.unreadNotificationCount ?: 0
         val userCount = PrefManager.getVal<Int>(PrefName.UnreadUserNotifications)

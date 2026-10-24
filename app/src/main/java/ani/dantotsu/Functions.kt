@@ -817,6 +817,10 @@ fun String.findBetween(a: String, b: String): String? {
 
 fun ImageView.loadImage(url: String?, size: Int = 0) {
     if (!url.isNullOrEmpty()) {
+        ani.dantotsu.others.CustomMediaImages.overrideFor(url)?.let {
+            loadLocalImage(it, size)
+            return
+        }
         val localFile = File(url)
         if (localFile.exists()) {
             loadLocalImage(localFile, size)
@@ -828,6 +832,10 @@ fun ImageView.loadImage(url: String?, size: Int = 0) {
 
 fun ImageView.loadImage(file: FileUrl?, size: Int = 0) {
     file?.url = PrefManager.getVal<String>(PrefName.ImageUrl).ifEmpty { file.url }
+    ani.dantotsu.others.CustomMediaImages.overrideFor(file?.url)?.let {
+        loadLocalImage(it, size)
+        return
+    }
     if (file?.url?.isNotEmpty() == true) {
         tryWith {
             if (file.url.startsWith("content://")) {
@@ -850,6 +858,13 @@ fun ImageView.loadImage(file: FileUrl?, size: Int = 0) {
 
 fun ImageView.loadImage(file: FileUrl?, width: Int = 0, height: Int = 0) {
     file?.url = PrefManager.getVal<String>(PrefName.ImageUrl).ifEmpty { file.url }
+    ani.dantotsu.others.CustomMediaImages.overrideFor(file?.url)?.let { custom ->
+        tryWith {
+            Glide.with(this.context).load(custom).transition(withCrossFade())
+                .override(width, height).into(this)
+        }
+        return
+    }
     if (file?.url?.isNotEmpty() == true) {
         tryWith {
             if (file.url.startsWith("content://")) {
@@ -1582,7 +1597,9 @@ suspend fun View.pop() {
     delay(100.milliseconds)
 }
 
-fun blurImage(imageView: ImageView, banner: String?) {
+fun blurImage(imageView: ImageView, originalBanner: String?) {
+    val banner = ani.dantotsu.others.CustomMediaImages.overrideFor(originalBanner)?.absolutePath
+        ?: originalBanner
     if (banner != null) {
         val radius = PrefManager.getVal<Float>(PrefName.BlurRadius).toInt()
         val sampling = PrefManager.getVal<Float>(PrefName.BlurSampling).toInt()

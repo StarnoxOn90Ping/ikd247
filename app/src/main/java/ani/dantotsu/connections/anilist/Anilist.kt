@@ -45,6 +45,45 @@ object Anilist {
     /** Fires whenever [episodesWatched] / [chapterRead] were re-fetched, so the home header can redraw. */
     val userStatsChanged = androidx.lifecycle.MutableLiveData<Long>()
 
+    // AniList recalculates profile statistics a while after a list change (sometimes minutes), so
+    // a fetch right after watching returns the old total. Remember our own adjustment and keep
+    // showing it until the server's number moves.
+    private class StatOverride(val pre: Int, val local: Int, val at: Long)
+
+    private var episodesOverride: StatOverride? = null
+    private var chaptersOverride: StatOverride? = null
+    private const val STAT_OVERRIDE_WINDOW_MS = 30 * 60 * 1000L
+
+    /** Call when the user's progress on one entry changed by [delta] (negative when lowered). */
+    @Synchronized
+    fun applyLocalProgressChange(isAnime: Boolean, delta: Int) {
+        if (delta == 0) return
+        val current = (if (isAnime) episodesWatched else chapterRead) ?: return
+        val updated = (current + delta).coerceAtLeast(0)
+        val previous = if (isAnime) episodesOverride else chaptersOverride
+        val override = StatOverride(previous?.pre ?: current, updated, System.currentTimeMillis())
+        if (isAnime) {
+            episodesOverride = override
+            episodesWatched = updated
+        } else {
+            chaptersOverride = override
+            chapterRead = updated
+        }
+        userStatsChanged.postValue(System.currentTimeMillis())
+    }
+
+    /** Picks between the server's total and our own pending adjustment. */
+    @Synchronized
+    fun reconcileStat(isAnime: Boolean, server: Int?): Int? {
+        val ov = if (isAnime) episodesOverride else chaptersOverride
+        if (server == null || ov == null) return server
+        val stillStale = server == ov.pre &&
+                System.currentTimeMillis() - ov.at < STAT_OVERRIDE_WINDOW_MS
+        if (stillStale) return ov.local
+        if (isAnime) episodesOverride = null else chaptersOverride = null
+        return server
+    }
+
     var genres: ArrayList<String>? = null
     var tags: Map<Boolean, List<String>>? = null
 

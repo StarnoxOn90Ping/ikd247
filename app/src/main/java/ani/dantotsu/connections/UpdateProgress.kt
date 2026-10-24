@@ -82,6 +82,7 @@ fun updateProgress(media: Media, number: String) {
             CoroutineScope(Dispatchers.IO).launch {
                 val a = progressInt
                 if (a > (media.userProgress ?: -1)) {
+                    Anilist.applyLocalProgressChange(media.anime != null, a - (media.userProgress ?: 0))
                     Anilist.mutation.editList(
                         media.id,
                         a,

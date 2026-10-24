@@ -40,6 +40,7 @@ import ani.dantotsu.databinding.BottomSheetSelectorBinding
 import ani.dantotsu.databinding.ItemStreamBinding
 import ani.dantotsu.databinding.ItemUrlBinding
 import ani.dantotsu.download.DownloadedType
+import ani.dantotsu.download.findValidName
 import ani.dantotsu.download.video.Helper
 import ani.dantotsu.getThemeColor
 import ani.dantotsu.hideSystemBarsExtendView
@@ -525,7 +526,7 @@ class SelectorDialogFragment : BottomSheetDialogFragment() {
                         val downloadedEpisode =
                             if (media?.format != "LOCAL" &&
                                 !model.watchSources!!.isDownloadedSource(media!!.selected!!.sourceIndex)
-                            ) findDownloadedEpisode(actualKey) else null
+                            ) findDownloadedEpisode(ep, actualKey) else null
                         if (downloadedEpisode != null) {
                             playDownloadedEpisode(ep, downloadedEpisode)
                         } else if (selected != null && media?.format != "LOCAL") {
@@ -702,12 +703,28 @@ class SelectorDialogFragment : BottomSheetDialogFragment() {
 
     @OptIn(DelicateCoroutinesApi::class)
     @SuppressLint("UnsafeOptInUsageError")
-    /** The downloaded copy of [episodeKey] for the current media, if there is one. */
-    private fun findDownloadedEpisode(episodeKey: String?): DownloadedType? {
+    /**
+     * The downloaded copy of this episode for the current media, if there is one. Matches the same
+     * way the episode list decides to show the "downloaded" badge (episode number == saved name),
+     * with a few forgiving fallbacks for keys/names that differ in case or formatting.
+     */
+    private fun findDownloadedEpisode(ep: Episode, episodeKey: String?): DownloadedType? {
         val m = media ?: return null
-        if (episodeKey == null) return null
-        return Injekt.get<ani.dantotsu.download.DownloadsManager>().animeDownloadedTypes.firstOrNull {
-            with(ani.dantotsu.download.DownloadsManager.Companion) { m.compareName(it.titleName) } && it.chapterName.equals(episodeKey, ignoreCase = true)
+        val names = listOfNotNull(ep.number, episodeKey, ep.title).distinct()
+        val wantedNumbers = names.mapNotNull { ani.dantotsu.media.MediaNameAdapter.findEpisodeNumber(it) }
+        val titleMatches = Injekt.get<ani.dantotsu.download.DownloadsManager>().animeDownloadedTypes.filter {
+            with(ani.dantotsu.download.DownloadsManager.Companion) { m.compareName(it.titleName) }
+        }
+        titleMatches.firstOrNull { d ->
+            names.any { n ->
+                n.equals(d.chapterName, ignoreCase = true) ||
+                        n.findValidName().equals(d.chapterName, ignoreCase = true)
+            }
+        }?.let { return it }
+        // Last resort: same episode number, e.g. "Episode 5" vs "5".
+        return titleMatches.firstOrNull { d ->
+            val num = ani.dantotsu.media.MediaNameAdapter.findEpisodeNumber(d.chapterName)
+            num != null && wantedNumbers.any { it == num }
         }
     }
 

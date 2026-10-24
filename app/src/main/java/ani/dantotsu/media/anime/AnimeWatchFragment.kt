@@ -671,6 +671,7 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
                 episodeAdapter.clearSelection()
                 kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                     try {
+                        Anilist.applyLocalProgressChange(media.anime != null, newProgress - (media.userProgress ?: 0))
                         Anilist.mutation.editList(media.id, newProgress, status = status)
                         MAL.query.editList(media.idMAL, media.anime != null, newProgress, null, status)
                         media.userProgress = newProgress

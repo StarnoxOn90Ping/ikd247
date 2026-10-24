@@ -145,6 +145,17 @@ class ImageViewDialog : BottomSheetDialogFragment() {
                     shareImage(title, bitmap, requireContext())
                 }
 
+                // Tall pictures (covers) used to push the buttons below the screen. Size the
+                // picture to the space that is actually left so nothing needs scrolling.
+                val density = resources.displayMetrics.density
+                val reserved = ((if (onChangeImage != null) 340 else 270) * density).toInt()
+                val availW = resources.displayMetrics.widthPixels - (32 * density).toInt()
+                val wanted = (bitmap.height.toFloat() / bitmap.width * availW).toInt()
+                val allowed = resources.displayMetrics.heightPixels - reserved
+                binding.bottomImageView.layoutParams = binding.bottomImageView.layoutParams.apply {
+                    height = wanted.coerceAtMost(allowed).coerceAtLeast((120 * density).toInt())
+                }
+                binding.bottomImageView.minimumHeight = 0
                 binding.bottomImageView.setImage(ImageSource.cachedBitmap(bitmap))
                 ObjectAnimator.ofFloat(binding.bottomImageView, "alpha", 0f, 1f).setDuration(400L)
                     .start()

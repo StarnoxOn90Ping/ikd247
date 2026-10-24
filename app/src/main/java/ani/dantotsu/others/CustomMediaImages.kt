@@ -1,5 +1,6 @@
 package ani.dantotsu.others
 
+import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -9,6 +10,8 @@ import android.net.Uri
 import ani.dantotsu.util.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import java.io.File
 
 /**
@@ -27,6 +30,58 @@ object CustomMediaImages {
     private fun dir(context: Context): File =
         File(context.filesDir, "custom_media_images").apply { mkdirs() }
 
+    // ---- Global lookup -------------------------------------------------------------------
+    // Every image loader in the app asks [overrideFor] first, so a custom cover/banner shows up
+    // in lists, search, home, etc. AniList image URLs carry the media id in their file name
+    // (".../cover/large/bx21-abc.jpg", ".../banner/21-abc.jpg"), which lets us find the override
+    // for any size/variant of the picture without knowing which Media object it belongs to.
+
+    private val urlRegex = Regex("""/(cover|banner)/(?:[^/]+/)?(?:bx|b)?(\d+)-[^/]*$""")
+
+    @Volatile
+    private var index: Map<String, File>? = null
+
+    private fun buildIndex(): Map<String, File> {
+        val ctx = Injekt.get<Application>()
+        val found = HashMap<String, File>()
+        dir(ctx).listFiles()?.filter { it.isFile && it.length() > 0 }
+            ?.sortedBy { it.lastModified() }
+            ?.forEach { f ->
+                // name: <id>_<kind>_<timestamp>.jpg ; newest wins because of the sort above
+                val parts = f.name.split("_")
+                if (parts.size >= 3) found["${parts[0]}_${parts[1]}"] = f
+            }
+        index = found
+        return found
+    }
+
+    private fun invalidate() {
+        index = null
+    }
+
+    /** The custom picture that should replace [url], or null. Cheap enough for every image load. */
+    fun overrideFor(url: String?): File? {
+        if (url.isNullOrEmpty() || !url.startsWith("http")) return null
+        val match = urlRegex.find(url) ?: return null
+        val kind = match.groupValues[1]
+        val id = match.groupValues[2]
+        val map = index ?: try {
+            buildIndex()
+        } catch (_: Exception) {
+            return null
+        }
+        if (map.isEmpty()) return null
+        return map["${id}_$kind"]?.takeIf { it.exists() }
+    }
+
+    /** The media id encoded in an AniList image URL, if it has one. */
+    fun idFromUrl(url: String?): Int? =
+        url?.let { urlRegex.find(it)?.groupValues?.get(2)?.toIntOrNull() }
+
+    /** Custom images are tied to AniList image URLs, so only media that has one can use them. */
+    fun canCustomize(mediaId: Int, cover: String?, banner: String?): Boolean =
+        mediaId != 0 && (idFromUrl(cover) == mediaId || idFromUrl(banner) == mediaId)
+
     // Files get a unique name on every save so Glide never serves a stale cached copy.
     private fun prefix(mediaId: Int, kind: Kind) = "${mediaId}_${kind.tag}_"
 
@@ -41,6 +96,7 @@ object CustomMediaImages {
 
     fun remove(context: Context, mediaId: Int, kind: Kind) {
         dir(context).listFiles { f -> f.name.startsWith(prefix(mediaId, kind)) }?.forEach { it.delete() }
+        invalidate()
     }
 
     /** Copies [uri] into app storage (downscaled, rotation fixed). Returns true on success. */
@@ -88,6 +144,7 @@ object CustomMediaImages {
                 // Keep only the newest copy.
                 dir(context).listFiles { f -> f.name.startsWith(prefix(mediaId, kind)) && f != target }
                     ?.forEach { it.delete() }
+                invalidate()
                 true
             } catch (e: Exception) {
                 Logger.log(e)

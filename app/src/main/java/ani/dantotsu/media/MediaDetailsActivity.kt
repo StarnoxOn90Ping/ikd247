@@ -115,7 +115,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         val title = getString(if (isCover) R.string.cover else R.string.banner, media.userPreferredName)
         val custom = ani.dantotsu.others.CustomMediaImages.path(this, media.id, kind)
         val current = custom ?: if (isCover) media.cover else (media.banner ?: media.cover)
-        val canCustomize = media.id != 0
+        val canCustomize = ani.dantotsu.others.CustomMediaImages.canCustomize(media.id, media.cover, media.banner)
         ImageViewDialog.newInstance(
             this,
             title,
