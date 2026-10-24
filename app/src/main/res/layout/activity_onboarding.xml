@@ -5,26 +5,20 @@
     android:id="@+id/onboardingRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#141E55">
+    android:background="#0B0B1A">
 
-    <!-- Slowly drifting decorative blobs -->
-    <View
-        android:id="@+id/blobOne"
-        android:layout_width="300dp"
-        android:layout_height="300dp"
-        android:layout_gravity="top|start"
-        android:layout_marginStart="-120dp"
-        android:layout_marginTop="-80dp"
-        android:background="@drawable/bg_onboarding_circle" />
+    <!-- Tilted, drifting, softly blurred wall of anime posters -->
+    <ani.dantotsu.onboarding.AnimeTileWall
+        android:id="@+id/tileWall"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
+    <!-- Colour wash that follows the current page and keeps the text readable -->
     <View
-        android:id="@+id/blobTwo"
-        android:layout_width="240dp"
-        android:layout_height="240dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="-90dp"
-        android:layout_marginBottom="120dp"
-        android:background="@drawable/bg_onboarding_circle" />
+        android:id="@+id/scrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0.8" />
 
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/onboardingPager"
@@ -69,12 +63,15 @@
             android:layout_width="wrap_content"
             android:layout_height="56dp"
             android:fontFamily="@font/poppins_bold"
-            android:minWidth="140dp"
+            android:minWidth="150dp"
             android:text="@string/onboarding_next"
             android:textColor="#1B1464"
             android:textSize="15sp"
             app:backgroundTint="#FFFFFF"
             app:cornerRadius="28dp"
-            tools:ignore="HardcodedText" />
+            app:icon="@drawable/ic_round_arrow_forward_ios_24"
+            app:iconGravity="textEnd"
+            app:iconSize="14dp"
+            app:iconTint="#1B1464" />
     </LinearLayout>
 </FrameLayout>

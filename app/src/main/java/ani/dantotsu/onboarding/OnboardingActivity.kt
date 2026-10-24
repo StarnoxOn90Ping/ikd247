@@ -16,9 +16,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.DecelerateInterpolator
-import android.view.animation.LinearInterpolator
 import android.view.animation.OvershootInterpolator
-import android.widget.ImageView
+import android.widget.TextView
+import android.content.res.ColorStateList
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
@@ -31,9 +31,12 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
+import androidx.core.widget.TextViewCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import ani.dantotsu.MainActivity
+import ani.dantotsu.client
 import ani.dantotsu.R
 import ani.dantotsu.databinding.ActivityOnboardingBinding
 import ani.dantotsu.databinding.ItemOnboardingPageBinding
@@ -44,6 +47,12 @@ import ani.dantotsu.settings.saving.PrefName
 import ani.dantotsu.themes.ThemeManager
 import ani.dantotsu.util.LauncherWrapper
 import ani.dantotsu.util.StoragePermissions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import kotlin.math.abs
 
 /**
@@ -58,51 +67,68 @@ class OnboardingActivity : AppCompatActivity() {
     private data class Page(
         val kind: Kind,
         @DrawableRes val icon: Int,
+        @StringRes val eyebrow: Int,
         @StringRes val title: Int,
         @StringRes val description: Int,
         val colorTop: Int,
         val colorBottom: Int,
-        val tintIcon: Boolean = true
+        val tintIcon: Boolean = true,
+        val features: List<Int> = emptyList()
     )
 
     private val pages = listOf(
         Page(
-            Kind.INFO, R.drawable.ic_dantotsu_round,
+            Kind.INFO, R.drawable.ic_dantotsu_round, R.string.onboarding_eyebrow_welcome,
             R.string.onboarding_welcome_title, R.string.onboarding_welcome_desc,
-            0xFF141E55.toInt(), 0xFF6A3FD1.toInt(), tintIcon = false
+            0xFF141E55.toInt(), 0xFF6A3FD1.toInt(), tintIcon = false,
+            features = listOf(
+                R.string.onboarding_feature_anime,
+                R.string.onboarding_feature_manga,
+                R.string.onboarding_feature_anilist
+            )
         ),
         Page(
-            Kind.INFO, R.drawable.ic_round_movie_filter_24,
+            Kind.INFO, R.drawable.ic_round_movie_filter_24, R.string.onboarding_eyebrow_discover,
             R.string.onboarding_discover_title, R.string.onboarding_discover_desc,
-            0xFF0F3C5F.toInt(), 0xFF1F8FA8.toInt()
+            0xFF0F3C5F.toInt(), 0xFF1F8FA8.toInt(),
+            features = listOf(
+                R.string.onboarding_feature_stream,
+                R.string.onboarding_feature_read,
+                R.string.onboarding_feature_offline
+            )
         ),
         Page(
-            Kind.INFO, R.drawable.ic_round_notifications_active_24,
+            Kind.INFO, R.drawable.ic_round_notifications_active_24, R.string.onboarding_eyebrow_alerts,
             R.string.onboarding_alerts_title, R.string.onboarding_alerts_desc,
-            0xFF4A1259.toInt(), 0xFFD1457B.toInt()
+            0xFF4A1259.toInt(), 0xFFD1457B.toInt(),
+            features = listOf(
+                R.string.onboarding_feature_exact,
+                R.string.onboarding_feature_closed
+            )
         ),
         Page(
             Kind.NOTIFICATIONS, R.drawable.ic_round_notifications_active_24,
+            R.string.onboarding_eyebrow_notifications,
             R.string.onboarding_notifications_title, R.string.onboarding_notifications_desc,
             0xFF3B1E78.toInt(), 0xFF8E54E9.toInt()
         ),
         Page(
-            Kind.BATTERY, R.drawable.ic_onboarding_battery,
+            Kind.BATTERY, R.drawable.ic_onboarding_battery, R.string.onboarding_eyebrow_battery,
             R.string.onboarding_battery_title, R.string.onboarding_battery_desc,
             0xFF14532D.toInt(), 0xFF2BAE66.toInt()
         ),
         Page(
-            Kind.ALARMS, R.drawable.ic_onboarding_alarm,
+            Kind.ALARMS, R.drawable.ic_onboarding_alarm, R.string.onboarding_eyebrow_alarms,
             R.string.onboarding_alarm_title, R.string.onboarding_alarm_desc,
             0xFF7C2D12.toInt(), 0xFFE8903A.toInt()
         ),
         Page(
-            Kind.STORAGE, R.drawable.ic_round_folder_24,
+            Kind.STORAGE, R.drawable.ic_round_folder_24, R.string.onboarding_eyebrow_storage,
             R.string.onboarding_storage_title, R.string.onboarding_storage_desc,
             0xFF1E3A8A.toInt(), 0xFF3B82F6.toInt()
         ),
         Page(
-            Kind.DONE, R.drawable.ic_onboarding_sparkle,
+            Kind.DONE, R.drawable.ic_onboarding_sparkle, R.string.onboarding_eyebrow_done,
             R.string.onboarding_done_title, R.string.onboarding_done_desc,
             0xFF2D1B69.toInt(), 0xFFB04FD6.toInt()
         )
@@ -116,7 +142,6 @@ class OnboardingActivity : AppCompatActivity() {
         GradientDrawable.Orientation.TOP_BOTTOM,
         intArrayOf(0xFF141E55.toInt(), 0xFF6A3FD1.toInt())
     )
-    private val blobAnimators = mutableListOf<ValueAnimator>()
     private val argb = ArgbEvaluator()
 
     private val notificationLauncher =
@@ -149,7 +174,8 @@ class OnboardingActivity : AppCompatActivity() {
 
         folderLauncher = LauncherWrapper(this, ActivityResultContracts.OpenDocumentTree())
 
-        binding.onboardingRoot.background = background
+        binding.scrim.background = background
+        loadPosters()
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -179,7 +205,7 @@ class OnboardingActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        startBlobAnimations()
+        binding.tileWall.start()
     }
 
     override fun onResume() {
@@ -190,8 +216,7 @@ class OnboardingActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        blobAnimators.forEach { it.cancel() }
-        blobAnimators.clear()
+        binding.tileWall.stop()
     }
 
     // region setup
@@ -223,6 +248,7 @@ class OnboardingActivity : AppCompatActivity() {
                     )
                 )
                 updateDots(position + positionOffset)
+                binding.tileWall.setParallax(-(position + positionOffset) * dp(36))
             }
 
             override fun onPageSelected(position: Int) {
@@ -288,26 +314,33 @@ class OnboardingActivity : AppCompatActivity() {
         )
     }
 
-    private fun startBlobAnimations() {
-        fun drift(view: View, dx: Float, dy: Float, duration: Long) {
-            val animator = ValueAnimator.ofFloat(0f, 1f).apply {
-                this.duration = duration
-                repeatCount = ValueAnimator.INFINITE
-                repeatMode = ValueAnimator.REVERSE
-                interpolator = AccelerateDecelerateInterpolator()
-                addUpdateListener {
-                    val f = it.animatedValue as Float
-                    view.translationX = dx * f
-                    view.translationY = dy * f
-                    view.scaleX = 1f + 0.12f * f
-                    view.scaleY = 1f + 0.12f * f
+    /** Pulls currently trending posters from AniList for the background; silent if offline. */
+    private fun loadPosters() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val urls = try {
+                val query = "{Page(page:1,perPage:30){media(type:ANIME,sort:TRENDING_DESC," +
+                        "isAdult:false){coverImage{large}}}}"
+                val response = client.post(
+                    "https://graphql.anilist.co/",
+                    mapOf(
+                        "Content-Type" to "application/json; charset=utf-8",
+                        "Accept" to "application/json"
+                    ),
+                    requestBody = JSONObject().put("query", query).toString()
+                        .toRequestBody("application/json; charset=utf-8".toMediaType()),
+                    cacheTime = 0
+                )
+                val media = JSONObject(response.text).getJSONObject("data")
+                    .getJSONObject("Page").getJSONArray("media")
+                (0 until media.length()).mapNotNull {
+                    media.getJSONObject(it).optJSONObject("coverImage")?.optString("large")
+                        ?.takeIf { url -> url.isNotEmpty() }
                 }
-                start()
+            } catch (e: Exception) {
+                emptyList()
             }
-            blobAnimators.add(animator)
+            if (urls.isNotEmpty()) withContext(Dispatchers.Main) { binding.tileWall.setImages(urls) }
         }
-        drift(binding.blobOne, dp(60).toFloat(), dp(80).toFloat(), 7000)
-        drift(binding.blobTwo, -dp(70).toFloat(), -dp(50).toFloat(), 9000)
     }
 
     // endregion
@@ -433,7 +466,10 @@ class OnboardingActivity : AppCompatActivity() {
     private fun playEntrance(position: Int) {
         val holder = currentHolder(position) ?: return
         val b = holder.b
-        listOf<View>(b.iconContainer, b.pageTitle, b.pageDescription, b.statusChip, b.actionButton)
+        listOf<View>(
+            b.iconContainer, b.pageEyebrow, b.pageTitle, b.pageDescription,
+            b.featureRow, b.statusChip, b.actionButton
+        )
             .forEachIndexed { index, view ->
                 if (!view.isVisible) return@forEachIndexed
                 // alpha is already handled by the pager transformer while swiping
@@ -468,9 +504,31 @@ class OnboardingActivity : AppCompatActivity() {
             b.pageIcon.setImageResource(page.icon)
             b.pageIcon.imageTintList =
                 if (page.tintIcon) android.content.res.ColorStateList.valueOf(Color.WHITE) else null
+            b.pageEyebrow.setText(page.eyebrow)
             b.pageTitle.setText(page.title)
             b.pageDescription.setText(page.description)
+            bindFeatures(page)
             bindStatus(page)
+        }
+
+        private fun bindFeatures(page: Page) {
+            b.featureRow.removeAllViews()
+            b.featureRow.isVisible = page.features.isNotEmpty()
+            page.features.forEach { res ->
+                val chip = TextView(b.root.context).apply {
+                    setText(res)
+                    setTextColor(Color.WHITE)
+                    textSize = 12f
+                    typeface = androidx.core.content.res.ResourcesCompat
+                        .getFont(context, R.font.poppins_semi_bold)
+                    setBackgroundResource(R.drawable.bg_onboarding_chip)
+                    setPadding(dp(11), dp(7), dp(11), dp(7))
+                    layoutParams = android.widget.LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { marginStart = dp(4); marginEnd = dp(4) }
+                }
+                b.featureRow.addView(chip)
+            }
         }
 
         fun bindStatus(page: Page) {
@@ -485,7 +543,12 @@ class OnboardingActivity : AppCompatActivity() {
                 if (granted) R.string.onboarding_status_enabled else R.string.onboarding_status_pending
             )
             b.statusChip.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                if (granted) R.drawable.ic_onboarding_check else 0, 0, 0, 0
+                if (granted) R.drawable.ic_onboarding_check else R.drawable.ic_onboarding_dot,
+                0, 0, 0
+            )
+            TextViewCompat.setCompoundDrawableTintList(
+                b.statusChip,
+                ColorStateList.valueOf(if (granted) 0xFF7CFFB2.toInt() else 0xFFFFC857.toInt())
             )
             // Exact alarms need no grant below Android 12, nothing to ask for then.
             b.actionButton.isVisible = !granted
@@ -496,24 +559,12 @@ class OnboardingActivity : AppCompatActivity() {
         fun startAnimations() {
             stopAnimations()
             animators.add(ValueAnimator.ofFloat(0f, 1f).apply {
-                duration = 1900
-                repeatCount = ValueAnimator.INFINITE
-                interpolator = DecelerateInterpolator()
-                addUpdateListener {
-                    val f = it.animatedFraction
-                    b.pulseRing.scaleX = 0.75f + 0.55f * f
-                    b.pulseRing.scaleY = 0.75f + 0.55f * f
-                    b.pulseRing.alpha = 1f - f
-                }
-                start()
-            })
-            animators.add(ValueAnimator.ofFloat(0f, 1f).apply {
-                duration = 2200
+                duration = 2400
                 repeatCount = ValueAnimator.INFINITE
                 repeatMode = ValueAnimator.REVERSE
                 interpolator = AccelerateDecelerateInterpolator()
                 addUpdateListener {
-                    b.pageIcon.translationY = -dp(10) * (it.animatedValue as Float)
+                    b.pageIcon.translationY = -dp(7) * (it.animatedValue as Float)
                 }
                 start()
             })
