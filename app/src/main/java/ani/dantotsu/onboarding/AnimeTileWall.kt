@@ -22,9 +22,8 @@ import kotlin.math.hypot
  * A tilted wall of poster tiles. Neighbouring columns drift in opposite directions forever
  * (seamless marquee) and every tile is blurred by [SoftBlurTransformation].
  *
- * The wall always has artwork: it starts with the illustrated tiles bundled in the app (so it also
- * works offline) and swaps in real posters via [setImages] if they can be downloaded. A tile whose
- * poster fails to load falls back to bundled artwork.
+ * Only the [TILE_COUNT] webp tiles bundled in the app (res/drawable-nodpi/onb_tile_01..32) are
+ * shown. Nothing is downloaded, so the wall looks the same online and offline.
  */
 class AnimeTileWall @JvmOverloads constructor(
     context: Context,
@@ -34,7 +33,6 @@ class AnimeTileWall @JvmOverloads constructor(
     private val container = FrameLayout(context)
     private val animators = mutableListOf<ValueAnimator>()
     private val tiles = mutableListOf<Pair<ImageView, Int>>() // tile, source index
-    private var sources: List<Any> = BUNDLED
     private var built = false
     private var wantRunning = false
     private var tileWidth = 0
@@ -73,7 +71,7 @@ class AnimeTileWall @JvmOverloads constructor(
             }
             for (i in 0 until perColumn * 2) {
                 // the second half repeats the first so the loop is seamless
-                val sourceIndex = c * 5 + i % perColumn
+                val sourceIndex = (c * perColumn + i % perColumn) % TILE_COUNT
                 val tile = ImageView(context).apply {
                     scaleType = ImageView.ScaleType.CENTER_CROP
                     background = GradientDrawable(
@@ -97,28 +95,16 @@ class AnimeTileWall @JvmOverloads constructor(
         if (wantRunning) startAnimators()
     }
 
-    /** Replaces the bundled artwork with downloaded poster urls. */
-    fun setImages(posterUrls: List<String>) {
-        if (posterUrls.isEmpty()) return
-        sources = posterUrls
-        if (built) bindImages()
-    }
-
     private fun bindImages() {
         // Decode at half size: it gets blurred anyway and the upscale of a blurred image is smooth
         val w = (tileWidth / 2).coerceAtLeast(16)
         val h = (tileHeight / 2).coerceAtLeast(16)
         tiles.forEach { (view, index) ->
-            val fallback = Glide.with(view)
+            Glide.with(view)
                 .load(BUNDLED[index % BUNDLED.size])
                 .override(w, h)
                 .transform(CenterCrop(), SoftBlurTransformation(BLUR_RADIUS))
-            Glide.with(view)
-                .load(sources[index % sources.size])
-                .override(w, h)
-                .transform(CenterCrop(), SoftBlurTransformation(BLUR_RADIUS))
-                .error(fallback)
-                .transition(withCrossFade(500))
+                .transition(withCrossFade(300))
                 .into(view)
         }
     }
@@ -170,14 +156,24 @@ class AnimeTileWall @JvmOverloads constructor(
 
     companion object {
         /** Blur strength in pixels of the half-size decoded poster. Raise for blurrier tiles. */
-        private const val BLUR_RADIUS = 4
+        private const val BLUR_RADIUS = 1
 
-        /** Original illustrated artwork shipped with the app, used offline / as fallback. */
+        /** Number of tile images in the rotation (onb_tile_01 .. onb_tile_32). */
+        private const val TILE_COUNT = 32
+
+        /** The bundled webp tiles, in order. */
         private val BUNDLED: List<Int> = listOf(
             R.drawable.onb_tile_01, R.drawable.onb_tile_02, R.drawable.onb_tile_03,
             R.drawable.onb_tile_04, R.drawable.onb_tile_05, R.drawable.onb_tile_06,
             R.drawable.onb_tile_07, R.drawable.onb_tile_08, R.drawable.onb_tile_09,
-            R.drawable.onb_tile_10, R.drawable.onb_tile_11, R.drawable.onb_tile_12
+            R.drawable.onb_tile_10, R.drawable.onb_tile_11, R.drawable.onb_tile_12,
+            R.drawable.onb_tile_13, R.drawable.onb_tile_14, R.drawable.onb_tile_15,
+            R.drawable.onb_tile_16, R.drawable.onb_tile_17, R.drawable.onb_tile_18,
+            R.drawable.onb_tile_19, R.drawable.onb_tile_20, R.drawable.onb_tile_21,
+            R.drawable.onb_tile_22, R.drawable.onb_tile_23, R.drawable.onb_tile_24,
+            R.drawable.onb_tile_25, R.drawable.onb_tile_26, R.drawable.onb_tile_27,
+            R.drawable.onb_tile_28, R.drawable.onb_tile_29, R.drawable.onb_tile_30,
+            R.drawable.onb_tile_31, R.drawable.onb_tile_32
         )
     }
 }

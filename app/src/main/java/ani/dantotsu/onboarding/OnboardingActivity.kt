@@ -35,11 +35,9 @@ import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.core.widget.TextViewCompat
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import ani.dantotsu.MainActivity
-import ani.dantotsu.client
 import ani.dantotsu.R
 import ani.dantotsu.databinding.ActivityOnboardingBinding
 import ani.dantotsu.databinding.ItemOnboardingPageBinding
@@ -50,12 +48,6 @@ import ani.dantotsu.settings.saving.PrefName
 import ani.dantotsu.themes.ThemeManager
 import ani.dantotsu.util.LauncherWrapper
 import ani.dantotsu.util.StoragePermissions
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
 import kotlin.math.abs
 
 /**
@@ -157,7 +149,6 @@ class OnboardingActivity : AppCompatActivity() {
             GradientDrawable.Orientation.TOP_BOTTOM,
             intArrayOf(0x8C080814.toInt(), 0x59080814, 0xD9080814.toInt())
         )
-        loadPosters()
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -285,35 +276,6 @@ class OnboardingActivity : AppCompatActivity() {
                 else -> R.string.onboarding_next
             }
         )
-    }
-
-    /** Pulls currently trending posters from AniList for the background; silent if offline. */
-    private fun loadPosters() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val urls = try {
-                val query = "{Page(page:1,perPage:30){media(type:ANIME,sort:TRENDING_DESC," +
-                        "isAdult:false){coverImage{large}}}}"
-                val response = client.post(
-                    "https://graphql.anilist.co/",
-                    mapOf(
-                        "Content-Type" to "application/json; charset=utf-8",
-                        "Accept" to "application/json"
-                    ),
-                    requestBody = JSONObject().put("query", query).toString()
-                        .toRequestBody("application/json; charset=utf-8".toMediaType()),
-                    cacheTime = 0
-                )
-                val media = JSONObject(response.text).getJSONObject("data")
-                    .getJSONObject("Page").getJSONArray("media")
-                (0 until media.length()).mapNotNull {
-                    media.getJSONObject(it).optJSONObject("coverImage")?.optString("large")
-                        ?.takeIf { url -> url.isNotEmpty() }
-                }
-            } catch (e: Exception) {
-                emptyList()
-            }
-            if (urls.isNotEmpty()) withContext(Dispatchers.Main) { binding.tileWall.setImages(urls) }
-        }
     }
 
     // endregion
