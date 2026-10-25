@@ -90,21 +90,22 @@ class OfflineAnimeAdapter(
         return view
     }
 
+    private var query: String = ""
+
     fun onSearchQuery(query: String) {
-       
-        items = if (query.isEmpty()) {
-            
-            originalItems
-        } else {
-           
-            originalItems.filter { it.title.contains(query, ignoreCase = true) }
-        }
-        notifyDataSetChanged() 
+        this.query = query
+        applyFilter()
     }
 
     fun setItems(items: List<OfflineAnimeModel>) {
-        this.items = items
         this.originalItems = items
+        applyFilter()
+    }
+
+    // a refreshed list keeps whatever the user typed in the search bar
+    private fun applyFilter() {
+        items = if (query.isEmpty()) originalItems
+        else originalItems.filter { it.title.contains(query, ignoreCase = true) }
         notifyDataSetChanged()
     }
 

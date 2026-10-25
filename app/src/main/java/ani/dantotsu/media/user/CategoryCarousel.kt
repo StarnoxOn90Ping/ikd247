@@ -87,6 +87,9 @@ class CategoryCarousel @JvmOverloads constructor(
                     selected = pos
                     commitSelection(pos)
                 }
+                // Once everything has really stopped (the snap helper may start one more settle),
+                // nudge the selected label onto the exact middle using the views' real positions.
+                rv.post { if (rv.scrollState == RecyclerView.SCROLL_STATE_IDLE) alignSelectedToCenter() }
             }
         })
         recycler.addOnChildAttachStateChangeListener(object : RecyclerView.OnChildAttachStateChangeListener {
@@ -123,14 +126,27 @@ class CategoryCarousel @JvmOverloads constructor(
 
     private fun centerNow() {
         if (labels.isEmpty() || width == 0) return
-        // padding lets the first and last category reach the centre too
-        recycler.setPadding(
-            max(0, (width - widths.first()) / 2), 0,
-            max(0, (width - widths.last()) / 2), 0
-        )
+        // half-width padding on both sides lets every category (first and last included) reach the
+        // exact middle, without depending on pre-measured label widths being pixel perfect
+        val half = width / 2
+        recycler.setPadding(half, 0, half, 0)
         layoutManager.scrollToPositionWithOffset(selected, (width - widths[selected]) / 2 - recycler.paddingLeft)
         setPillWidth(widths[selected])
-        recycler.post { updateAll() }
+        recycler.post {
+            alignSelectedToCenter()
+            updateAll()
+        }
+    }
+
+    /**
+     * Moves the selected label so that its real, laid-out centre sits exactly on the carousel's centre
+     * and sizes the pill from the real view width. Measured widths are only a first guess.
+     */
+    private fun alignSelectedToCenter() {
+        val child = layoutManager.findViewByPosition(selected) ?: return
+        val dx = (child.left + child.right) / 2 - recycler.width / 2
+        if (dx != 0) recycler.scrollBy(dx, 0)
+        if (child.width > 0 && pill.layoutParams.width != child.width) setPillWidth(child.width)
     }
 
     private fun smoothCenter(index: Int) {
@@ -158,6 +174,7 @@ class CategoryCarousel @JvmOverloads constructor(
 
     private fun updateAll() {
         var best = -1
+        var bestWidth = 0
         var bestDist = Float.MAX_VALUE
         val center = recycler.width / 2f
         for (i in 0 until recycler.childCount) {
@@ -167,11 +184,12 @@ class CategoryCarousel @JvmOverloads constructor(
             if (d < bestDist) {
                 bestDist = d
                 best = recycler.getChildAdapterPosition(child)
+                bestWidth = child.width
             }
         }
         if (best >= 0 && best != closest && best < widths.size) {
             closest = best
-            animatePill(widths[best])
+            animatePill(if (bestWidth > 0) bestWidth else widths[best])
         }
     }
 

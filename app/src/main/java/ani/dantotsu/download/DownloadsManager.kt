@@ -72,7 +72,10 @@ class DownloadsManager(private val context: Context) {
         var added = 0
         // When the download location changed, entries from the old location are meaningless:
         // start from an empty index and rebuild purely from what is in the current folder.
-        if (replace) downloadsList.clear()
+        if (replace) {
+            downloadsList.clear()
+            OfflineLibraryCache.clear()
+        }
         for (type in listOf(MediaType.ANIME, MediaType.MANGA, MediaType.NOVEL)) {
             val directory = getBaseDirectory(context, type) ?: continue
             if (!directory.exists() || !directory.isDirectory) continue
@@ -107,6 +110,8 @@ class DownloadsManager(private val context: Context) {
     fun addDownload(downloadedType: DownloadedType) {
         downloadsList.add(downloadedType)
         saveDownloads()
+        // cover / media.json of this title may have just been (re)written
+        OfflineLibraryCache.invalidate(downloadedType.titleName)
     }
 
     fun removeDownload(
@@ -116,6 +121,7 @@ class DownloadsManager(private val context: Context) {
     ) {
         removeDownloadCompat(context, downloadedType, toast)
         downloadsList.removeAll { it.titleName == downloadedType.titleName && it.chapterName == downloadedType.chapterName }
+        OfflineLibraryCache.invalidate(downloadedType.titleName)
         CoroutineScope(Dispatchers.IO).launch {
             removeDirectory(downloadedType, toast)
             withContext(Dispatchers.Main) {
@@ -146,6 +152,7 @@ class DownloadsManager(private val context: Context) {
     }
 
     fun removeMedia(title: String, type: MediaType) {
+        OfflineLibraryCache.invalidate(title)
         removeMediaCompat(context, title, type)
         val baseDirectory = getBaseDirectory(context, type)
         val directory = baseDirectory?.findFolder(title)

@@ -3,6 +3,7 @@ package ani.dantotsu.download.manga
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.SystemClock
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -30,6 +31,7 @@ import ani.dantotsu.currContext
 import ani.dantotsu.download.DownloadCompat
 import ani.dantotsu.download.DownloadCompat.Companion.loadOfflineMangaModelCompat
 import ani.dantotsu.download.DownloadedType
+import ani.dantotsu.download.OfflineLibraryCache
 import ani.dantotsu.download.DownloadsManager
 import ani.dantotsu.download.DownloadsManager.Companion.compareName
 import ani.dantotsu.download.DownloadsManager.Companion.getSubDirectory
@@ -55,11 +57,18 @@ import com.google.gson.GsonBuilder
 import com.google.gson.InstanceCreator
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SChapterImpl
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -154,6 +163,7 @@ class OfflineMangaFragment : Fragment(), OfflineMangaSearchListener {
             style = 0
             PrefManager.setVal(PrefName.OfflineView, style)
             gridView.visibility = View.GONE
+            gridView.adapter = null
             gridView = view.findViewById(R.id.gridView)
             adapter.notifyNewGrid()
             grid()
@@ -165,6 +175,7 @@ class OfflineMangaFragment : Fragment(), OfflineMangaSearchListener {
             style = 1
             PrefManager.setVal(PrefName.OfflineView, style)
             gridView.visibility = View.GONE
+            gridView.adapter = null
             gridView = view.findViewById(R.id.gridView1)
             adapter.notifyNewGrid()
             grid()
@@ -175,11 +186,13 @@ class OfflineMangaFragment : Fragment(), OfflineMangaSearchListener {
         emptyState = ani.dantotsu.offline.OfflineEmptyState(view)
 
         val swipeRefresh = view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.localRefresh)
+        // canScrollList is exact; canScrollVertically on a GridView can report "at the top" while
+        // still a few pixels down, which let a normal scroll turn into a pull-to-refresh
         swipeRefresh.setOnChildScrollUpCallback { _, _ ->
-            gridView.canScrollVertically(-1)
+            gridView.canScrollList(-1)
         }
         swipeRefresh.setOnRefreshListener {
-            getDownloads()
+            getDownloads(force = true)
             swipeRefresh.isRefreshing = false
         }
 
@@ -192,12 +205,16 @@ class OfflineMangaFragment : Fragment(), OfflineMangaSearchListener {
         val fadeIn = AlphaAnimation(0f, 1f)
         fadeIn.duration = 300 // animations  pog
         gridView.layoutAnimation = LayoutAnimationController(fadeIn)
-        adapter = OfflineMangaAdapter(requireContext(), downloads, this)
-        getDownloads()
+        // The adapter (and the list it holds) survives view-style switches, so changing the layout
+        // just re-binds what is already loaded instead of reloading every download.
+        if (!::adapter.isInitialized) {
+            adapter = OfflineMangaAdapter(requireContext(), downloads, this)
+            getDownloads()
+        } else {
+            adapter.notifyNewGrid()
+        }
         gridView.adapter = adapter
         gridView.scheduleLayoutAnimation()
-        total.text =
-            if (gridView.count > 0) "Manga and Novels (${gridView.count})" else "Empty List"
         gridView.setOnItemClickListener { _, _, position, _ ->
             // Get the OfflineMangaModel that was clicked
             val item = adapter.getItem(position) as OfflineMangaModel
@@ -288,63 +305,81 @@ class OfflineMangaFragment : Fragment(), OfflineMangaSearchListener {
         getDownloads()
     }
 
-    override fun onPause() {
-        super.onPause()
-        downloads = listOf()
-    }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        downloads = listOf()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        downloads = listOf()
-    }
-
-    private fun getDownloads() {
-        downloads = listOf()
+    /**
+     * Shows the downloaded manga and novels. Cards that were built before come straight from the
+     * cache, so the page appears at once; only titles without a card are loaded (a few at a time, in
+     * parallel) and show up as they finish. [force] throws the cache away first (pull-to-refresh).
+     */
+    private fun getDownloads(force: Boolean = false) {
         if (downloadsJob.isActive) {
             downloadsJob.cancel()
         }
-        downloads = listOf()
         downloadsJob = Job()
+        val appContext = (context ?: currContext())?.applicationContext ?: return
         CoroutineScope(Dispatchers.IO + downloadsJob).launch {
-            val mangaTitles =
-                downloadManager.mangaDownloadedTypes.map { it.titleName.findValidName() }.distinct()
-            val newMangaDownloads = mutableListOf<OfflineMangaModel>()
-            for (title in mangaTitles) {
-                val tDownloads =
-                    downloadManager.mangaDownloadedTypes.filter { it.titleName.findValidName() == title }
-                val download = tDownloads.firstOrNull() ?: continue
-                val offlineMangaModel = loadOfflineMangaModel(download)
-                newMangaDownloads += offlineMangaModel
-            }
-            downloads = newMangaDownloads
-            val novelTitles = downloadManager.novelDownloadedTypes.map { it.titleName }.distinct()
-            val newNovelDownloads = mutableListOf<OfflineMangaModel>()
-            for (title in novelTitles) {
-                val tDownloads =
-                    downloadManager.novelDownloadedTypes.filter { it.titleName.findValidName() == title }
-                val download = tDownloads.firstOrNull() ?: continue
-                val offlineMangaModel = loadOfflineMangaModel(download)
-                newNovelDownloads += offlineMangaModel
-            }
-            downloads += newNovelDownloads
-            withContext(Dispatchers.Main) {
-                adapter.setItems(downloads)
-                total.text =
-                    if (gridView.count > 0) "Manga and Novels (${gridView.count})" else "Empty List"
-                if (gridView.count > 0) emptyState.hide() else emptyState.show(
-                    R.drawable.ic_round_library_books_24,
-                    "No downloaded manga or novels",
-                    "Chapters you download will appear here for offline reading."
-                )
-                adapter.notifyDataSetChanged()
+            try {
+                OfflineLibraryCache.ensureLoaded(appContext)
+                if (force) OfflineLibraryCache.clearManga()
+                // manga first, then novels, same order as before
+                val entries = (downloadManager.mangaDownloadedTypes + downloadManager.novelDownloadedTypes)
+                    .groupBy { it.type to it.titleName.findValidName() }
+                    .map { (key, list) -> Triple(key.first.name, key.second, list.first()) }
+                val results = ConcurrentHashMap<String, OfflineMangaModel>()
+                fun snapshot() = entries.mapNotNull { (type, title, _) ->
+                    results["$type|$title"] ?: OfflineLibraryCache.getManga(type, title)
+                }
+
+                val missing = entries.filter { (type, title, _) ->
+                    OfflineLibraryCache.getManga(type, title) == null
+                }
+                withContext(Dispatchers.Main) { showDownloads(snapshot(), loading = missing.isNotEmpty()) }
+                if (missing.isEmpty()) return@launch
+
+                val permits = Semaphore(6)
+                var lastPush = SystemClock.uptimeMillis()
+                coroutineScope {
+                    missing.map { (type, title, download) ->
+                        async {
+                            permits.withPermit {
+                                results["$type|$title"] = OfflineLibraryCache.mangaOrLoad(type, title) {
+                                    loadOfflineMangaModel(download)
+                                }
+                            }
+                            val now = SystemClock.uptimeMillis()
+                            if (now - lastPush > 300) {
+                                lastPush = now
+                                withContext(Dispatchers.Main) { showDownloads(snapshot(), loading = true) }
+                            }
+                        }
+                    }.awaitAll()
+                }
+                withContext(Dispatchers.Main) { showDownloads(snapshot(), loading = false) }
+                OfflineLibraryCache.persist(appContext)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Logger.log(e)
             }
         }
+    }
 
+    private fun showDownloads(list: List<OfflineMangaModel>, loading: Boolean) {
+        if (!isAdded || view == null) return
+        // unchanged list: leave the grid alone so scroll position and images aren't disturbed
+        if (list != downloads) {
+            downloads = list
+            adapter.setItems(list)
+        }
+        total.text = if (list.isNotEmpty()) "Manga and Novels (${list.size})" else "Empty List"
+        when {
+            list.isNotEmpty() || loading -> emptyState.hide()
+            else -> emptyState.show(
+                R.drawable.ic_round_library_books_24,
+                "No downloaded manga or novels",
+                "Chapters you download will appear here for offline reading."
+            )
+        }
     }
 
     /**
@@ -402,7 +437,7 @@ class OfflineMangaFragment : Fragment(), OfflineMangaSearchListener {
             val score = ((if (mediaModel.userScore == 0) (mediaModel.meanScore
                 ?: 0) else mediaModel.userScore) / 10.0).toString()
             val isOngoing =
-                mediaModel.status == currActivity()!!.getString(R.string.status_releasing)
+                mediaModel.status == (context ?: currContext())?.getString(R.string.status_releasing)
             val isUserScored = mediaModel.userScore != 0
             val readChapter = (mediaModel.userProgress ?: "~").toString()
             val totalChapter = "${mediaModel.manga?.totalChapters ?: "??"}"

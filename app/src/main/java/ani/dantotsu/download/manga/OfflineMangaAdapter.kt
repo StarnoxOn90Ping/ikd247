@@ -85,21 +85,22 @@ class OfflineMangaAdapter(
         return view
     }
 
+    private var query: String = ""
+
     fun onSearchQuery(query: String) {
-        // Implement the filtering logic here, for example:
-        items = if (query.isEmpty()) {
-            // Return the original list if the query is empty
-            originalItems
-        } else {
-            // Filter the list based on the query
-            originalItems.filter { it.title.contains(query, ignoreCase = true) }
-        }
-        notifyDataSetChanged() // Notify the adapter that the data set has changed
+        this.query = query
+        applyFilter()
     }
 
     fun setItems(items: List<OfflineMangaModel>) {
-        this.items = items
         this.originalItems = items
+        applyFilter()
+    }
+
+    // a refreshed list keeps whatever the user typed in the search bar
+    private fun applyFilter() {
+        items = if (query.isEmpty()) originalItems
+        else originalItems.filter { it.title.contains(query, ignoreCase = true) }
         notifyDataSetChanged()
     }
 

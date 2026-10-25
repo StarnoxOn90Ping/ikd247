@@ -4,6 +4,7 @@ package ani.dantotsu.download.anime
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.SystemClock
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -33,6 +34,7 @@ import ani.dantotsu.currContext
 import ani.dantotsu.download.DownloadCompat.Companion.loadMediaCompat
 import ani.dantotsu.download.DownloadCompat.Companion.loadOfflineAnimeModelCompat
 import ani.dantotsu.download.DownloadedType
+import ani.dantotsu.download.OfflineLibraryCache
 import ani.dantotsu.download.DownloadsManager
 import ani.dantotsu.download.DownloadsManager.Companion.compareName
 import ani.dantotsu.download.findValidName
@@ -61,11 +63,18 @@ import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.SEpisodeImpl
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SChapterImpl
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
@@ -160,6 +169,7 @@ class OfflineAnimeFragment : Fragment(), OfflineAnimeSearchListener {
             style = 0
             PrefManager.setVal(PrefName.OfflineView, style)
             gridView.visibility = View.GONE
+            gridView.adapter = null
             gridView = view.findViewById(R.id.gridView)
             adapter.notifyNewGrid()
             grid()
@@ -170,6 +180,7 @@ class OfflineAnimeFragment : Fragment(), OfflineAnimeSearchListener {
             style = 1
             PrefManager.setVal(PrefName.OfflineView, style)
             gridView.visibility = View.GONE
+            gridView.adapter = null
             gridView = view.findViewById(R.id.gridView1)
             adapter.notifyNewGrid()
             grid()
@@ -181,11 +192,13 @@ class OfflineAnimeFragment : Fragment(), OfflineAnimeSearchListener {
         emptyState = ani.dantotsu.offline.OfflineEmptyState(view)
 
         val swipeRefresh = view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.localRefresh)
+        // canScrollList is exact; canScrollVertically on a GridView can report "at the top" while
+        // still a few pixels down, which let a normal scroll turn into a pull-to-refresh
         swipeRefresh.setOnChildScrollUpCallback { _, _ ->
-            gridView.canScrollVertically(-1)
+            gridView.canScrollList(-1)
         }
         swipeRefresh.setOnRefreshListener {
-            getDownloads()
+            getDownloads(force = true)
             swipeRefresh.isRefreshing = false
         }
 
@@ -199,11 +212,16 @@ class OfflineAnimeFragment : Fragment(), OfflineAnimeSearchListener {
         val fadeIn = AlphaAnimation(0f, 1f)
         fadeIn.duration = 300 // animations  pog
         gridView.layoutAnimation = LayoutAnimationController(fadeIn)
-        adapter = OfflineAnimeAdapter(requireContext(), downloads, this)
-        getDownloads()
+        // The adapter (and the list it holds) survives view-style switches, so changing the layout
+        // just re-binds what is already loaded instead of reloading every download.
+        if (!::adapter.isInitialized) {
+            adapter = OfflineAnimeAdapter(requireContext(), downloads, this)
+            getDownloads()
+        } else {
+            adapter.notifyNewGrid()
+        }
         gridView.adapter = adapter
         gridView.scheduleLayoutAnimation()
-        total.text = if (gridView.count > 0) "Anime (${gridView.count})" else "Empty List"
         gridView.setOnItemClickListener { _, _, position, _ ->
             // Get the OfflineAnimeModel that was clicked
             val item = adapter.getItem(position) as OfflineAnimeModel
@@ -297,50 +315,79 @@ class OfflineAnimeFragment : Fragment(), OfflineAnimeSearchListener {
         getDownloads()
     }
 
-    override fun onPause() {
-        super.onPause()
-        downloads = listOf()
-    }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        downloads = listOf()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        downloads = listOf()
-    }
-
-    private fun getDownloads() {
-        downloads = listOf()
+    /**
+     * Shows the downloaded anime. Cards that were built before come straight from the cache, so the
+     * page appears at once; only titles without a card are loaded (a few at a time, in parallel) and
+     * show up as they finish. [force] throws the cache away first (pull-to-refresh).
+     */
+    private fun getDownloads(force: Boolean = false) {
         if (downloadsJob.isActive) {
             downloadsJob.cancel()
         }
         downloadsJob = Job()
+        val appContext = (context ?: currContext())?.applicationContext ?: return
         CoroutineScope(Dispatchers.IO + downloadsJob).launch {
-            val animeTitles =
-                downloadManager.animeDownloadedTypes.map { it.titleName.findValidName() }.distinct()
-            val newAnimeDownloads = mutableListOf<OfflineAnimeModel>()
-            for (title in animeTitles) {
-                val tDownloads =
-                    downloadManager.animeDownloadedTypes.filter { it.titleName.findValidName() == title }
-                val download = tDownloads.firstOrNull() ?: continue
-                val offlineAnimeModel = loadOfflineAnimeModel(download)
-                if (offlineAnimeModel.title == "unknown") offlineAnimeModel.title = title
-                newAnimeDownloads += offlineAnimeModel
+            try {
+                OfflineLibraryCache.ensureLoaded(appContext)
+                if (force) OfflineLibraryCache.clearAnime()
+                val entries = downloadManager.animeDownloadedTypes
+                    .groupBy { it.titleName.findValidName() }
+                    .map { (title, list) -> title to list.first() }
+                val results = ConcurrentHashMap<String, OfflineAnimeModel>()
+                fun snapshot() = entries.mapNotNull { (title, _) ->
+                    results[title] ?: OfflineLibraryCache.getAnime(title)
+                }
+
+                val missing = entries.filter { OfflineLibraryCache.getAnime(it.first) == null }
+                withContext(Dispatchers.Main) { showDownloads(snapshot(), loading = missing.isNotEmpty()) }
+                if (missing.isEmpty()) return@launch
+
+                val permits = Semaphore(6)
+                var lastPush = SystemClock.uptimeMillis()
+                coroutineScope {
+                    missing.map { (title, download) ->
+                        async {
+                            permits.withPermit {
+                                results[title] = OfflineLibraryCache.animeOrLoad(title) {
+                                    loadOfflineAnimeModel(download).also {
+                                        if (it.title == "unknown") it.title = title
+                                    }
+                                }
+                            }
+                            val now = SystemClock.uptimeMillis()
+                            if (now - lastPush > 300) {
+                                lastPush = now
+                                withContext(Dispatchers.Main) { showDownloads(snapshot(), loading = true) }
+                            }
+                        }
+                    }.awaitAll()
+                }
+                withContext(Dispatchers.Main) { showDownloads(snapshot(), loading = false) }
+                OfflineLibraryCache.persist(appContext)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Logger.log(e)
             }
-            downloads = newAnimeDownloads
-            withContext(Dispatchers.Main) {
-                adapter.setItems(downloads)
-                total.text = if (gridView.count > 0) "Anime (${gridView.count})" else "Empty List"
-                if (gridView.count > 0) emptyState.hide() else emptyState.show(
-                    R.drawable.ic_round_video_library_24,
-                    "No downloaded anime",
-                    "Episodes you download will appear here for offline watching."
-                )
-                adapter.notifyDataSetChanged()
-            }
+        }
+    }
+
+    private fun showDownloads(list: List<OfflineAnimeModel>, loading: Boolean) {
+        if (!isAdded || view == null) return
+        // unchanged list: leave the grid alone so scroll position and images aren't disturbed
+        if (list != downloads) {
+            downloads = list
+            adapter.setItems(list)
+        }
+        total.text = if (list.isNotEmpty()) "Anime (${list.size})" else "Empty List"
+        when {
+            list.isNotEmpty() || loading -> emptyState.hide()
+            else -> emptyState.show(
+                R.drawable.ic_round_video_library_24,
+                "No downloaded anime",
+                "Episodes you download will appear here for offline watching."
+            )
         }
     }
 
