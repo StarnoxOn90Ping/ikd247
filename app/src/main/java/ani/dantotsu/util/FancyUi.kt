@@ -23,16 +23,20 @@ fun View.setPressBounce(scaleDown: Float = 0.86f) {
             MotionEvent.ACTION_DOWN -> v.animate()
                 .setStartDelay(0)
                 .scaleX(scaleDown).scaleY(scaleDown)
-                .setDuration(110)
+                .setDuration(150)
                 .setInterpolator(DecelerateInterpolator())
                 .start()
 
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> v.animate()
-                .setStartDelay(0)
-                .scaleX(1f).scaleY(1f)
-                .setDuration(430)
-                .setInterpolator(OvershootInterpolator(4.2f))
-                .start()
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                // even a quick tap stays squished long enough to be seen before springing back
+                val held = event.eventTime - event.downTime
+                v.animate()
+                    .setStartDelay((150L - held).coerceAtLeast(0L))
+                    .scaleX(1f).scaleY(1f)
+                    .setDuration(750)
+                    .setInterpolator(OvershootInterpolator(6f))
+                    .start()
+            }
         }
         false
     }

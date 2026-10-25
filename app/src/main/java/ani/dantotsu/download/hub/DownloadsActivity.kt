@@ -85,7 +85,6 @@ class DownloadsActivity : AppCompatActivity() {
 
         bannerArrow = DownloadArrowAnimator(
             binding.downloadsBannerIcon,
-            binding.downloadsBannerIconGhost,
             24f * resources.displayMetrics.density
         )
         setupPager()

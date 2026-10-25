@@ -4,12 +4,12 @@ import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.DecelerateInterpolator
 import androidx.recyclerview.widget.RecyclerView
 import ani.dantotsu.R
 import ani.dantotsu.databinding.ItemCalendarEntryBinding
 import ani.dantotsu.databinding.ItemCalendarHeaderBinding
 import ani.dantotsu.loadImage
+import ani.dantotsu.setAnimation
 import ani.dantotsu.util.setPressBounce
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -50,13 +50,11 @@ class CalendarAdapter(
         private set
     private var compact = false
     private var timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
-    private var animatedUpTo = -1
 
     fun submit(newRows: List<CalendarRow>, compact: Boolean, use24h: Boolean) {
         rows = newRows
         this.compact = compact
         timeFormat = SimpleDateFormat(if (use24h) "HH:mm" else "h:mm a", Locale.getDefault())
-        animatedUpTo = -1
         notifyDataSetChanged()
     }
 
@@ -80,27 +78,20 @@ class CalendarAdapter(
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        bindRow(holder, position)
+        // the same pop-in the home pages use whenever a row scrolls into view
+        setAnimation(holder.itemView.context, holder.itemView)
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.contains(TICK)) bindRow(holder, position) // countdown refresh: no pop-in
+        else super.onBindViewHolder(holder, position, payloads)
+    }
+
+    private fun bindRow(holder: RecyclerView.ViewHolder, position: Int) {
         when (val row = rows[position]) {
             is CalendarRow.Header -> (holder as HeaderHolder).bind(row)
             is CalendarRow.Item -> (holder as EntryHolder).bind(row.entry)
-        }
-        animateIn(holder.itemView, position)
-    }
-
-    private fun animateIn(v: View, position: Int) {
-        v.animate().cancel()
-        if (position > animatedUpTo && position < 14) {
-            animatedUpTo = position
-            v.alpha = 0f
-            v.translationY = 36f
-            v.animate().alpha(1f).translationY(0f)
-                .setStartDelay(position * 35L)
-                .setDuration(320)
-                .setInterpolator(DecelerateInterpolator())
-                .start()
-        } else {
-            v.alpha = 1f
-            v.translationY = 0f
         }
     }
 

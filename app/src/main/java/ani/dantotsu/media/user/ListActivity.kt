@@ -22,6 +22,7 @@ import ani.dantotsu.getThemeColor
 import ani.dantotsu.hideSystemBarsExtendView
 import ani.dantotsu.settings.saving.PrefManager
 import ani.dantotsu.settings.saving.PrefName
+import ani.dantotsu.navBarHeight
 import ani.dantotsu.statusBarHeight
 import ani.dantotsu.themes.ThemeManager
 import ani.dantotsu.util.fadeInDown
@@ -58,20 +59,11 @@ class ListActivity : AppCompatActivity() {
         binding.listTabLayout.setBackgroundColor(primaryColor)
         binding.listAppBar.setBackgroundColor(primaryColor)
         binding.listTitle.setTextColor(primaryTextColor)
-        // categories: a rounded pill that stretches elastically between tabs
-        val onPrimaryColor = getThemeColor(com.google.android.material.R.attr.colorOnPrimary)
-        val density = resources.displayMetrics.density
-        binding.listTabLayout.apply {
-            setTabTextColors(secondaryTextColor, onPrimaryColor)
-            setSelectedTabIndicator(R.drawable.tab_indicator_pill)
-            setSelectedTabIndicatorGravity(TabLayout.INDICATOR_GRAVITY_STRETCH)
-            tabIndicatorAnimationMode = TabLayout.INDICATOR_ANIMATION_MODE_ELASTIC
-            tabRippleColor = ColorStateList.valueOf(Color.TRANSPARENT)
-            setSelectedTabIndicatorColor(primaryTextColor)
-            layoutParams = layoutParams.apply { height = (56 * density).toInt() }
-            clipToPadding = false
-            setPadding((8 * density).toInt(), 0, (8 * density).toInt(), 0)
-        }
+        binding.listTabLayout.setTabTextColors(secondaryTextColor, primaryTextColor)
+        binding.listTabLayout.setSelectedTabIndicatorColor(primaryTextColor)
+        // the stock tab strip is replaced by the floating carousel at the bottom; it stays only as the
+        // bookkeeping that keeps the pager and the selected category in sync
+        binding.listTabLayout.visibility = View.GONE
         if (!PrefManager.getVal<Boolean>(PrefName.ImmersiveMode)) {
             this.window.statusBarColor =
                 ContextCompat.getColor(this, R.color.nav_bg_inv)
@@ -92,19 +84,45 @@ class ListActivity : AppCompatActivity() {
             R.string.user_list, intent.getStringExtra("username"),
             if (anime) getString(R.string.anime) else getString(R.string.manga)
         )
-        // big, centred, gradient heading that drops in
+        // heading: line 1 = "name's" (ellipsised if long), line 2 = "Anime List" / "Manga List"
+        val owner = intent.getStringExtra("username")?.takeIf { it.isNotBlank() }
+        val kind = getString(if (anime) R.string.anime_list else R.string.manga_list)
         binding.listTitle.visibility = View.GONE
         binding.listTitleBig.apply {
             visibility = View.VISIBLE
-            text = binding.listTitle.text
+            text = if (owner != null) getString(R.string.list_owner, owner) else kind
             setGradientText(primaryTextColor, getThemeColor(com.google.android.material.R.attr.colorTertiary))
             fadeInDown()
         }
+        if (owner != null) {
+            binding.listTitleSub.apply {
+                visibility = View.VISIBLE
+                text = kind
+                fadeInDown(120)
+            }
+        }
         (binding.listActionsRow as LinearLayout).gravity = Gravity.CENTER
-        binding.listTabLayout.fadeInDown(200, 10f)
+
+        // floating category carousel
+        val density = resources.displayMetrics.density
+        val extraBottom = if (PrefManager.getVal<Boolean>(PrefName.ImmersiveMode)) navBarHeight else 0
+        binding.listCategoryBar.apply {
+            visibility = View.VISIBLE
+            updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = (16 * density).toInt() + extraBottom
+            }
+            translationY = 140 * density
+            animate().translationY(0f).setStartDelay(150).setDuration(650)
+                .setInterpolator(android.view.animation.OvershootInterpolator(1.2f)).start()
+        }
+        binding.listViewPager.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+            bottomMargin = (96 * density).toInt() + extraBottom
+        }
+        binding.listCategoryBar.onSelected = { i -> binding.listTabLayout.getTabAt(i)?.select() }
         binding.listTabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 this@ListActivity.selectedTabIdx = tab?.position ?: 0
+                binding.listCategoryBar.select(tab?.position ?: 0)
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
@@ -138,6 +156,9 @@ class ListActivity : AppCompatActivity() {
                     tab.text = "${keys[position]} (${values[position].size})"
                 }.attach()
                 binding.listViewPager.setCurrentItem(savedTab, false)
+                binding.listCategoryBar.setItems(
+                    keys.indices.map { i -> "${keys[i]} (${values[i].size})" }, savedTab
+                )
             }
         }
 

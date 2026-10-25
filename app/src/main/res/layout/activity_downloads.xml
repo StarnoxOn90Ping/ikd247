@@ -36,8 +36,7 @@
                 android:clickable="true"
                 android:contentDescription="@string/hub_back"
                 android:elevation="4dp"
-                android:focusable="true"
-                android:foreground="@drawable/ripple_circle">
+                android:focusable="true">
 
                 <ImageView
                     android:layout_width="20dp"
@@ -91,8 +90,7 @@
                 android:clickable="true"
                 android:contentDescription="@string/hub_open_queue"
                 android:elevation="4dp"
-                android:focusable="true"
-                android:foreground="@drawable/ripple_circle">
+                android:focusable="true">
 
                 <ImageView
                     android:layout_width="24dp"
@@ -172,6 +170,7 @@
             android:layout_marginTop="12dp"
             android:visibility="gone"
             app:cardBackgroundColor="?attr/colorPrimaryContainer"
+            app:rippleColor="@android:color/transparent"
             app:cardCornerRadius="22dp"
             app:cardElevation="0dp"
             tools:visibility="visible">
@@ -200,15 +199,6 @@
                             android:layout_width="24dp"
                             android:layout_height="24dp"
                             android:importantForAccessibility="no"
-                            app:srcCompat="@drawable/ic_arrow_down_24"
-                            app:tint="?attr/colorPrimary" />
-
-                        <ImageView
-                            android:id="@+id/downloadsBannerIconGhost"
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:importantForAccessibility="no"
-                            android:visibility="gone"
                             app:srcCompat="@drawable/ic_arrow_down_24"
                             app:tint="?attr/colorPrimary" />
                     </FrameLayout>

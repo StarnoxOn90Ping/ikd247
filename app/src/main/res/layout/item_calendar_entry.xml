@@ -9,6 +9,7 @@
     android:clickable="true"
     android:focusable="true"
     app:cardBackgroundColor="@color/grey_nav"
+    app:rippleColor="@android:color/transparent"
     app:cardCornerRadius="24dp"
     app:cardElevation="2dp">
 

@@ -1560,4 +1560,5 @@ Non quae tempore quo provident laudantium qui illo dolor vel quia dolor et exerc
     <string name="cal_error_title">Couldn\'t load the calendar</string>
     <string name="cal_error_text">Check your connection and try again.</string>
     <string name="cal_retry">Try again</string>
+    <string name="list_owner">%1$s\'s</string>
 </resources>

@@ -35,12 +35,28 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="24dp"
                 android:layout_marginTop="14dp"
+                android:ellipsize="end"
                 android:fontFamily="@font/poppins_bold"
                 android:gravity="center"
                 android:letterSpacing="0.02"
-                android:maxLines="2"
+                android:maxLines="1"
                 android:textColor="?attr/colorPrimary"
-                android:textSize="28sp"
+                android:textSize="30sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/listTitleSub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="24dp"
+                android:alpha="0.8"
+                android:fontFamily="@font/poppins"
+                android:gravity="center"
+                android:letterSpacing="0.14"
+                android:maxLines="1"
+                android:textAllCaps="true"
+                android:textColor="?attr/colorOnBackground"
+                android:textSize="13sp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -182,5 +198,15 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+    <!-- floating category carousel (enabled by ListActivity only) -->
+    <ani.dantotsu.media.user.CategoryCarousel
+        android:id="@+id/listCategoryBar"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:layout_gravity="bottom"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="16dp"
+        android:visibility="gone" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
