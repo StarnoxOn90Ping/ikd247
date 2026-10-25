@@ -112,8 +112,8 @@
 
         <!-- the arrow drops through this clipped box while downloading -->
         <FrameLayout
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_gravity="center"
             android:clipChildren="true">
 
@@ -121,6 +121,7 @@
                 android:id="@+id/downloads_icon"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
+                android:layout_gravity="center"
                 android:importantForAccessibility="no"
                 app:srcCompat="@drawable/ic_arrow_down_24"
                 app:tint="?attr/colorPrimary" />

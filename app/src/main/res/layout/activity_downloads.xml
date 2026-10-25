@@ -189,8 +189,8 @@
 
                     <!-- same arrow + conveyor animation as the home download button -->
                     <FrameLayout
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
                         android:layout_gravity="center"
                         android:clipChildren="true">
 
@@ -198,6 +198,7 @@
                             android:id="@+id/downloadsBannerIcon"
                             android:layout_width="24dp"
                             android:layout_height="24dp"
+                            android:layout_gravity="center"
                             android:importantForAccessibility="no"
                             app:srcCompat="@drawable/ic_arrow_down_24"
                             app:tint="?attr/colorPrimary" />

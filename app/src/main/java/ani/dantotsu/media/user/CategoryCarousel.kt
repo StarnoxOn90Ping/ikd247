@@ -70,8 +70,9 @@ class CategoryCarousel @JvmOverloads constructor(
         recycler.clipToPadding = false
         recycler.itemAnimator = null
         recycler.overScrollMode = OVER_SCROLL_NEVER
-        recycler.isHorizontalFadingEdgeEnabled = true
-        recycler.setFadingEdgeLength((34 * density).toInt())
+        // no fading edge: it blurred the first/last letters of long selected labels (e.g. "Favorites (x)").
+        // Neighbours still fade away from the centre through the per-item alpha in applyEffect().
+        recycler.isHorizontalFadingEdgeEnabled = false
         snap.attachToRecyclerView(recycler)
         addView(recycler, LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
 

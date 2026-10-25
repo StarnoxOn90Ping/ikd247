@@ -16,6 +16,11 @@ import ani.dantotsu.download.DownloadsManager
 import ani.dantotsu.settings.saving.PrefManager
 import ani.dantotsu.settings.saving.PrefName
 import ani.dantotsu.toast
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 class StoragePermissions {
     companion object {
@@ -108,8 +113,20 @@ class LauncherWrapper(
                 )
 
                 if (StoragePermissions.hasDirAccess(activity, uri)) {
+                    val previous = PrefManager.getVal<String>(PrefName.DownloadsDir)
                     PrefManager.setVal(PrefName.DownloadsDir, uri.toString())
                     DownloadsManager.addNoMedia(activity)
+                    if (previous != uri.toString()) {
+                        // New download location: rebuild the index from what is in the new folder.
+                        // (Flows that also move the old downloads rebuild once more after the move.)
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                Injekt.get<DownloadsManager>().rebuildIndexFromDisk(replace = true)
+                            } catch (e: Exception) {
+                                Logger.log(e)
+                            }
+                        }
+                    }
                     complete(true)
                 } else {
                     toast(activity.getString(R.string.dir_error))

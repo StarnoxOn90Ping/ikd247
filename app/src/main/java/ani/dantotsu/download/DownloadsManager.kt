@@ -64,10 +64,15 @@ class DownloadsManager(private val context: Context) {
      * but the index empty. The layout `<base>/<MediaType>/<title>/<chapter>` is
      * enough to reconstruct it.
      *
+     * @param replace drop the current index first (use after the download location changed)
      * @return number of entries recovered
      */
-    fun rebuildIndexFromDisk(): Int {
+    @Synchronized
+    fun rebuildIndexFromDisk(replace: Boolean = false): Int {
         var added = 0
+        // When the download location changed, entries from the old location are meaningless:
+        // start from an empty index and rebuild purely from what is in the current folder.
+        if (replace) downloadsList.clear()
         for (type in listOf(MediaType.ANIME, MediaType.MANGA, MediaType.NOVEL)) {
             val directory = getBaseDirectory(context, type) ?: continue
             if (!directory.exists() || !directory.isDirectory) continue
@@ -92,9 +97,9 @@ class DownloadsManager(private val context: Context) {
                 }
             }
         }
-        if (added > 0) {
+        if (added > 0 || replace) {
             saveDownloads()
-            Logger.log("rebuildIndexFromDisk: recovered $added download(s)")
+            Logger.log("rebuildIndexFromDisk(replace=$replace): indexed $added download(s)")
         }
         return added
     }
@@ -217,8 +222,19 @@ class DownloadsManager(private val context: Context) {
         context: Context,
         oldUri: Uri,
         newUri: Uri,
-        finished: (Boolean, String) -> Unit
+        onFinished: (Boolean, String) -> Unit
     ) {
+        // The new location is already saved in the prefs by the time we get here, so whatever the
+        // outcome of the move, the index has to match what is actually in the new folder.
+        val finished: (Boolean, String) -> Unit = { ok, message ->
+            try {
+                rebuildIndexFromDisk(replace = true)
+            } catch (e: Exception) {
+                Logger.log("Failed to rebuild download index after location change: ${e.message}")
+                Logger.log(e)
+            }
+            onFinished(ok, message)
+        }
         if (oldUri == newUri) {
             Logger.log("Source and destination are the same")
             finished(false, "Source and destination are the same")

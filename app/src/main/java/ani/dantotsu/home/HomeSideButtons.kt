@@ -30,7 +30,7 @@ class HomeSideButtons(
 ) {
     private val density = activity.resources.displayMetrics.density
 
-    private val arrow = DownloadArrowAnimator(nav.downloadsIcon, 24f * density)
+    private val arrow = DownloadArrowAnimator(nav.downloadsIcon, 32f * density) // (40dp clip box + 24dp arrow) / 2
     private var wasActive = false
     private var started = false
 

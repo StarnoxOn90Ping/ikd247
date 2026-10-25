@@ -93,7 +93,7 @@ class OnboardingActivity : AppCompatActivity() {
     }
 
     /** The idle animation of an icon; picked to match what the icon means. */
-    private enum class Motion { FLOAT, BELL, SHAKE, PULSE, HOP, SPIN }
+    private enum class Motion { FLOAT, BELL, SHAKE, PULSE, HOP, SPIN, SPIN_CCW }
 
     private data class Page(
         val kind: Kind,
@@ -120,7 +120,7 @@ class OnboardingActivity : AppCompatActivity() {
         ),
         Page(
             Kind.RESTORE, R.drawable.backup_restore, R.string.onboarding_eyebrow_restore,
-            R.string.onboarding_restore_title, R.string.onboarding_restore_desc, Motion.SPIN,
+            R.string.onboarding_restore_title, R.string.onboarding_restore_desc, Motion.SPIN_CCW,
             iconDp = 112, containerDp = 200
         ),
         Page(
@@ -722,8 +722,10 @@ class OnboardingActivity : AppCompatActivity() {
                     ms = 2600
                 )
 
-                Motion.SPIN -> {
-                    play(PropertyValuesHolder.ofFloat(View.ROTATION, 0f, 360f), ms = 8000)
+                Motion.SPIN, Motion.SPIN_CCW -> {
+                    // SPIN_CCW (restore page) turns anti-clockwise, like the arrow on its icon
+                    val end = if (page.motion == Motion.SPIN_CCW) -360f else 360f
+                    play(PropertyValuesHolder.ofFloat(View.ROTATION, 0f, end), ms = 8000)
                     play(
                         PropertyValuesHolder.ofFloat(View.SCALE_X, 0.9f, 1.1f),
                         PropertyValuesHolder.ofFloat(View.SCALE_Y, 0.9f, 1.1f),
