@@ -33,7 +33,7 @@
         android:contentDescription="@string/release_calendar"
         android:elevation="8dp"
         android:focusable="true"
-        android:foreground="?attr/selectableItemBackgroundBorderless"
+        android:foreground="@drawable/ripple_circle"
         android:visibility="gone"
         tools:visibility="visible">
 
@@ -94,7 +94,7 @@
         android:contentDescription="@string/downloads"
         android:elevation="8dp"
         android:focusable="true"
-        android:foreground="?attr/selectableItemBackgroundBorderless"
+        android:foreground="@drawable/ripple_circle"
         android:visibility="gone"
         tools:visibility="visible">
 
@@ -112,14 +112,30 @@
             app:trackCornerRadius="3dp"
             app:trackThickness="3dp" />
 
-        <ImageView
-            android:id="@+id/downloads_icon"
+        <!-- the arrow and its ghost slide through this clipped box while downloading -->
+        <FrameLayout
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_gravity="center"
-            android:importantForAccessibility="no"
-            app:srcCompat="@drawable/ic_download_24"
-            app:tint="?attr/colorPrimary" />
+            android:clipChildren="true">
+
+            <ImageView
+                android:id="@+id/downloads_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:importantForAccessibility="no"
+                app:srcCompat="@drawable/ic_arrow_down_24"
+                app:tint="?attr/colorPrimary" />
+
+            <ImageView
+                android:id="@+id/downloads_icon_ghost"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:importantForAccessibility="no"
+                android:visibility="gone"
+                app:srcCompat="@drawable/ic_arrow_down_24"
+                app:tint="?attr/colorPrimary" />
+        </FrameLayout>
 
         <View
             android:id="@+id/downloads_badge"

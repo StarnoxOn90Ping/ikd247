@@ -36,7 +36,7 @@
                 android:contentDescription="@string/hub_back"
                 android:elevation="4dp"
                 android:focusable="true"
-                android:foreground="?attr/selectableItemBackgroundBorderless">
+                android:foreground="@drawable/ripple_circle">
 
                 <ImageView
                     android:layout_width="20dp"
@@ -82,7 +82,7 @@
                 android:elevation="4dp"
                 android:focusable="true"
                 android:fontFamily="@font/poppins_bold"
-                android:foreground="?attr/selectableItemBackground"
+                android:foreground="@drawable/ripple_rounded"
                 android:gravity="center"
                 android:paddingHorizontal="16dp"
                 android:text="@string/cal_today"
@@ -99,7 +99,7 @@
                 android:contentDescription="@string/cal_customize"
                 android:elevation="4dp"
                 android:focusable="true"
-                android:foreground="?attr/selectableItemBackgroundBorderless">
+                android:foreground="@drawable/ripple_circle">
 
                 <ImageView
                     android:layout_width="24dp"

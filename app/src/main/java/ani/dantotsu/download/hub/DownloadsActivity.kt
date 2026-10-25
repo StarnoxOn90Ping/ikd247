@@ -1,12 +1,9 @@
 package ani.dantotsu.download.hub
 
-import android.animation.ObjectAnimator
-import android.animation.ValueAnimator
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.LinearInterpolator
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
@@ -41,7 +38,7 @@ class DownloadsActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDownloadsBinding
     private val downloadsManager = Injekt.get<DownloadsManager>()
 
-    private var bannerAnimator: ObjectAnimator? = null
+    private lateinit var bannerArrow: DownloadArrowAnimator
     private var lastAnimeCount = -1
     private var lastMangaCount = -1
     private var currentPage = 0
@@ -68,6 +65,11 @@ class DownloadsActivity : AppCompatActivity() {
         binding.downloadsQueueButton.setOnClickListener(openQueue)
         binding.downloadsBanner.setOnClickListener(openQueue)
 
+        bannerArrow = DownloadArrowAnimator(
+            binding.downloadsBannerIcon,
+            binding.downloadsBannerIconGhost,
+            24f * resources.displayMetrics.density
+        )
         setupPager()
         refreshCounts()
         startLiveUpdates()
@@ -197,23 +199,10 @@ class DownloadsActivity : AppCompatActivity() {
                 banner.visibility = View.VISIBLE
                 banner.animate().alpha(1f).setDuration(250).start()
             }
-            if (bannerAnimator == null) {
-                val d = 4f * resources.displayMetrics.density
-                bannerAnimator = ObjectAnimator.ofFloat(
-                    binding.downloadsBannerIcon, View.TRANSLATION_Y, -d, d
-                ).apply {
-                    duration = 650
-                    repeatCount = ValueAnimator.INFINITE
-                    repeatMode = ValueAnimator.REVERSE
-                    interpolator = LinearInterpolator()
-                    start()
-                }
-            }
+            bannerArrow.start()
         } else {
             count.visibility = View.GONE
-            bannerAnimator?.cancel()
-            bannerAnimator = null
-            binding.downloadsBannerIcon.translationY = 0f
+            bannerArrow.stop()
             if (banner.visibility == View.VISIBLE) {
                 banner.animate().alpha(0f).setDuration(200)
                     .withEndAction { banner.visibility = View.GONE }.start()
@@ -224,7 +213,7 @@ class DownloadsActivity : AppCompatActivity() {
     // endregion
 
     override fun onDestroy() {
-        bannerAnimator?.cancel()
+        if (::bannerArrow.isInitialized) bannerArrow.stop()
         super.onDestroy()
         if (::binding.isInitialized) binding.downloadsPager.adapter = null
     }

@@ -6,7 +6,7 @@
     android:background="@drawable/bg_segment_track"
     android:clickable="true"
     android:focusable="true"
-    android:foreground="?attr/selectableItemBackground"
+    android:foreground="@drawable/ripple_rounded"
     android:gravity="center"
     android:orientation="vertical">
 

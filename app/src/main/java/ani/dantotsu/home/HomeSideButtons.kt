@@ -1,14 +1,11 @@
 package ani.dantotsu.home
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.ObjectAnimator
-import android.animation.PropertyValuesHolder
-import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.Intent
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.LinearInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
@@ -16,14 +13,13 @@ import androidx.lifecycle.lifecycleScope
 import ani.dantotsu.calendar.AiringCalendarActivity
 import ani.dantotsu.databinding.ItemNavbarBinding
 import ani.dantotsu.download.hub.DownloadActivityState
+import ani.dantotsu.download.hub.DownloadArrowAnimator
 import ani.dantotsu.download.hub.DownloadsActivity
 import ani.dantotsu.media.CalendarActivity
 import ani.dantotsu.settings.saving.PrefManager
 import ani.dantotsu.settings.saving.PrefName
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.PI
-import kotlin.math.sin
 
 /**
  * Drives the two circles that flank the bottom navigation pill:
@@ -36,12 +32,25 @@ class HomeSideButtons(
 ) {
     private val density = activity.resources.displayMetrics.density
 
-    private var iconAnimator: ValueAnimator? = null
-    private var badgePulse: ObjectAnimator? = null
+    private val arrow = DownloadArrowAnimator(nav.downloadsIcon, nav.downloadsIconGhost, 24f * density)
     private var wasActive = false
     private var started = false
 
+    @SuppressLint("ClickableViewAccessibility")
     fun attach() {
+        // subtle press-in / spring-back on both circles
+        listOf(nav.calendarButton, nav.downloadsButton).forEach { v ->
+            v.setOnTouchListener { view, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> view.animate().scaleX(0.9f).scaleY(0.9f)
+                        .setDuration(90).setInterpolator(DecelerateInterpolator()).start()
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> view.animate()
+                        .scaleX(1f).scaleY(1f).setDuration(260)
+                        .setInterpolator(OvershootInterpolator(2.5f)).start()
+                }
+                false
+            }
+        }
         nav.calendarButton.setOnClickListener { openCalendar() }
         nav.downloadsButton.setOnClickListener {
             activity.startActivity(Intent(activity, DownloadsActivity::class.java))
@@ -113,56 +122,22 @@ class HomeSideButtons(
     }
 
     private fun startDownloading() {
-        if (iconAnimator != null) return
-        val icon = nav.downloadsIcon
-        val travel = 5f * density
-
+        if (arrow.isRunning) return
         nav.downloadsProgress.animate().alpha(1f).setDuration(250).start()
+        arrow.start()
 
-        iconAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = 1100
-            repeatCount = ValueAnimator.INFINITE
-            interpolator = LinearInterpolator()
-            addUpdateListener {
-                val f = it.animatedFraction
-                // the arrow keeps falling into the tray and fading back in at the top
-                icon.translationY = (f * 2f - 1f) * travel
-                icon.alpha = sin(PI * f).toFloat().coerceIn(0.2f, 1f)
-            }
-            start()
-        }
-
+        // the red dot just appears and then stays put
         val badge = nav.downloadsBadge
         badge.visibility = View.VISIBLE
-        badge.animate().scaleX(1f).scaleY(1f).setDuration(260)
-            .setInterpolator(OvershootInterpolator(2.4f))
-            .setListener(object : AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: Animator) {
-                    badge.animate().setListener(null)
-                    if (iconAnimator != null && badgePulse == null) {
-                        badgePulse = ObjectAnimator.ofPropertyValuesHolder(
-                            badge,
-                            PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.3f, 1f),
-                            PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.3f, 1f)
-                        ).apply {
-                            duration = 1000
-                            repeatCount = ValueAnimator.INFINITE
-                            start()
-                        }
-                    }
-                }
-            })
-            .start()
+        badge.animate().setListener(null).cancel()
+        badge.animate().scaleX(1f).scaleY(1f).setDuration(220)
+            .setInterpolator(OvershootInterpolator(2f)).start()
     }
 
     private fun stopDownloading() {
-        if (iconAnimator == null) return
-        iconAnimator?.cancel()
-        iconAnimator = null
-        badgePulse?.cancel()
-        badgePulse = null
+        if (!arrow.isRunning) return
+        arrow.stop()
 
-        nav.downloadsIcon.animate().translationY(0f).alpha(1f).setDuration(150).start()
         nav.downloadsProgress.animate().alpha(0f).setDuration(300).start()
         val badge = nav.downloadsBadge
         badge.animate().setListener(null).cancel()
