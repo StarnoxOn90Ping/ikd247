@@ -26,6 +26,9 @@ import ani.dantotsu.media.MediaDetailsActivity
 import ani.dantotsu.navBarHeight
 import ani.dantotsu.statusBarHeight
 import ani.dantotsu.themes.ThemeManager
+import ani.dantotsu.util.fadeInDown
+import ani.dantotsu.util.setGradientText
+import ani.dantotsu.util.setPressBounce
 import ani.dantotsu.util.Logger
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -79,6 +82,18 @@ class AiringCalendarActivity : AppCompatActivity() {
             topMargin = statusBarHeight
         }
         binding.calendarList.setPadding(0, 0, 0, navBarHeight + (24 * resources.displayMetrics.density).toInt())
+
+        // fancy heading: gradient text that drops in, plus springy buttons
+        binding.calendarTitle.setGradientText(
+            getThemeColor(androidx.appcompat.R.attr.colorPrimary),
+            getThemeColor(com.google.android.material.R.attr.colorTertiary)
+        )
+        binding.calendarTitle.fadeInDown()
+        binding.calendarMonth.fadeInDown(120)
+        binding.calendarToday.fadeInDown(160)
+        binding.calendarBack.setPressBounce()
+        binding.calendarCustomize.setPressBounce()
+        binding.calendarToday.setPressBounce(0.9f)
 
         binding.calendarBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         binding.calendarCustomize.setOnClickListener { showCustomizeSheet() }
@@ -286,6 +301,7 @@ class AiringCalendarActivity : AppCompatActivity() {
         binding.calendarEmptyTitle.setText(title)
         binding.calendarEmptyText.setText(text)
         binding.calendarEmptyAction.setText(action)
+        binding.calendarEmptyAction.setPressBounce(0.92f)
         binding.calendarEmptyAction.setOnClickListener { onAction() }
         binding.calendarEmpty.visibility = View.VISIBLE
     }
@@ -367,6 +383,7 @@ class AiringCalendarActivity : AppCompatActivity() {
             cell.dayNumber.text = numberFmt.format(day)
             val n = dayCounts[day] ?: 0
             cell.dayDots.text = "•".repeat(n.coerceAtMost(3))
+            cell.root.setPressBounce(0.88f)
             cell.root.setOnClickListener { selectDay(index, scroll = true) }
             strip.addView(cell.root)
             cell
@@ -384,9 +401,11 @@ class AiringCalendarActivity : AppCompatActivity() {
         dayCells.forEachIndexed { i, cell ->
             val selected = i == index
             val isToday = dayStarts[i] == today
-            cell.root.setBackgroundResource(if (selected) R.drawable.bg_segment_thumb else R.drawable.bg_segment_track)
-            cell.root.animate().scaleX(if (selected) 1.06f else 1f).scaleY(if (selected) 1.06f else 1f)
-                .setDuration(160).start()
+            cell.root.setBackgroundResource(if (selected) R.drawable.bg_day_cell_selected else R.drawable.bg_day_cell)
+            // lift the chosen day instead of scaling it, so nothing is ever clipped
+            cell.root.animate().setStartDelay(0)
+                .translationZ(if (selected) 8f * resources.displayMetrics.density else 0f)
+                .setDuration(180).start()
             cell.dayWeekday.setTextColor(if (selected) onPrimary else onSurface)
             cell.dayNumber.setTextColor(if (selected) onPrimary else if (isToday) primary else onSurface)
             cell.dayDots.setTextColor(if (selected) onPrimary else primary)

@@ -24,6 +24,12 @@ import ani.dantotsu.settings.saving.PrefManager
 import ani.dantotsu.settings.saving.PrefName
 import ani.dantotsu.statusBarHeight
 import ani.dantotsu.themes.ThemeManager
+import ani.dantotsu.util.fadeInDown
+import ani.dantotsu.util.setGradientText
+import android.content.res.ColorStateList
+import android.graphics.Color
+import android.view.Gravity
+import android.widget.LinearLayout
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.Dispatchers
@@ -52,8 +58,20 @@ class ListActivity : AppCompatActivity() {
         binding.listTabLayout.setBackgroundColor(primaryColor)
         binding.listAppBar.setBackgroundColor(primaryColor)
         binding.listTitle.setTextColor(primaryTextColor)
-        binding.listTabLayout.setTabTextColors(secondaryTextColor, primaryTextColor)
-        binding.listTabLayout.setSelectedTabIndicatorColor(primaryTextColor)
+        // categories: a rounded pill that stretches elastically between tabs
+        val onPrimaryColor = getThemeColor(com.google.android.material.R.attr.colorOnPrimary)
+        val density = resources.displayMetrics.density
+        binding.listTabLayout.apply {
+            setTabTextColors(secondaryTextColor, onPrimaryColor)
+            setSelectedTabIndicator(R.drawable.tab_indicator_pill)
+            setSelectedTabIndicatorGravity(TabLayout.INDICATOR_GRAVITY_STRETCH)
+            tabIndicatorAnimationMode = TabLayout.INDICATOR_ANIMATION_MODE_ELASTIC
+            tabRippleColor = ColorStateList.valueOf(Color.TRANSPARENT)
+            setSelectedTabIndicatorColor(primaryTextColor)
+            layoutParams = layoutParams.apply { height = (56 * density).toInt() }
+            clipToPadding = false
+            setPadding((8 * density).toInt(), 0, (8 * density).toInt(), 0)
+        }
         if (!PrefManager.getVal<Boolean>(PrefName.ImmersiveMode)) {
             this.window.statusBarColor =
                 ContextCompat.getColor(this, R.color.nav_bg_inv)
@@ -74,6 +92,16 @@ class ListActivity : AppCompatActivity() {
             R.string.user_list, intent.getStringExtra("username"),
             if (anime) getString(R.string.anime) else getString(R.string.manga)
         )
+        // big, centred, gradient heading that drops in
+        binding.listTitle.visibility = View.GONE
+        binding.listTitleBig.apply {
+            visibility = View.VISIBLE
+            text = binding.listTitle.text
+            setGradientText(primaryTextColor, getThemeColor(com.google.android.material.R.attr.colorTertiary))
+            fadeInDown()
+        }
+        (binding.listActionsRow as LinearLayout).gravity = Gravity.CENTER
+        binding.listTabLayout.fadeInDown(200, 10f)
         binding.listTabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 this@ListActivity.selectedTabIdx = tab?.position ?: 0

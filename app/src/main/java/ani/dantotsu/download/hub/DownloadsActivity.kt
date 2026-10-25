@@ -24,6 +24,13 @@ import ani.dantotsu.settings.DownloadQueueActivity
 import ani.dantotsu.settings.saving.PrefManager
 import ani.dantotsu.statusBarHeight
 import ani.dantotsu.themes.ThemeManager
+import ani.dantotsu.util.fadeInDown
+import ani.dantotsu.util.setGradientText
+import ani.dantotsu.util.setPressBounce
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.floor
+import kotlin.math.sin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import uy.kohesive.injekt.Injekt
@@ -58,6 +65,17 @@ class DownloadsActivity : AppCompatActivity() {
             bottomMargin = navBarHeight
         }
 
+        // fancy heading: gradient text that drops in, plus springy buttons
+        binding.downloadsTitle.setGradientText(
+            getThemeColor(androidx.appcompat.R.attr.colorPrimary),
+            getThemeColor(com.google.android.material.R.attr.colorTertiary)
+        )
+        binding.downloadsTitle.fadeInDown()
+        binding.downloadsSubtitle.fadeInDown(120)
+        binding.downloadsBack.setPressBounce()
+        binding.downloadsQueueButton.setPressBounce()
+        binding.downloadsBanner.setPressBounce(0.97f)
+
         binding.downloadsBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
         val openQueue = View.OnClickListener {
             startActivity(Intent(this, DownloadQueueActivity::class.java))
@@ -81,6 +99,14 @@ class DownloadsActivity : AppCompatActivity() {
         val pager = binding.downloadsPager
         pager.adapter = HubAdapter()
         pager.offscreenPageLimit = 1
+        // pages fade and shrink slightly as they slide, so the switch feels like depth rather than a slide
+        pager.setPageTransformer { page, position ->
+            val d = abs(position).coerceAtMost(1f)
+            page.alpha = 1f - 0.65f * d
+            val scale = 1f - 0.08f * d
+            page.scaleX = scale
+            page.scaleY = scale
+        }
 
         val startPage = PrefManager.getCustomVal("downloads_hub_last_tab", 0).coerceIn(0, 1)
         currentPage = startPage
@@ -99,6 +125,11 @@ class DownloadsActivity : AppCompatActivity() {
             val w = thumbWidth()
             if (w <= 0f) return
             thumb.translationX = (position + offset) * w
+            // liquid feel: the thumb stretches while travelling and squashes back into place
+            val travel = (position + offset)
+            val bump = sin(PI * (travel - floor(travel))).toFloat().coerceAtLeast(0f)
+            thumb.scaleX = 1f + 0.22f * bump
+            thumb.scaleY = 1f - 0.12f * bump
             // text colours follow the thumb so they cross-fade while swiping
             val progress = (position + offset).coerceIn(0f, 1f)
             tint(progress)
@@ -127,6 +158,13 @@ class DownloadsActivity : AppCompatActivity() {
         val off = getThemeColor(com.google.android.material.R.attr.colorOutline)
         binding.downloadsTabAnime.setTextColor(blend(on, off, progress))
         binding.downloadsTabManga.setTextColor(blend(off, on, progress))
+        // the active label grows a little
+        val a = 1f + 0.1f * (1f - progress)
+        val m = 1f + 0.1f * progress
+        binding.downloadsTabAnime.scaleX = a
+        binding.downloadsTabAnime.scaleY = a
+        binding.downloadsTabManga.scaleX = m
+        binding.downloadsTabManga.scaleY = m
     }
 
     private fun blend(from: Int, to: Int, t: Float): Int {

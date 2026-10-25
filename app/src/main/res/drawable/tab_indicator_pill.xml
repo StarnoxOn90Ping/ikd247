@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rounded pill that sits behind the selected list tab (tinted with the theme colour in code) -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:insetBottom="8dp"
+    android:insetLeft="2dp"
+    android:insetRight="2dp"
+    android:insetTop="8dp">
+    <shape android:shape="rectangle">
+        <solid android:color="@android:color/white" />
+        <corners android:radius="22dp" />
+    </shape>
+</inset>

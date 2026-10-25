@@ -1,11 +1,8 @@
 package ani.dantotsu.home
 
-import android.annotation.SuppressLint
 import android.content.Intent
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
@@ -18,6 +15,7 @@ import ani.dantotsu.download.hub.DownloadsActivity
 import ani.dantotsu.media.CalendarActivity
 import ani.dantotsu.settings.saving.PrefManager
 import ani.dantotsu.settings.saving.PrefName
+import ani.dantotsu.util.setPressBounce
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -36,21 +34,10 @@ class HomeSideButtons(
     private var wasActive = false
     private var started = false
 
-    @SuppressLint("ClickableViewAccessibility")
     fun attach() {
-        // subtle press-in / spring-back on both circles
-        listOf(nav.calendarButton, nav.downloadsButton).forEach { v ->
-            v.setOnTouchListener { view, event ->
-                when (event.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> view.animate().scaleX(0.9f).scaleY(0.9f)
-                        .setDuration(90).setInterpolator(DecelerateInterpolator()).start()
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> view.animate()
-                        .scaleX(1f).scaleY(1f).setDuration(260)
-                        .setInterpolator(OvershootInterpolator(2.5f)).start()
-                }
-                false
-            }
-        }
+        // springy press feedback on both circles
+        nav.calendarButton.setPressBounce(0.82f)
+        nav.downloadsButton.setPressBounce(0.82f)
         nav.calendarButton.setOnClickListener { openCalendar() }
         nav.downloadsButton.setOnClickListener {
             activity.startActivity(Intent(activity, DownloadsActivity::class.java))
@@ -97,6 +84,7 @@ class HomeSideButtons(
                 .setStartDelay(120L + i * 70L)
                 .setDuration(380)
                 .setInterpolator(OvershootInterpolator(1.6f))
+                .withEndAction { v.animate().setStartDelay(0) }
                 .start()
         }
     }
@@ -147,9 +135,9 @@ class HomeSideButtons(
 
         // little "all done" bounce on the whole circle
         if (wasActive) {
-            nav.downloadsButton.animate().scaleX(1.14f).scaleY(1.14f).setDuration(140)
+            nav.downloadsButton.animate().setStartDelay(0).scaleX(1.14f).scaleY(1.14f).setDuration(140)
                 .withEndAction {
-                    nav.downloadsButton.animate().scaleX(1f).scaleY(1f).setDuration(220)
+                    nav.downloadsButton.animate().setStartDelay(0).scaleX(1f).scaleY(1f).setDuration(220)
                         .setInterpolator(OvershootInterpolator(2f)).start()
                 }.start()
         }

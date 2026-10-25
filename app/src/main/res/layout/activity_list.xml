@@ -28,7 +28,23 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
 
+            <!-- big centred heading (enabled by ListActivity only) -->
+            <TextView
+                android:id="@+id/listTitleBig"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginTop="14dp"
+                android:fontFamily="@font/poppins_bold"
+                android:gravity="center"
+                android:letterSpacing="0.02"
+                android:maxLines="2"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="28sp"
+                android:visibility="gone" />
+
             <LinearLayout
+                android:id="@+id/listActionsRow"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="horizontal">

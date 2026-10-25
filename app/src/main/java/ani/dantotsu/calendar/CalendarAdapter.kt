@@ -10,6 +10,7 @@ import ani.dantotsu.R
 import ani.dantotsu.databinding.ItemCalendarEntryBinding
 import ani.dantotsu.databinding.ItemCalendarHeaderBinding
 import ani.dantotsu.loadImage
+import ani.dantotsu.util.setPressBounce
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -164,6 +165,7 @@ class CalendarAdapter(
                 b.entryBanner.loadImage(e.media.banner ?: e.media.cover)
             }
 
+            b.root.setPressBounce(0.97f)
             b.root.setOnClickListener { onClick(e) }
         }
     }
