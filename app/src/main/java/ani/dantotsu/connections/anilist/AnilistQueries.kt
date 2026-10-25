@@ -1746,6 +1746,54 @@ Page(page:$page,perPage:50) {
         return list.reversed().toMutableList()
     }
 
+    /**
+     * Airing schedule of a specific set of anime (e.g. the user's list) inside a time window.
+     * @return (media, episode, airingAt in epoch seconds), oldest first
+     */
+    suspend fun airingScheduleFor(
+        mediaIds: List<Int>,
+        greater: Long,
+        lesser: Long
+    ): MutableList<Triple<Media, Int, Long>> {
+        val out = mutableListOf<Triple<Media, Int, Long>>()
+        for (chunk in mediaIds.chunked(40)) {
+            var pageNumber = 1
+            var hasNext: Boolean
+            do {
+                val query = """{
+Page(page:$pageNumber,perPage:50) {
+    $standardPageInformation
+    airingSchedules(
+        mediaId_in: [${chunk.joinToString(",")}]
+        airingAt_greater: $greater
+        airingAt_lesser: $lesser
+        sort:TIME
+    ) {
+        episode
+        airingAt
+        media {
+            ${standardMediaInformation()}
+        }
+    }
+}
+        }""".prepare()
+                val res = executeQuery<Query.Page>(query, force = true)?.data?.page
+                res?.airingSchedules?.forEach { j ->
+                    val apiMedia = j.media
+                    val ep = j.episode
+                    val at = j.airingAt
+                    if (apiMedia != null && ep != null && at != null) {
+                        out.add(Triple(Media(apiMedia), ep, at.toLong()))
+                    }
+                }
+                hasNext = res?.pageInfo?.hasNextPage == true
+                pageNumber++
+            } while (hasNext)
+        }
+        out.sortBy { it.third }
+        return out
+    }
+
     suspend fun getCharacterDetails(character: Character): Character {
         val query = """ {
   Character(id: ${character.id}) {

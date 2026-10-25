@@ -85,6 +85,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var incognitoLiveData: SharedPreferenceBooleanLiveData
     private val scope = lifecycleScope
     private var load = false
+    private var sideButtons: ani.dantotsu.home.HomeSideButtons? = null
 
 
     @kotlin.OptIn(DelicateCoroutinesApi::class)
@@ -331,6 +332,11 @@ class MainActivity : AppCompatActivity() {
             val navbar = binding.includedNavbar.navbar
             bottomBar = navbar
             navbar.visibility = View.VISIBLE
+            // calendar (left) + downloads (right) circles that flank the pill
+            sideButtons = ani.dantotsu.home.HomeSideButtons(this, binding.includedNavbar).also {
+                it.attach()
+                it.reveal()
+            }
             binding.mainProgressBar.visibility = View.GONE
             val mainViewPager = binding.viewpager
             mainViewPager.isUserInputEnabled = false
@@ -509,6 +515,7 @@ class MainActivity : AppCompatActivity() {
         val params: ViewGroup.MarginLayoutParams =
             binding.includedNavbar.navbar.layoutParams as ViewGroup.MarginLayoutParams
         params.updateMargins(bottom = margin.toPx)
+        sideButtons?.syncBottomMargin(margin.toPx)
     }
 
     private fun handleViewIntent(intent: Intent) {

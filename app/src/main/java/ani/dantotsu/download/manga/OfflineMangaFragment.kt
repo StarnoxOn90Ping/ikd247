@@ -86,6 +86,23 @@ class OfflineMangaFragment : Fragment(), OfflineMangaSearchListener {
         val semiTransparentColor = (currentColor and 0x00FFFFFF) or 0xA8000000.toInt()
         textInputLayout.boxBackgroundColor = semiTransparentColor
         val materialCardView = view.findViewById<MaterialCardView>(R.id.offlineMangaAvatarContainer)
+
+        // Embedded in the Downloads hub: the hub already owns the header/settings, so slim this one down
+        if (arguments?.getBoolean(ani.dantotsu.download.hub.DownloadsActivity.ARG_EMBEDDED, false) == true) {
+            materialCardView.visibility = View.GONE
+            view.findViewById<View>(R.id.animeTitleContainer).apply {
+                (layoutParams as ViewGroup.MarginLayoutParams).apply {
+                    marginStart = (20 * resources.displayMetrics.density).toInt()
+                    marginEnd = (20 * resources.displayMetrics.density).toInt()
+                    topMargin = (8 * resources.displayMetrics.density).toInt()
+                    bottomMargin = (8 * resources.displayMetrics.density).toInt()
+                }
+            }
+            view.findViewById<View>(R.id.offlineViewRow).apply {
+                val pad = (20 * resources.displayMetrics.density).toInt()
+                setPadding(pad, paddingTop, pad, paddingBottom)
+            }
+        }
         materialCardView.setCardBackgroundColor(semiTransparentColor)
         val color = requireContext().getThemeColor(android.R.attr.windowBackground)
 
@@ -95,7 +112,9 @@ class OfflineMangaFragment : Fragment(), OfflineMangaSearchListener {
                 SettingsDialogFragment.newInstance(SettingsDialogFragment.Companion.PageType.OfflineMANGA)
             dialogFragment.show((it.context as AppCompatActivity).supportFragmentManager, "dialog")
         }
-        if (!(PrefManager.getVal(PrefName.ImmersiveMode) as Boolean)) {
+        if (!(PrefManager.getVal(PrefName.ImmersiveMode) as Boolean) &&
+            arguments?.getBoolean(ani.dantotsu.download.hub.DownloadsActivity.ARG_EMBEDDED, false) != true
+        ) {
             view.rootView.fitsSystemWindows = true
         }
 

@@ -192,6 +192,12 @@
         <activity android:name=".settings.FAQActivity" />
         <activity android:name=".settings.DownloadQueueActivity" android:parentActivityName=".settings.SettingsActivity" />
         <activity
+            android:name=".download.hub.DownloadsActivity"
+            android:parentActivityName=".MainActivity" />
+        <activity
+            android:name=".calendar.AiringCalendarActivity"
+            android:parentActivityName=".MainActivity" />
+        <activity
             android:name=".settings.data.SettingsDataActivity"
             android:parentActivityName=".settings.SettingsActivity" />
         <activity

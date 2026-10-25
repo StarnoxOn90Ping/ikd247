@@ -1,17 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    Bottom navigation row: [ calendar circle ]  [ anime | home | manga pill ]  [ downloads circle ]
+    Four weighted spacers give every gap the same width, so each circle sits exactly
+    halfway between the pill and its screen edge.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/navbar_container"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_gravity="bottom">
+    android:layout_gravity="bottom"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Calendar circle -->
+    <FrameLayout
+        android:id="@+id/calendar_button"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/bottom_circle"
+        android:clickable="true"
+        android:contentDescription="@string/release_calendar"
+        android:elevation="8dp"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackgroundBorderless"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <ImageView
+            android:id="@+id/calendar_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            app:srcCompat="@drawable/ic_round_calendar_today_24"
+            app:tint="?attr/colorPrimary" />
+
+    </FrameLayout>
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <nl.joery.animatedbottombar.AnimatedBottomBar
         android:id="@+id/navbar"
         android:layout_width="240dp"
         android:layout_height="56dp"
-        android:layout_gravity="center_horizontal"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="32dp"
         android:background="@drawable/bottom_nav"
@@ -31,4 +76,66 @@
         app:abb_tabs="@menu/bottom_navbar_menu"
         app:abb_textAppearance="@style/NavBarText"
         tools:visibility="visible" />
-</FrameLayout>
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Downloads circle -->
+    <FrameLayout
+        android:id="@+id/downloads_button"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/bottom_circle"
+        android:clickable="true"
+        android:contentDescription="@string/downloads"
+        android:elevation="8dp"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackgroundBorderless"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/downloads_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:alpha="0"
+            android:max="100"
+            android:progress="0"
+            app:indicatorColor="?attr/colorPrimary"
+            app:indicatorSize="50dp"
+            app:trackColor="@android:color/transparent"
+            app:trackCornerRadius="3dp"
+            app:trackThickness="3dp" />
+
+        <ImageView
+            android:id="@+id/downloads_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            app:srcCompat="@drawable/ic_download_24"
+            app:tint="?attr/colorPrimary" />
+
+        <View
+            android:id="@+id/downloads_badge"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_badge_dot"
+            android:scaleX="0"
+            android:scaleY="0"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+</LinearLayout>
