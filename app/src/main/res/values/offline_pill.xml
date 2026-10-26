@@ -8,8 +8,5 @@
     <color name="online_accent_stroke">#664CD98A</color>
 
     <string name="offline_title" translatable="false">Offline</string>
-    <string name="offline_subtitle" translatable="false">Showing saved content</string>
-    <string name="offline_back_title" translatable="false">Back online</string>
-    <string name="offline_back_subtitle" translatable="false">Tap to reload</string>
-    <string name="offline_still_subtitle" translatable="false">Still no connection</string>
+    <string name="offline_reconnect_title" translatable="false">Reconnect</string>
 </resources>

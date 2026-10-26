@@ -12,7 +12,6 @@ import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
@@ -26,8 +25,8 @@ import ani.dantotsu.util.setPressBounce
  *
  *  - amber, softly pulsing "Offline" badge (Home keeps showing its cached content)
  *  - if the connection returns while the app is still in offline mode, it morphs into a green
- *    "Back online · Tap to reload" pill; tapping it recreates MainActivity with the full bar
- *  - tapping it while still offline gives a little shake instead
+ *    "Reconnect" pill; tapping it recreates MainActivity with the full bar
+ *  - tapping it while still offline just gives a little shake
  */
 class OfflinePill(
     private val activity: AppCompatActivity,
@@ -62,14 +61,14 @@ class OfflinePill(
             .withEndAction { pill.animate().setStartDelay(0L) }
             .start()
 
-        startOfflineAnimations()
+        startAnimations()
         watchNetwork()
     }
 
     /** Cancels the animators and unregisters the network callback. Call from onDestroy. */
     fun release() {
         released = true
-        stopOfflineAnimations()
+        stopAnimations()
         nav.offlinePill.animate().cancel()
         callback?.let {
             runCatching {
@@ -84,15 +83,14 @@ class OfflinePill(
     private fun markRecovered() {
         if (released || recovered) return
         recovered = true
-        stopOfflineAnimations()
-        nav.offlinePulse.alpha = 0f
 
         nav.offlinePill.setBackgroundResource(R.drawable.bg_online_pill)
+        nav.offlinePulse.setBackgroundResource(R.drawable.bg_online_pulse)
         nav.offlineIcon.setImageResource(R.drawable.ic_wifi_on_24)
         ImageViewCompat.setImageTintList(nav.offlineIcon, ColorStateList.valueOf(onlineColor))
         nav.offlineTitle.setTextColor(onlineColor)
-        swapText(nav.offlineTitle, R.string.offline_back_title)
-        swapText(nav.offlineSubtitle, R.string.offline_back_subtitle)
+        swapTitle(R.string.offline_reconnect_title)
+        startAnimations()
 
         // happy little pop
         nav.offlinePill.animate().setStartDelay(0L).scaleX(1.08f).scaleY(1.08f).setDuration(140L)
@@ -107,12 +105,12 @@ class OfflinePill(
         recovered = false
 
         nav.offlinePill.setBackgroundResource(R.drawable.bg_offline_pill)
+        nav.offlinePulse.setBackgroundResource(R.drawable.bg_offline_pulse)
         nav.offlineIcon.setImageResource(R.drawable.ic_wifi_off_24)
         ImageViewCompat.setImageTintList(nav.offlineIcon, ColorStateList.valueOf(offlineColor))
         nav.offlineTitle.setTextColor(offlineColor)
-        swapText(nav.offlineTitle, R.string.offline_title)
-        swapText(nav.offlineSubtitle, R.string.offline_subtitle)
-        startOfflineAnimations()
+        swapTitle(R.string.offline_title)
+        startAnimations()
     }
 
     private fun onTap() {
@@ -122,23 +120,20 @@ class OfflinePill(
         } else {
             nav.offlinePill.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             shake()
-            swapText(nav.offlineSubtitle, R.string.offline_still_subtitle)
-            nav.offlinePill.postDelayed({
-                if (!released && !recovered) swapText(nav.offlineSubtitle, R.string.offline_subtitle)
-            }, 1600L)
         }
     }
 
     // ---- animation helpers --------------------------------------------------------------------
 
-    private fun startOfflineAnimations() {
-        stopOfflineAnimations()
-        // expanding ring behind the icon
+    private fun startAnimations() {
+        stopAnimations()
+        // Expanding ring behind the icon. It starts and ends fully transparent and never grows
+        // past the pill's own height (40dp * 1.3 = 52dp < 56dp), so it fades out instead of being cut off.
         pulseAnimator = ObjectAnimator.ofPropertyValuesHolder(
             nav.offlinePulse,
-            PropertyValuesHolder.ofFloat(View.SCALE_X, 0.7f, 1.7f),
-            PropertyValuesHolder.ofFloat(View.SCALE_Y, 0.7f, 1.7f),
-            PropertyValuesHolder.ofFloat(View.ALPHA, 0.65f, 0f)
+            PropertyValuesHolder.ofFloat(View.SCALE_X, 0.85f, 1.3f),
+            PropertyValuesHolder.ofFloat(View.SCALE_Y, 0.85f, 1.3f),
+            PropertyValuesHolder.ofFloat(View.ALPHA, 0.7f, 0f)
         ).apply {
             duration = 1800L
             repeatCount = ObjectAnimator.INFINITE
@@ -146,7 +141,7 @@ class OfflinePill(
             start()
         }
         // the icon gently breathes
-        breatheAnimator = ObjectAnimator.ofFloat(nav.offlineIcon, View.ALPHA, 1f, 0.55f).apply {
+        breatheAnimator = ObjectAnimator.ofFloat(nav.offlineIcon, View.ALPHA, 1f, 0.6f).apply {
             duration = 1400L
             repeatCount = ObjectAnimator.INFINITE
             repeatMode = ObjectAnimator.REVERSE
@@ -155,12 +150,13 @@ class OfflinePill(
         }
     }
 
-    private fun stopOfflineAnimations() {
+    private fun stopAnimations() {
         pulseAnimator?.cancel()
         breatheAnimator?.cancel()
         pulseAnimator = null
         breatheAnimator = null
         nav.offlineIcon.alpha = 1f
+        nav.offlinePulse.alpha = 0f
     }
 
     private fun shake() {
@@ -173,8 +169,9 @@ class OfflinePill(
         }
     }
 
-    /** Cross-fades a text change instead of snapping it. */
-    private fun swapText(view: TextView, resId: Int) {
+    /** Cross-fades the title instead of snapping it. */
+    private fun swapTitle(resId: Int) {
+        val view = nav.offlineTitle
         val text = activity.getString(resId)
         if (view.text.toString() == text) return
         view.animate().setListener(null).cancel()

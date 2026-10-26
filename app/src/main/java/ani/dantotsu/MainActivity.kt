@@ -281,6 +281,9 @@ class MainActivity : AppCompatActivity() {
             // the pill becomes an "Offline" badge and only the cached Home page is shown
             offlineMode = !isOnline(this)
             if (offlineMode) selectedOption = 1
+            // The token used to be loaded only by loadMain() on a background thread, so the pager
+            // could build Home before it was set and fall back to the Login page. Read it right now.
+            Anilist.getSavedToken()
             val navbar = binding.includedNavbar.navbar
             if (offlineMode) {
                 navbar.visibility = View.GONE
@@ -594,14 +597,29 @@ class MainActivity : AppCompatActivity() {
         // offline: a single page (Home, served from the local cache)
         override fun getItemCount(): Int = if (offline) 1 else 3
 
+        // Offline and online pages get different ids. Otherwise, after recreate() on reconnect,
+        // FragmentStateAdapter restores the old offline Home fragment into page 0 (Anime).
+        override fun getItemId(position: Int): Long =
+            if (offline) OFFLINE_ITEM_ID else position.toLong()
+
+        override fun containsItem(itemId: Long): Boolean =
+            if (offline) itemId == OFFLINE_ITEM_ID else itemId in 0L..2L
+
+        private fun homeOrLogin(): Fragment =
+            if (!Anilist.token.isNullOrEmpty() || Anilist.getSavedToken()) HomeFragment() else LoginFragment()
+
         override fun createFragment(position: Int): Fragment {
-            if (offline) return if (Anilist.token != null) HomeFragment() else LoginFragment()
+            if (offline) return homeOrLogin()
             when (position) {
                 0 -> return AnimeFragment()
-                1 -> return if (Anilist.token != null) HomeFragment() else LoginFragment()
+                1 -> return homeOrLogin()
                 2 -> return MangaFragment()
             }
             return LoginFragment()
+        }
+
+        private companion object {
+            const val OFFLINE_ITEM_ID = 1000L
         }
     }
 
