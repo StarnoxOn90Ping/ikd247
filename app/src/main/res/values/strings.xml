@@ -210,7 +210,6 @@
     <string name="anilist_settings">Anilist Settings</string>
     <string name="extension_settings">Extensions</string>
     <string name="downloads">Downloads</string>
-    <string name="offline_mode">Offline Mode</string>
     <string name="settings">Settings</string>
     <string name="extensions">Extensions</string>
     <string name="extension_updates_available">Extension updates available</string>
@@ -891,7 +890,6 @@
     <string name="exporting_requires_encryption">Exporting credentials requires a password for encryption.</string>
     <string name="manga_queue">Manga Queue (WIP)</string>
     <string name="anime_queue">Anime Queue (WIP)</string>
-    <string name="no_offline_manga_found">No offline manga found</string>
     <string name="sort">Sort</string>
     <string name="download">Download</string>
     <string name="scanlator">Scanlator</string>

@@ -7,7 +7,7 @@ import androidx.annotation.DrawableRes
 import ani.dantotsu.R
 
 /**
- * Centered "nothing here" placeholder shared by the Local / Offline Anime / Offline Manga tabs.
+ * Centered "nothing here" placeholder shared by the Downloads hub Anime / Manga tabs.
  * Backed by layout_offline_empty_state.xml (included in fragment_offline_page.xml).
  */
 class OfflineEmptyState(root: View) {
