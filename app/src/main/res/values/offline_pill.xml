@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="offline_accent">#FFB84D</color>
+    <color name="offline_accent_soft">#2EFFB84D</color>
+    <color name="offline_accent_stroke">#66FFB84D</color>
+    <color name="online_accent">#4CD98A</color>
+    <color name="online_accent_soft">#2E4CD98A</color>
+    <color name="online_accent_stroke">#664CD98A</color>
+
+    <string name="offline_title" translatable="false">Offline</string>
+    <string name="offline_subtitle" translatable="false">Showing saved content</string>
+    <string name="offline_back_title" translatable="false">Back online</string>
+    <string name="offline_back_subtitle" translatable="false">Tap to reload</string>
+    <string name="offline_still_subtitle" translatable="false">Still no connection</string>
+</resources>

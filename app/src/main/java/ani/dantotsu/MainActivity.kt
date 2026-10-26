@@ -43,6 +43,7 @@ import ani.dantotsu.home.AnimeFragment
 import ani.dantotsu.home.HomeFragment
 import ani.dantotsu.home.LoginFragment
 import ani.dantotsu.home.MangaFragment
+import ani.dantotsu.home.OfflinePill
 import ani.dantotsu.media.MediaDetailsActivity
 import ani.dantotsu.notifications.TaskScheduler
 import ani.dantotsu.others.CustomBottomDialog
@@ -85,6 +86,10 @@ class MainActivity : AppCompatActivity() {
     private val scope = lifecycleScope
     private var load = false
     private var sideButtons: ani.dantotsu.home.HomeSideButtons? = null
+    private var offlinePill: OfflinePill? = null
+
+    /** True when the app was launched without internet: only Home (cached) is available. */
+    private var offlineMode = false
 
 
     @kotlin.OptIn(DelicateCoroutinesApi::class)
@@ -272,9 +277,18 @@ class MainActivity : AppCompatActivity() {
             } else {
                 PrefManager.getVal(PrefName.DefaultStartUpTab)
             }
+            // launched without internet -> no Anime/Manga pages (they would just load forever),
+            // the pill becomes an "Offline" badge and only the cached Home page is shown
+            offlineMode = !isOnline(this)
+            if (offlineMode) selectedOption = 1
             val navbar = binding.includedNavbar.navbar
-            bottomBar = navbar
-            navbar.visibility = View.VISIBLE
+            if (offlineMode) {
+                navbar.visibility = View.GONE
+                offlinePill = OfflinePill(this, binding.includedNavbar).also { it.show() }
+            } else {
+                bottomBar = navbar
+                navbar.visibility = View.VISIBLE
+            }
             // calendar (left) + downloads (right) circles that flank the pill
             sideButtons = ani.dantotsu.home.HomeSideButtons(this, binding.includedNavbar).also {
                 it.attach()
@@ -284,26 +298,29 @@ class MainActivity : AppCompatActivity() {
             val mainViewPager = binding.viewpager
             mainViewPager.isUserInputEnabled = false
             mainViewPager.adapter =
-                ViewPagerAdapter(supportFragmentManager, lifecycle)
+                ViewPagerAdapter(supportFragmentManager, lifecycle, offlineMode)
             mainViewPager.setPageTransformer(ZoomOutPageTransformer())
-            navbar.selectTabAt(selectedOption)
-            navbar.setOnTabSelectListener(object :
-                AnimatedBottomBar.OnTabSelectListener {
-                override fun onTabSelected(
-                    lastIndex: Int,
-                    lastTab: AnimatedBottomBar.Tab?,
-                    newIndex: Int,
-                    newTab: AnimatedBottomBar.Tab
-                ) {
-                    navbar.animate().translationZ(12f).setDuration(200).start()
-                    selectedOption = newIndex
-                    mainViewPager.setCurrentItem(newIndex, false)
-                }
-            })
-            if (mainViewPager.currentItem != selectedOption) {
+            if (!offlineMode) {
+                navbar.selectTabAt(selectedOption)
+                navbar.setOnTabSelectListener(object :
+                    AnimatedBottomBar.OnTabSelectListener {
+                    override fun onTabSelected(
+                        lastIndex: Int,
+                        lastTab: AnimatedBottomBar.Tab?,
+                        newIndex: Int,
+                        newTab: AnimatedBottomBar.Tab
+                    ) {
+                        navbar.animate().translationZ(12f).setDuration(200).start()
+                        selectedOption = newIndex
+                        mainViewPager.setCurrentItem(newIndex, false)
+                    }
+                })
+            }
+            val startPage = if (offlineMode) 0 else selectedOption
+            if (mainViewPager.currentItem != startPage) {
                 mainViewPager.post {
                     mainViewPager.setCurrentItem(
-                        selectedOption,
+                        startPage,
                         false
                     )
                 }
@@ -443,6 +460,10 @@ class MainActivity : AppCompatActivity() {
             binding.includedNavbar.navbar.layoutParams as ViewGroup.MarginLayoutParams
         params.updateMargins(bottom = margin.toPx)
         sideButtons?.syncBottomMargin(margin.toPx)
+        binding.includedNavbar.offlinePill.let { pill ->
+            pill.layoutParams = (pill.layoutParams as ViewGroup.MarginLayoutParams)
+                .apply { updateMargins(bottom = margin.toPx) }
+        }
     }
 
     private fun handleViewIntent(intent: Intent) {
@@ -564,12 +585,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     //ViewPager
-    private class ViewPagerAdapter(fragmentManager: FragmentManager, lifecycle: Lifecycle) :
-        FragmentStateAdapter(fragmentManager, lifecycle) {
+    private class ViewPagerAdapter(
+        fragmentManager: FragmentManager,
+        lifecycle: Lifecycle,
+        private val offline: Boolean
+    ) : FragmentStateAdapter(fragmentManager, lifecycle) {
 
-        override fun getItemCount(): Int = 3
+        // offline: a single page (Home, served from the local cache)
+        override fun getItemCount(): Int = if (offline) 1 else 3
 
         override fun createFragment(position: Int): Fragment {
+            if (offline) return if (Anilist.token != null) HomeFragment() else LoginFragment()
             when (position) {
                 0 -> return AnimeFragment()
                 1 -> return if (Anilist.token != null) HomeFragment() else LoginFragment()
@@ -584,8 +610,12 @@ class MainActivity : AppCompatActivity() {
         setIntent(intent)
         if (intent.getBooleanExtra("goToHome", false)) {
             selectedOption = 1
-            binding.includedNavbar.navbar.selectTabAt(1)
-            binding.viewpager.setCurrentItem(1, false)
+            if (offlineMode) {
+                binding.viewpager.setCurrentItem(0, false)
+            } else {
+                binding.includedNavbar.navbar.selectTabAt(1)
+                binding.viewpager.setCurrentItem(1, false)
+            }
         }
         if (Intent.ACTION_VIEW == intent.action) {
             handleViewIntent(intent)
@@ -661,6 +691,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        offlinePill?.release()
+        offlinePill = null
         if (::binding.isInitialized) {
             binding.viewpager.adapter = null
         }

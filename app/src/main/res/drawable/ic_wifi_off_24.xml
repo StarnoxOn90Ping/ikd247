@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- wifi arcs -->
+    <path
+        android:pathData="M8.6,15.4 A4.9,4.9 0 0 1 15.4,15.4"
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="2"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M5.4,12.2 A9.4,9.4 0 0 1 18.6,12.2"
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="2"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M2.3,9.1 A13.8,13.8 0 0 1 21.7,9.1"
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="2"
+        android:strokeLineCap="round" />
+    <!-- dot -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,18.2m-1.6,0a1.6,1.6 0 1,1 3.2,0a1.6,1.6 0 1,1 -3.2,0" />
+    <!-- slash -->
+    <path
+        android:pathData="M4.2,3.6 L19.8,20.4"
+        android:strokeColor="@android:color/white"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round" />
+</vector>

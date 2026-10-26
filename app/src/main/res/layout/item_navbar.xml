@@ -76,6 +76,83 @@
         app:abb_textAppearance="@style/NavBarText"
         tools:visibility="visible" />
 
+    <!-- Offline pill: replaces the anime | home | manga pill when the app is launched without internet -->
+    <FrameLayout
+        android:id="@+id/offline_pill"
+        android:layout_width="240dp"
+        android:layout_height="56dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/bg_offline_pill"
+        android:clickable="true"
+        android:contentDescription="@string/offline_title"
+        android:elevation="8dp"
+        android:focusable="true"
+        android:visibility="gone"
+        tools:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:layout_width="32dp"
+                android:layout_height="32dp">
+
+                <View
+                    android:id="@+id/offline_pulse"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/bg_offline_pulse" />
+
+                <ImageView
+                    android:id="@+id/offline_icon"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    app:srcCompat="@drawable/ic_wifi_off_24"
+                    app:tint="@color/offline_accent" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/offline_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/poppins_bold"
+                    android:includeFontPadding="false"
+                    android:letterSpacing="0.14"
+                    android:singleLine="true"
+                    android:text="@string/offline_title"
+                    android:textAllCaps="true"
+                    android:textColor="@color/offline_accent"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/offline_subtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/poppins"
+                    android:includeFontPadding="false"
+                    android:singleLine="true"
+                    android:text="@string/offline_subtitle"
+                    android:textColor="?attr/colorOutline"
+                    android:textSize="10sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+
     <Space
         android:layout_width="0dp"
         android:layout_height="0dp"

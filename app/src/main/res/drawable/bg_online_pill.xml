@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Same pill, green flavour – shown when the connection comes back while still in offline mode -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/grey_nav" />
+            <corners android:radius="40dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="0"
+                android:endColor="@android:color/transparent"
+                android:startColor="@color/online_accent_soft" />
+            <stroke
+                android:width="1dp"
+                android:color="@color/online_accent_stroke" />
+            <corners android:radius="40dp" />
+        </shape>
+    </item>
+</layer-list>
