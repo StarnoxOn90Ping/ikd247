@@ -546,12 +546,11 @@ class MangaReaderActivity : AppCompatActivity() {
                 applySettings()
                 checkSmartDownloadManga(chap)
                 val context = this
-                val offline: Boolean = PrefManager.getVal(PrefName.OfflineMode)
                 val incognito: Boolean = PrefManager.getVal(PrefName.Incognito)
                 val rpcenabled: Boolean = PrefManager.getVal(PrefName.rpcEnabled)
                 if (RPCManager.shouldSuppressForAdultMedia(media.isAdult)) {
                     RPCManager.clearPresence(context)
-                } else if ((isOnline(context) && !offline) && Discord.token != null && !incognito && rpcenabled) {
+                } else if (isOnline(context) && Discord.token != null && !incognito && rpcenabled) {
                     lifecycleScope.launch {
                         val buttons = mutableListOf<RPC.Link>()
                         buttons.add(RPC.Link("View Manga", "https://anilist.co/manga/${media.id}/"))

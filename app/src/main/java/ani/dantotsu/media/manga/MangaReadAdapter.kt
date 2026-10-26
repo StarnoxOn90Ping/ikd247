@@ -109,7 +109,6 @@ class MangaReadAdapter(
                 null
             )
         }
-        val offline = !isOnline(binding.root.context) || PrefManager.getVal(PrefName.OfflineMode)
         //for removing saved progress
         binding.sourceTitle.setOnLongClickListener {
             fragment.requireContext().customAlertDialog().apply {
@@ -126,10 +125,6 @@ class MangaReadAdapter(
             true
         }
 
-        binding.mediaSourceNameContainer.isGone = offline
-        binding.mediaSourceSettings.isGone = offline
-        binding.mediaSourceSearch.isGone = offline
-        binding.mediaSourceTitle.isGone = offline
         // Source Selection
         var source =
             media.selected!!.sourceIndex.let { if (it >= mangaReadSources.names.size) 0 else it }

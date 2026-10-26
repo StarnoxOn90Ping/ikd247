@@ -512,11 +512,6 @@ class NovelReadFragment : Fragment(),
                     return@setOnRefreshListener
                 }
                 viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                    val ctx = context
-                    val offline = (ctx != null && !isOnline(ctx)) || PrefManager.getVal(PrefName.OfflineMode)
-                    if (offline && media.format != "LOCAL") {
-                        media.selected!!.sourceIndex = model.novelSources.list.lastIndex
-                    }
                     model.loadNovelChapters(media, source, invalidate = true)
                     withContext(Dispatchers.Main) {
                         _binding?.mediaSourceSwipeRefresh?.isRefreshing = false

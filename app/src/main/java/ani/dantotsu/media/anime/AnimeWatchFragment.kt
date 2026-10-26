@@ -173,10 +173,8 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
                     return@setOnRefreshListener
                 }
                 viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                    val ctx = context
-                    val offline = (ctx != null && !isOnline(ctx)) || PrefManager.getVal(PrefName.OfflineMode)
                     val isLocal = model.watchSources?.list?.getOrNull(media.selected!!.sourceIndex)?.name == "Local"
-                    if (!offline && !isLocal) {
+                    if (!isLocal) {
                         launch { model.loadKitsuEpisodes(media, force = true) }
                         launch { model.loadAnifyEpisodes(media, force = true) }
                         launch { model.loadFillerEpisodes(media, force = true) }
@@ -253,13 +251,8 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
                     setupSelectionUi()
 
                     viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                        val ctx = context
-                        val offline =
-                            (ctx != null && !isOnline(ctx)) || PrefManager.getVal(PrefName.OfflineMode)
                         val isLocal = model.watchSources!!.list.getOrNull(media.selected!!.sourceIndex)?.name == "Local"
-                        if (offline && !isLocal) {
-                            media.selected!!.sourceIndex = model.watchSources!!.list.lastIndex
-                        } else if (!offline && !isLocal) {
+                        if (!isLocal) {
                             launch { model.loadKitsuEpisodes(media) }
                             launch { model.loadAnifyEpisodes(media) }
                             launch { model.loadFillerEpisodes(media) }

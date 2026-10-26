@@ -180,11 +180,6 @@ open class MangaReadFragment : Fragment(), ScanlatorSelectionListener {
                     return@setOnRefreshListener
                 }
                 viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                    val ctx = context
-                    val offline = (ctx != null && !isOnline(ctx)) || PrefManager.getVal(PrefName.OfflineMode)
-                    if (offline && media.format != "LOCAL") {
-                        media.selected!!.sourceIndex = model.mangaReadSources!!.list.lastIndex
-                    }
                     model.loadMangaChapters(media, media.selected!!.sourceIndex, invalidate = true)
                     withContext(Dispatchers.Main) {
                         _binding?.mediaSourceSwipeRefresh?.isRefreshing = false
@@ -256,11 +251,6 @@ open class MangaReadFragment : Fragment(), ScanlatorSelectionListener {
                         setupSelectionUi()
 
                         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                            val ctx = context
-                            val offline =
-                                (ctx != null && !isOnline(ctx)) || PrefManager.getVal(PrefName.OfflineMode)
-                            if (offline && media.format != "LOCAL") media.selected!!.sourceIndex =
-                                model.mangaReadSources!!.list.lastIndex
                             model.loadMangaChapters(media, media.selected!!.sourceIndex)
                         }
                         loaded = true

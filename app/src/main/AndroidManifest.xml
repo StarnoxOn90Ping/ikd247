@@ -304,7 +304,6 @@
             android:theme="@style/Theme.Dantotsu.NeverCutout"
             android:windowSoftInputMode="adjustResize|stateHidden" />
         <activity android:name=".media.CharacterDetailsActivity" />
-        <activity android:name=".home.NoInternet" />
         <activity android:name=".others.CrashActivity"
             android:excludeFromRecents="true"
             android:exported="true"

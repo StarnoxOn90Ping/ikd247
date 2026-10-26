@@ -28,7 +28,6 @@ class PlayerDiscordManager(
     ) {
         if (media == null || episode == null || player == null) return
         val context = activity
-        val offline = PrefManager.getVal<Boolean>(PrefName.OfflineMode)
         val incognito = PrefManager.getVal<Boolean>(PrefName.Incognito)
         val rpcEnabled = PrefManager.getVal<Boolean>(PrefName.rpcEnabled)
 
@@ -37,7 +36,7 @@ class PlayerDiscordManager(
             return
         }
 
-        if (isOnline(context) && !offline && Discord.token != null && !incognito && rpcEnabled) {
+        if (isOnline(context) && Discord.token != null && !incognito && rpcEnabled) {
             activity.lifecycleScope.launch {
                 val buttons = mutableListOf<RPC.Link>()
                 buttons.add(RPC.Link("View Anime", "https://anilist.co/anime/${media.id}/"))

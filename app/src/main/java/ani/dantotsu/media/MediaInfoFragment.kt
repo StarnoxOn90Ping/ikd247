@@ -38,7 +38,6 @@ import ani.dantotsu.databinding.ItemTitleRecyclerBinding
 import ani.dantotsu.databinding.ItemTitleTextBinding
 import ani.dantotsu.databinding.ItemTitleTrailerBinding
 import ani.dantotsu.displayTimer
-import ani.dantotsu.isOnline
 import ani.dantotsu.loadImage
 import ani.dantotsu.navBarHeight
 import ani.dantotsu.setBaseline
@@ -157,8 +156,6 @@ class MediaInfoFragment : Fragment() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val model: MediaDetailsViewModel by activityViewModels()
-        val offline: Boolean =
-            PrefManager.getVal(PrefName.OfflineMode) || !isOnline(requireContext())
         binding.mediaInfoProgressBar.isGone = loaded
         binding.mediaInfoContainer.isVisible = loaded
         val activity = requireActivity() as MediaDetailsActivity
@@ -313,17 +310,15 @@ class MediaInfoFragment : Fragment() {
                     if (media.manga.author != null) {
                         binding.mediaInfoAuthorContainer.visibility = View.VISIBLE
                         binding.mediaInfoAuthor.text = media.manga.author!!.name
-                        if (!offline) {
-                            binding.mediaInfoAuthorContainer.setOnClickListener {
-                                ContextCompat.startActivity(
-                                    requireActivity(),
-                                    Intent(activity, AuthorActivity::class.java).putExtra(
-                                        "author",
-                                        media.manga.author!! as Serializable
-                                    ),
-                                    null
-                                )
-                            }
+                        binding.mediaInfoAuthorContainer.setOnClickListener {
+                            ContextCompat.startActivity(
+                                requireActivity(),
+                                Intent(activity, AuthorActivity::class.java).putExtra(
+                                    "author",
+                                    media.manga.author!! as Serializable
+                                ),
+                                null
+                            )
                         }
                     }
                 }
@@ -356,7 +351,7 @@ class MediaInfoFragment : Fragment() {
 
                 val screenWidth = resources.displayMetrics.run { widthPixels / density }
 
-                if (media.manga != null && !offline) {
+                if (media.manga != null) {
                     model.loadMangaExtras(media)
 
                     model.adaptation.observe(viewLifecycleOwner) {
@@ -386,7 +381,7 @@ class MediaInfoFragment : Fragment() {
                     }
                     parent.addView(bind.root)
                 }
-                if (!media.users.isNullOrEmpty() && !offline) {
+                if (!media.users.isNullOrEmpty()) {
                     val users: ArrayList<User> = media.users ?: arrayListOf()
                     val currentUserId = Anilist.userid
                     if (Anilist.token != null && currentUserId != null && media.userStatus != null) {
@@ -423,7 +418,7 @@ class MediaInfoFragment : Fragment() {
                         parent.addView(root)
                     }
                 }
-                if (media.trailer != null && !offline) {
+                if (media.trailer != null) {
                     @Suppress("DEPRECATION")
                     class MyChrome : WebChromeClient() {
                         private var mCustomView: View? = null
@@ -606,7 +601,7 @@ class MediaInfoFragment : Fragment() {
                     parent.addView(bind.root)
                 }
 
-                if (media.anime != null && (media.anime.op.isNotEmpty() || media.anime.ed.isNotEmpty()) && !offline) {
+                if (media.anime != null && (media.anime.op.isNotEmpty() || media.anime.ed.isNotEmpty())) {
                     val markWon = Markwon.builder(requireContext())
                         .usePlugin(SoftBreakAddsNewLinePlugin.create()).build()
 
@@ -682,34 +677,32 @@ class MediaInfoFragment : Fragment() {
                     bind.mediaInfoGenresRecyclerView.layoutManager =
                         GridLayoutManager(requireActivity(), (screenWidth / 156f).toInt())
 
-                    if (!offline) {
-                        genreModel.doneListener = {
+                    genreModel.doneListener = {
+                        MainScope().launch {
+                            bind.mediaInfoGenresProgressBar.visibility = View.GONE
+                        }
+                    }
+                    if (genreModel.genres != null) {
+                        adapter.genres = genreModel.genres!!
+                        adapter.pos = ArrayList(genreModel.genres!!.keys)
+                        if (genreModel.done) genreModel.doneListener?.invoke()
+                    }
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        genreModel.loadGenres(media.genres) {
                             MainScope().launch {
-                                bind.mediaInfoGenresProgressBar.visibility = View.GONE
+                                adapter.addGenre(it)
                             }
                         }
-                        if (genreModel.genres != null) {
-                            adapter.genres = genreModel.genres!!
-                            adapter.pos = ArrayList(genreModel.genres!!.keys)
-                            if (genreModel.done) genreModel.doneListener?.invoke()
-                        }
-                        lifecycleScope.launch(Dispatchers.IO) {
-                            genreModel.loadGenres(media.genres) {
-                                MainScope().launch {
-                                    adapter.addGenre(it)
-                                }
-                            }
-                        }
+                    }
                     } else {
-                        bind.mediaInfoGenresProgressBar.visibility = View.GONE
-                        media.genres.forEach { genre ->
-                             adapter.addGenre(Pair(genre, ""))
-                        }
+                    bind.mediaInfoGenresProgressBar.visibility = View.GONE
+                    media.genres.forEach { genre ->
+                         adapter.addGenre(Pair(genre, ""))
                     }
                     parent.addView(bind.root)
                 }
 
-                if (media.tags.isNotEmpty() && !offline) {
+                if (media.tags.isNotEmpty()) {
                     val bind = ItemTitleChipgroupBinding.inflate(
                         LayoutInflater.from(context),
                         parent,
@@ -805,7 +798,7 @@ class MediaInfoFragment : Fragment() {
                     parent.addView(bind.root)
                 }
 
-                if (!media.rankings.isNullOrEmpty() && !offline) {
+                if (!media.rankings.isNullOrEmpty()) {
                     val bind = ItemTitleChipgroupBinding.inflate(
                         LayoutInflater.from(context),
                         parent,
@@ -852,7 +845,7 @@ class MediaInfoFragment : Fragment() {
                     parent.addView(bind.root)
                 }
 
-                if (!media.externalLinks.isNullOrEmpty() && !offline) {
+                if (!media.externalLinks.isNullOrEmpty()) {
                     val bind = ItemTitleChipgroupBinding.inflate(
                         LayoutInflater.from(context),
                         parent,
@@ -877,7 +870,7 @@ class MediaInfoFragment : Fragment() {
                     parent.addView(bind.root)
                 }
 
-                if ((!media.relations.isNullOrEmpty() || media.sequel != null || media.prequel != null) && !offline) {
+                if ((!media.relations.isNullOrEmpty() || media.sequel != null || media.prequel != null)) {
                     if (media.sequel != null || media.prequel != null) {
                         ItemQuelsBinding.inflate(
                             LayoutInflater.from(context),
@@ -927,60 +920,58 @@ class MediaInfoFragment : Fragment() {
                     }
                 }
 
-                if (!offline) {
-                    val isAnimeMedia = media.anime != null
-                    ItemQuelsBinding.inflate(
-                        LayoutInflater.from(context),
-                        parent,
-                        false
-                    ).apply {
-                        if (isAnimeMedia) {
-                            val watchOrderImage = media.banner ?: media.cover
-                            val newsImage = media.relations?.firstOrNull { it.cover != null && it.cover != media.cover }?.cover
-                                ?: media.characters?.firstOrNull()?.image
-                                ?: media.relations?.firstOrNull { it.banner != null && it.banner != media.banner }?.banner
-                                ?: media.cover?.takeIf { it != watchOrderImage }
-                                ?: media.banner
-                                ?: media.cover
+                val isAnimeMedia = media.anime != null
+                ItemQuelsBinding.inflate(
+                    LayoutInflater.from(context),
+                    parent,
+                    false
+                ).apply {
+                    if (isAnimeMedia) {
+                        val watchOrderImage = media.banner ?: media.cover
+                        val newsImage = media.relations?.firstOrNull { it.cover != null && it.cover != media.cover }?.cover
+                            ?: media.characters?.firstOrNull()?.image
+                            ?: media.relations?.firstOrNull { it.banner != null && it.banner != media.banner }?.banner
+                            ?: media.cover?.takeIf { it != watchOrderImage }
+                            ?: media.banner
+                            ?: media.cover
 
-                            mediaInfoPrequel.visibility = View.VISIBLE
-                            mediaInfoPrequelTitle.text = getString(R.string.watch_order)
-                            mediaInfoPrequelImage.loadImage(watchOrderImage)
-                            mediaInfoPrequel.setSafeOnClickListener {
-                                if (!isAdded || context == null) return@setSafeOnClickListener
-                                if (childFragmentManager.findFragmentByTag("watch_order") == null) {
-                                    MediaContentBottomSheet.newWatchOrderInstance(media)
-                                        .show(childFragmentManager, "watch_order")
-                                }
-                            }
-
-                            mediaInfoSequel.visibility = View.VISIBLE
-                            mediaInfoSequelTitle.text = getString(R.string.news)
-                            mediaInfoSequelImage.loadImage(newsImage)
-                            mediaInfoSequel.setSafeOnClickListener {
-                                if (!isAdded || context == null) return@setSafeOnClickListener
-                                if (childFragmentManager.findFragmentByTag("news") == null) {
-                                    MediaContentBottomSheet.newNewsInstance(media)
-                                        .show(childFragmentManager, "news")
-                                }
-                            }
-                        } else {
-                            val newsImage = media.banner ?: media.cover
-                            mediaInfoPrequel.visibility = View.VISIBLE
-                            mediaInfoPrequelTitle.text = getString(R.string.news)
-                            mediaInfoPrequelImage.loadImage(newsImage)
-                            mediaInfoPrequel.setSafeOnClickListener {
-                                if (!isAdded || context == null) return@setSafeOnClickListener
-                                if (childFragmentManager.findFragmentByTag("news") == null) {
-                                    MediaContentBottomSheet.newNewsInstance(media)
-                                        .show(childFragmentManager, "news")
-                                }
+                        mediaInfoPrequel.visibility = View.VISIBLE
+                        mediaInfoPrequelTitle.text = getString(R.string.watch_order)
+                        mediaInfoPrequelImage.loadImage(watchOrderImage)
+                        mediaInfoPrequel.setSafeOnClickListener {
+                            if (!isAdded || context == null) return@setSafeOnClickListener
+                            if (childFragmentManager.findFragmentByTag("watch_order") == null) {
+                                MediaContentBottomSheet.newWatchOrderInstance(media)
+                                    .show(childFragmentManager, "watch_order")
                             }
                         }
 
-                        root.tag = "dynamic_view"
-                        parent.addView(root)
+                        mediaInfoSequel.visibility = View.VISIBLE
+                        mediaInfoSequelTitle.text = getString(R.string.news)
+                        mediaInfoSequelImage.loadImage(newsImage)
+                        mediaInfoSequel.setSafeOnClickListener {
+                            if (!isAdded || context == null) return@setSafeOnClickListener
+                            if (childFragmentManager.findFragmentByTag("news") == null) {
+                                MediaContentBottomSheet.newNewsInstance(media)
+                                    .show(childFragmentManager, "news")
+                            }
+                        }
+                    } else {
+                        val newsImage = media.banner ?: media.cover
+                        mediaInfoPrequel.visibility = View.VISIBLE
+                        mediaInfoPrequelTitle.text = getString(R.string.news)
+                        mediaInfoPrequelImage.loadImage(newsImage)
+                        mediaInfoPrequel.setSafeOnClickListener {
+                            if (!isAdded || context == null) return@setSafeOnClickListener
+                            if (childFragmentManager.findFragmentByTag("news") == null) {
+                                MediaContentBottomSheet.newNewsInstance(media)
+                                    .show(childFragmentManager, "news")
+                            }
+                        }
                     }
+
+                    root.tag = "dynamic_view"
+                    parent.addView(root)
                 }
 
                 if (!media.review.isNullOrEmpty()) {
@@ -1006,7 +997,7 @@ class MediaInfoFragment : Fragment() {
                     }
                 }
 
-                if (!media.relations.isNullOrEmpty() && !offline) {
+                if (!media.relations.isNullOrEmpty()) {
                     ItemTitleRecyclerBinding.inflate(
                         LayoutInflater.from(context),
                         parent,
@@ -1023,7 +1014,7 @@ class MediaInfoFragment : Fragment() {
                         parent.addView(root)
                     }
                 }
-                if (!media.characters.isNullOrEmpty() && !offline) {
+                if (!media.characters.isNullOrEmpty()) {
                     ItemTitleRecyclerBinding.inflate(
                         LayoutInflater.from(context),
                         parent,
@@ -1041,7 +1032,7 @@ class MediaInfoFragment : Fragment() {
                         parent.addView(root)
                     }
                 }
-                if (!media.staff.isNullOrEmpty() && !offline) {
+                if (!media.staff.isNullOrEmpty()) {
                     ItemTitleRecyclerBinding.inflate(
                         LayoutInflater.from(context),
                         parent,
@@ -1060,7 +1051,7 @@ class MediaInfoFragment : Fragment() {
                     }
                 }
 
-                if (!media.recommendations.isNullOrEmpty() && !offline) {
+                if (!media.recommendations.isNullOrEmpty()) {
                     ItemTitleRecyclerBinding.inflate(
                         LayoutInflater.from(context),
                         parent,

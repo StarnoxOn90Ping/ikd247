@@ -43,7 +43,6 @@ import ani.dantotsu.home.AnimeFragment
 import ani.dantotsu.home.HomeFragment
 import ani.dantotsu.home.LoginFragment
 import ani.dantotsu.home.MangaFragment
-import ani.dantotsu.home.NoInternet
 import ani.dantotsu.media.MediaDetailsActivity
 import ani.dantotsu.notifications.TaskScheduler
 import ani.dantotsu.others.CustomBottomDialog
@@ -345,88 +344,77 @@ class MainActivity : AppCompatActivity() {
                 startActivity(notificationIntent)
             }
         }
-        val offlineMode: Boolean = PrefManager.getVal(PrefName.OfflineMode)
-        if (!isOnline(this)) {
-            snackString(this@MainActivity.getString(R.string.no_internet_connection))
-            startActivity(Intent(this, NoInternet::class.java))
-        } else {
-            if (offlineMode) {
-                snackString(this@MainActivity.getString(R.string.no_internet_connection))
-                startActivity(Intent(this, NoInternet::class.java))
-            } else {
-                val model: AnilistHomeViewModel by viewModels()
+        val model: AnilistHomeViewModel by viewModels()
 
-                //Load Data
-                if (!load && !launched) {
-                    scope.launch(Dispatchers.IO) {
-                        model.loadMain(this@MainActivity)
-                        val id = intent.extras?.getInt("mediaId", 0)?.takeIf { it != 0 }
-                            ?: intent.extras?.getInt("media", 0) ?: 0
-                        val cont = intent.extras?.getBoolean("continue") ?: false
-                        val mediaType = intent.extras?.getString("mediaType")
-                        if (id != 0) {
-                            val media = withContext(Dispatchers.IO) {
-                                Anilist.query.getMedia(id, mediaType)
-                            }
-                            if (media != null) {
-                                media.cameFromContinue = cont
-                                startActivity(
-                                    Intent(this@MainActivity, MediaDetailsActivity::class.java)
-                                        .putExtra("media", media as Serializable)
-                                )
-                            } else {
-                                snackString(this@MainActivity.getString(R.string.anilist_not_found))
-                            }
-                        }
-                        val username = intent.extras?.getString("username")
-                        if (username != null) {
-                            val nameInt = username.toIntOrNull()
-                            if (nameInt != null) {
-                                startActivity(
-                                    Intent(this@MainActivity, ProfileActivity::class.java)
-                                        .putExtra("userId", nameInt)
-                                )
-                            } else {
-                                startActivity(
-                                    Intent(this@MainActivity, ProfileActivity::class.java)
-                                        .putExtra("username", username)
-                                )
-                            }
-                        }
+        //Load Data
+        if (!load && !launched) {
+            scope.launch(Dispatchers.IO) {
+                model.loadMain(this@MainActivity)
+                val id = intent.extras?.getInt("mediaId", 0)?.takeIf { it != 0 }
+                    ?: intent.extras?.getInt("media", 0) ?: 0
+                val cont = intent.extras?.getBoolean("continue") ?: false
+                val mediaType = intent.extras?.getString("mediaType")
+                if (id != 0) {
+                    val media = withContext(Dispatchers.IO) {
+                        Anilist.query.getMedia(id, mediaType)
                     }
-                    load = true
-                }
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    if (!(PrefManager.getVal(PrefName.AllowOpeningLinks) as Boolean)) {
-                        CustomBottomDialog.newInstance().apply {
-                            title = "Allow Dantotsu to automatically open Anilist Links?"
-                            val md = "Open settings & click +Add Links & select Anilist urls"
-                            addView(TextView(this@MainActivity).apply {
-                                val markWon =
-                                    Markwon.builder(this@MainActivity)
-                                        .usePlugin(SoftBreakAddsNewLinePlugin.create()).build()
-                                markWon.setMarkdown(this, md)
-                            })
-
-                            setNegativeButton(this@MainActivity.getString(R.string.no)) {
-                                PrefManager.setVal(PrefName.AllowOpeningLinks, true)
-                                dismiss()
-                            }
-
-                            setPositiveButton(this@MainActivity.getString(R.string.yes)) {
-                                PrefManager.setVal(PrefName.AllowOpeningLinks, true)
-                                tryWith(true) {
-                                    startActivity(
-                                        Intent(Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS)
-                                            .setData(Uri.parse("package:$packageName"))
-                                    )
-                                }
-                                dismiss()
-                            }
-                        }.show(supportFragmentManager, "dialog")
+                    if (media != null) {
+                        media.cameFromContinue = cont
+                        startActivity(
+                            Intent(this@MainActivity, MediaDetailsActivity::class.java)
+                                .putExtra("media", media as Serializable)
+                        )
+                    } else {
+                        snackString(this@MainActivity.getString(R.string.anilist_not_found))
                     }
                 }
+                val username = intent.extras?.getString("username")
+                if (username != null) {
+                    val nameInt = username.toIntOrNull()
+                    if (nameInt != null) {
+                        startActivity(
+                            Intent(this@MainActivity, ProfileActivity::class.java)
+                                .putExtra("userId", nameInt)
+                        )
+                    } else {
+                        startActivity(
+                            Intent(this@MainActivity, ProfileActivity::class.java)
+                                .putExtra("username", username)
+                        )
+                    }
+                }
+            }
+            load = true
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (!(PrefManager.getVal(PrefName.AllowOpeningLinks) as Boolean)) {
+                CustomBottomDialog.newInstance().apply {
+                    title = "Allow Dantotsu to automatically open Anilist Links?"
+                    val md = "Open settings & click +Add Links & select Anilist urls"
+                    addView(TextView(this@MainActivity).apply {
+                        val markWon =
+                            Markwon.builder(this@MainActivity)
+                                .usePlugin(SoftBreakAddsNewLinePlugin.create()).build()
+                        markWon.setMarkdown(this, md)
+                    })
+
+                    setNegativeButton(this@MainActivity.getString(R.string.no)) {
+                        PrefManager.setVal(PrefName.AllowOpeningLinks, true)
+                        dismiss()
+                    }
+
+                    setPositiveButton(this@MainActivity.getString(R.string.yes)) {
+                        PrefManager.setVal(PrefName.AllowOpeningLinks, true)
+                        tryWith(true) {
+                            startActivity(
+                                Intent(Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS)
+                                    .setData(Uri.parse("package:$packageName"))
+                            )
+                        }
+                        dismiss()
+                    }
+                }.show(supportFragmentManager, "dialog")
             }
         }
         if (PrefManager.getVal(PrefName.OC)) {
