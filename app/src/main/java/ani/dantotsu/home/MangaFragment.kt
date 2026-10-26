@@ -249,9 +249,7 @@ class MangaFragment : Fragment() {
                 if (it.hasNextPage)
                     progressAdaptor.bar?.visibility = View.VISIBLE
                 else {
-                    if (!PrefManager.getVal<Boolean>(PrefName.RescueMode)) {
-                        snackString(getString(R.string.jobless_message))
-                    }
+                    snackString(getString(R.string.jobless_message))
                     progressAdaptor.bar?.visibility = View.GONE
                 }
                 loading = false
@@ -269,21 +267,16 @@ class MangaFragment : Fragment() {
                 running = true
                 scope.launch {
                     withContext(Dispatchers.IO) {
-                        val rescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
-                        if (rescueMode) {
-                            withContext(Dispatchers.Main) { load() }
+                        Anilist.userid =
+                            PrefManager.getNullableVal<String>(PrefName.AnilistUserId, null)
+                                ?.toIntOrNull()
+                        if (Anilist.userid == null) {
+                            getUserId(context) {
+                                load()
+                            }
                         } else {
-                            Anilist.userid =
-                                PrefManager.getNullableVal<String>(PrefName.AnilistUserId, null)
-                                    ?.toIntOrNull()
-                            if (Anilist.userid == null) {
-                                getUserId(context) {
-                                    load()
-                                }
-                            } else {
-                                getUserId(context) {
-                                    load()
-                                }
+                            getUserId(context) {
+                                load()
                             }
                         }
                     }

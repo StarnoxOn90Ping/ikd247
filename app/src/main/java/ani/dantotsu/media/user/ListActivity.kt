@@ -177,9 +177,6 @@ class ListActivity : AppCompatActivity() {
             }
         }
 
-        if (PrefManager.getVal<Boolean>(PrefName.RescueMode)) {
-            binding.listSort.visibility = View.GONE
-        }
         binding.listSort.setOnClickListener {
             val popup = PopupMenu(this, it)
             popup.setOnMenuItemClickListener { item ->

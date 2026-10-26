@@ -94,12 +94,7 @@ class AuthorActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedListener
                 author.image
             )
         }
-        val rescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
-        val link = if (rescueMode) {
-            "https://myanimelist.net/people/${author.id}"
-        } else {
-            "https://anilist.co/staff/${author.id}"
-        }
+        val link = "https://anilist.co/staff/${author.id}"
         binding.characterShare.setOnClickListener {
             val i = Intent(Intent.ACTION_SEND)
             i.type = "text/plain"
@@ -110,32 +105,28 @@ class AuthorActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedListener
             openLinkInBrowser(link)
             true
         }
-        if (!rescueMode) {
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                author.isFav =
+                    Anilist.query.isUserFav(AnilistMutations.FavType.STAFF, author.id)
+            }
+            withContext(Dispatchers.Main) {
+                binding.characterFav.setImageResource(
+                    if (author.isFav) R.drawable.ic_round_favorite_24 else R.drawable.ic_round_favorite_border_24
+                )
+            }
+        }
+        binding.characterFav.setOnClickListener {
             lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
-                    author.isFav =
-                        Anilist.query.isUserFav(AnilistMutations.FavType.STAFF, author.id)
-                }
-                withContext(Dispatchers.Main) {
+                if (Anilist.mutation.toggleFav(AnilistMutations.FavType.STAFF, author.id)) {
+                    author.isFav = !author.isFav
                     binding.characterFav.setImageResource(
                         if (author.isFav) R.drawable.ic_round_favorite_24 else R.drawable.ic_round_favorite_border_24
                     )
+                } else {
+                    snackString("Failed to toggle favorite")
                 }
             }
-            binding.characterFav.setOnClickListener {
-                lifecycleScope.launch {
-                    if (Anilist.mutation.toggleFav(AnilistMutations.FavType.STAFF, author.id)) {
-                        author.isFav = !author.isFav
-                        binding.characterFav.setImageResource(
-                            if (author.isFav) R.drawable.ic_round_favorite_24 else R.drawable.ic_round_favorite_border_24
-                        )
-                    } else {
-                        snackString("Failed to toggle favorite")
-                    }
-                }
-            }
-        } else {
-            binding.characterFav.visibility = View.GONE
         }
         model.getAuthor().observe(this) {
             if (it != null) {

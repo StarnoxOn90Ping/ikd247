@@ -20,7 +20,6 @@ import androidx.viewpager2.widget.ViewPager2
 import ani.dantotsu.MediaPageTransformer
 import ani.dantotsu.R
 import ani.dantotsu.connections.anilist.Anilist
-import ani.dantotsu.connections.mal.MAL
 import ani.dantotsu.databinding.ItemMangaPageBinding
 import ani.dantotsu.databinding.LayoutTrendingBinding
 import ani.dantotsu.getAppString
@@ -31,7 +30,6 @@ import ani.dantotsu.media.Media
 import ani.dantotsu.media.MediaAdaptor
 import ani.dantotsu.media.MediaListViewActivity
 import ani.dantotsu.media.SearchActivity
-import ani.dantotsu.openLinkInCustomTab
 import ani.dantotsu.profile.ProfileActivity
 import ani.dantotsu.px
 import ani.dantotsu.setSafeOnClickListener
@@ -81,8 +79,7 @@ class MangaPageAdapter : RecyclerView.Adapter<MangaPageAdapter.MangaPageViewHold
         }
 
         updateAvatar()
-        val isRescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
-        trendingBinding.notificationCount.isVisible = !isRescueMode && Anilist.unreadNotificationCount > 0
+        trendingBinding.notificationCount.isVisible = Anilist.unreadNotificationCount > 0
                 && PrefManager.getVal<Boolean>(PrefName.ShowNotificationRedDot) == true
         trendingBinding.notificationCount.text = Anilist.unreadNotificationCount.toString()
         trendingBinding.searchBar.hint = binding.root.context.getString(R.string.search)
@@ -109,21 +106,11 @@ class MangaPageAdapter : RecyclerView.Adapter<MangaPageAdapter.MangaPageViewHold
         }
         trendingBinding.userAvatar.setOnLongClickListener { view ->
             view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            val rescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
-            if (!rescueMode) {
-                ContextCompat.startActivity(
-                    view.context,
-                    Intent(view.context, ProfileActivity::class.java)
-                        .putExtra("userId", Anilist.userid), null
-                )
-            } else {
-                val malUsername = MAL.username
-                if (!malUsername.isNullOrBlank()) {
-                    openLinkInCustomTab("https://myanimelist.net/profile/$malUsername")
-                } else {
-                    ani.dantotsu.toast(view.context.getString(R.string.rescue_mode_active))
-                }
-            }
+            ContextCompat.startActivity(
+                view.context,
+                Intent(view.context, ProfileActivity::class.java)
+                    .putExtra("userId", Anilist.userid), null
+            )
             false
         }
 
@@ -152,8 +139,7 @@ class MangaPageAdapter : RecyclerView.Adapter<MangaPageAdapter.MangaPageViewHold
             )
         }
 
-        val rescueMode = PrefManager.getVal<Boolean>(PrefName.RescueMode)
-        binding.mangaIncludeList.isVisible = if (rescueMode) MAL.token != null else Anilist.token != null
+        binding.mangaIncludeList.isVisible = Anilist.token != null
 
         binding.mangaIncludeList.isChecked = PrefManager.getVal(PrefName.PopularMangaList)
 
@@ -314,8 +300,7 @@ class MangaPageAdapter : RecyclerView.Adapter<MangaPageAdapter.MangaPageViewHold
     }
 
     fun updateAvatar() {
-        val rescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
-        val avatarUrl = if (rescueMode) MAL.avatar else Anilist.avatar
+        val avatarUrl = Anilist.avatar
         if (avatarUrl != null && ready.value == true) {
             trendingBinding.userAvatar.loadImage(avatarUrl)
             trendingBinding.userAvatar.imageTintList = null
@@ -324,8 +309,7 @@ class MangaPageAdapter : RecyclerView.Adapter<MangaPageAdapter.MangaPageViewHold
 
     fun updateNotificationCount() {
         if (this::binding.isInitialized) {
-            val isRescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
-            trendingBinding.notificationCount.isVisible = !isRescueMode && Anilist.unreadNotificationCount > 0
+            trendingBinding.notificationCount.isVisible = Anilist.unreadNotificationCount > 0
                     && PrefManager.getVal<Boolean>(PrefName.ShowNotificationRedDot) == true
             trendingBinding.notificationCount.text = Anilist.unreadNotificationCount.toString()
         }

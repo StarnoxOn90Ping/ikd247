@@ -16,7 +16,6 @@ import ani.dantotsu.util.Logger
 import ani.dantotsu.toast
 import ani.dantotsu.media.anime.EpisodeSelectionBar
 import ani.dantotsu.connections.updateProgress
-import ani.dantotsu.connections.mal.MAL
 import ani.dantotsu.connections.anilist.Anilist
 import ani.dantotsu.Refresh
 import androidx.activity.OnBackPressedCallback
@@ -415,7 +414,7 @@ open class MangaReadFragment : Fragment(), ScanlatorSelectionListener {
             toast("Not available in incognito mode")
             return
         }
-        if (PrefManager.getVal<Boolean>(PrefName.RescueMode) || Anilist.userid == null) {
+        if (Anilist.userid == null) {
             toast("Can't change progress right now")
             return
         }
@@ -429,7 +428,6 @@ open class MangaReadFragment : Fragment(), ScanlatorSelectionListener {
                     try {
                         Anilist.applyLocalProgressChange(media.anime != null, newProgress - (media.userProgress ?: 0))
                         Anilist.mutation.editList(media.id, newProgress, status = status)
-                        MAL.query.editList(media.idMAL, media.anime != null, newProgress, null, status)
                         media.userProgress = newProgress
                         Anilist.query.invalidateHomePageCache()
                         Anilist.query.invalidateUserStatusCache()

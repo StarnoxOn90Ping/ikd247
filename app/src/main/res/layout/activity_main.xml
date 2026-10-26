@@ -56,25 +56,4 @@
             tools:ignore="ContentDescription" />
     </androidx.cardview.widget.CardView>
 
-    <androidx.cardview.widget.CardView
-        android:id="@+id/rescueModeIcon"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:layout_gravity="start|top"
-        android:layout_margin="16dp"
-        android:translationZ="7dp"
-        android:visibility="gone"
-        app:cardBackgroundColor="?attr/colorPrimaryContainer"
-        app:cardCornerRadius="16dp">
-
-        <androidx.constraintlayout.utils.widget.ImageFilterView
-            android:id="@+id/rescueModeImage"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_gravity="center"
-            android:src="@drawable/ic_myanimelist"
-            app:tint="?attr/colorOnPrimaryContainer"
-            tools:ignore="ContentDescription" />
-    </androidx.cardview.widget.CardView>
-
 </FrameLayout>

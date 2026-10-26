@@ -15,7 +15,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import ani.dantotsu.R
 import ani.dantotsu.connections.anilist.Anilist
 import ani.dantotsu.connections.discord.Discord
-import ani.dantotsu.connections.mal.MAL
 import ani.dantotsu.databinding.ActivitySettingsAccountsBinding
 import ani.dantotsu.initActivity
 import ani.dantotsu.loadImage
@@ -53,19 +52,6 @@ class SettingsAccountActivity : AppCompatActivity() {
                 bottomMargin = navBarHeight
             }
             accountSettingsBack.setOnClickListener { onBackPressedDispatcher.onBackPressed() }
-
-            settingsAccountHelp.setOnClickListener {
-                CustomBottomDialog.newInstance().apply {
-                    setTitleText(context.getString(R.string.account_help))
-                    addView(
-                        TextView(it.context).apply {
-                            val markWon = Markwon.builder(it.context)
-                                .usePlugin(SoftBreakAddsNewLinePlugin.create()).build()
-                            markWon.setMarkdown(this, context.getString(R.string.full_account_help))
-                        }
-                    )
-                }.show(supportFragmentManager, "dialog")
-            }
 
             fun reload() {
                 if (Anilist.token != null) {
@@ -109,33 +95,6 @@ class SettingsAccountActivity : AppCompatActivity() {
                     } else {
                         settingsAnilistTokenExpiry.visibility = View.GONE
                     }
-
-                    settingsMALLoginRequired.visibility = View.GONE
-                    settingsMALLogin.visibility = View.VISIBLE
-                    settingsMALUsername.visibility = View.VISIBLE
-
-                    if (MAL.token != null) {
-                        settingsMALLogin.setText(R.string.logout)
-                        settingsMALLogin.setOnClickListener {
-                            MAL.removeSavedToken()
-                            restartMainActivity.isEnabled = true
-                            reload()
-                        }
-                        settingsMALUsername.visibility = View.VISIBLE
-                        settingsMALUsername.text = MAL.username
-                        settingsMALAvatar.loadImage(MAL.avatar)
-                        settingsMALAvatar.setOnClickListener {
-                            it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                            openLinkInBrowser(getString(R.string.myanilist_link, MAL.username))
-                        }
-                    } else {
-                        settingsMALAvatar.setImageResource(R.drawable.ic_round_person_24)
-                        settingsMALUsername.visibility = View.GONE
-                        settingsMALLogin.setText(R.string.login)
-                        settingsMALLogin.setOnClickListener {
-                            MAL.loginIntent(context)
-                        }
-                    }
                 } else {
                     settingsAnilistAvatar.setImageResource(R.drawable.ic_round_person_24)
                     settingsAnilistUsername.visibility = View.GONE
@@ -147,9 +106,6 @@ class SettingsAccountActivity : AppCompatActivity() {
                     settingsAnilistLogin.setOnClickListener {
                         Anilist.loginIntent(context)
                     }
-                    settingsMALLoginRequired.visibility = View.VISIBLE
-                    settingsMALLogin.visibility = View.GONE
-                    settingsMALUsername.visibility = View.GONE
                 }
 
                 if (Discord.token != null) {

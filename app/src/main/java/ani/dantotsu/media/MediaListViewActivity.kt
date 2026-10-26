@@ -95,7 +95,7 @@ class MediaListViewActivity : AppCompatActivity() {
 
         val isRecommended = intent.getStringExtra("type") == "RECOMMENDED" ||
                 intent.getStringExtra("title") == getString(R.string.recommended)
-        if (isRecommended && !PrefManager.getVal<Boolean>(PrefName.RescueMode)) {
+        if (isRecommended) {
             var page = intent.getIntExtra("page", 1)
             var loading = false
             var hasNextPage = true

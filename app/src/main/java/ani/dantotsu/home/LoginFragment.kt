@@ -39,14 +39,7 @@ class LoginFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val rescueMode = ani.dantotsu.settings.saving.PrefManager.getVal<Boolean>(ani.dantotsu.settings.saving.PrefName.RescueMode)
-        if (rescueMode) {
-            binding.loginButton.text = getString(R.string.login)
-            (binding.loginButton as com.google.android.material.button.MaterialButton).setIconResource(R.drawable.ic_myanimelist)
-            binding.loginButton.setOnClickListener { ani.dantotsu.connections.mal.MAL.loginIntent(requireActivity()) }
-        } else {
-            binding.loginButton.setOnClickListener { Anilist.loginIntent(requireActivity()) }
-        }
+        binding.loginButton.setOnClickListener { Anilist.loginIntent(requireActivity()) }
         binding.loginDiscord.setOnClickListener { openLinkInBrowser(getString(R.string.discord)) }
         binding.loginGithub.setOnClickListener { openLinkInBrowser(getString(R.string.github)) }
         // binding.loginTelegram.setOnClickListener { openLinkInBrowser(getString(R.string.telegram)) }

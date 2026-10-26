@@ -3,7 +3,6 @@ package ani.dantotsu.connections
 import ani.dantotsu.R
 import ani.dantotsu.Refresh
 import ani.dantotsu.connections.anilist.Anilist
-import ani.dantotsu.connections.mal.MAL
 import ani.dantotsu.currContext
 import ani.dantotsu.media.Media
 import ani.dantotsu.media.emptyMedia
@@ -22,7 +21,6 @@ import uy.kohesive.injekt.api.get
 
 fun updateProgress(media: Media, number: String) {
     val incognito: Boolean = PrefManager.getVal(PrefName.Incognito)
-    val rescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
 
     val autoDelete = PrefManager.getCustomVal("auto_delete_downloads", false)
     if (autoDelete) {
@@ -49,36 +47,7 @@ fun updateProgress(media: Media, number: String) {
         ?: return
 
     if (!incognito) {
-        if (rescueMode) {
-            // In rescue mode: cache the update for later AL sync and mirror to MAL
-            val a = progressInt
-            if (a > (media.userProgress ?: -1)) {
-                val status = if (media.userStatus == "REPEATING") media.userStatus!! else "CURRENT"
-                val pending = PendingProgressUpdate(
-                    mediaId = media.id,
-                    idMAL = media.idMAL,
-                    isAnime = media.anime != null,
-                    progress = a,
-                    status = status,
-                )
-                val existing: List<PendingProgressUpdate> =
-                    PrefManager.getVal(PrefName.PendingProgressUpdates, listOf())
-                val updated = existing.filterNot { it.mediaId == media.id } + pending
-                PrefManager.setVal(PrefName.PendingProgressUpdates, updated)
-                CoroutineScope(Dispatchers.IO).launch {
-                    MAL.query.editList(
-                        media.idMAL,
-                        media.anime != null,
-                        a, null, status
-                    )
-                    toast(currContext()?.getString(R.string.setting_progress, a))
-                }
-                media.userProgress = a
-            }
-            Anilist.query.invalidateHomePageCache()
-            Anilist.query.invalidateUserStatusCache()
-            Refresh.all()
-        } else if (Anilist.userid != null) {
+        if (Anilist.userid != null) {
             CoroutineScope(Dispatchers.IO).launch {
                 val a = progressInt
                 if (a > (media.userProgress ?: -1)) {
@@ -87,12 +56,6 @@ fun updateProgress(media: Media, number: String) {
                         media.id,
                         a,
                         status = if (media.userStatus == "REPEATING") media.userStatus else "CURRENT"
-                    )
-                    MAL.query.editList(
-                        media.idMAL,
-                        media.anime != null,
-                        a, null,
-                        if (media.userStatus == "REPEATING") media.userStatus!! else "CURRENT"
                     )
                     toast(currContext()?.getString(R.string.setting_progress, a))
                     media.userProgress = a
@@ -109,10 +72,8 @@ fun updateProgress(media: Media, number: String) {
     }
 }
 
-/** Sync all pending progress updates (cached during rescue mode) to AniList. */
+/** Sync all pending progress updates to AniList. */
 fun syncPendingProgressUpdates() {
-
-    if (PrefManager.getVal<Boolean>(PrefName.RescueMode)) return
     if (Anilist.userid == null) return
     val pending: List<PendingProgressUpdate> = try {
         PrefManager.getVal(PrefName.PendingProgressUpdates, listOf())
@@ -126,19 +87,7 @@ fun syncPendingProgressUpdates() {
         val remaining = pending.toMutableList()
         for (update in pending) {
             try {
-                
-                val anilistId: Int = if (update.idMAL != null && update.mediaId == update.idMAL) {
-                    val type = if (update.isAnime) "ANIME" else "MANGA"
-                    val resolved = Anilist.query.getMedia(update.idMAL, mal = true, type = type)?.id
-                    if (resolved == null) {
-                        if (Anilist.anilistDisabledSignal) break
-                        remaining.remove(update)
-                        continue
-                    }
-                    resolved
-                } else {
-                    update.mediaId
-                }
+                val anilistId: Int = update.mediaId
                 Anilist.mutation.editList(
                     mediaID = anilistId,
                     progress = update.progress,
@@ -171,7 +120,6 @@ fun syncPendingProgressUpdates() {
 
 // sync changes to anilist in background 
 fun syncPendingDeletions() {
-    if (PrefManager.getVal<Boolean>(PrefName.RescueMode)) return
     if (Anilist.userid == null) return
     val pending: List<PendingDeletion> = try {
         PrefManager.getVal(PrefName.PendingDeletions, listOf())
@@ -186,19 +134,8 @@ fun syncPendingDeletions() {
         for (deletion in pending) {
             if (Anilist.anilistDisabledSignal) break
             try {
-                val anilistId: Int = if (deletion.idMAL != null && deletion.mediaId == deletion.idMAL) {
-                    val type = if (deletion.isAnime) "ANIME" else "MANGA"
-                    val resolved = Anilist.query.getMedia(deletion.idMAL, mal = true, type = type)?.id
-                    if (resolved == null) {
-                        if (Anilist.anilistDisabledSignal) break  // AniList down — abort entire sync
-                        remaining.remove(deletion)
-                        continue
-                    }
-                    resolved
-                } else {
-                    deletion.mediaId
-                }
-                val fakeMedia = emptyMedia().copy(id = anilistId, idMAL = deletion.idMAL)
+                val anilistId: Int = deletion.mediaId
+                val fakeMedia = emptyMedia().copy(id = anilistId)
                 val listId = Anilist.query.userMediaDetails(fakeMedia).userListId
                 if (listId != null) {
                     Anilist.mutation.deleteList(listId)
@@ -208,8 +145,7 @@ fun syncPendingDeletions() {
                 val progressUpdates: List<PendingProgressUpdate> =
                     PrefManager.getVal(PrefName.PendingProgressUpdates, listOf())
                 val filteredUpdates = progressUpdates.filterNot { update ->
-                    update.mediaId == deletion.mediaId ||
-                        (deletion.idMAL != null && update.idMAL == deletion.idMAL && update.mediaId == update.idMAL)
+                    update.mediaId == deletion.mediaId
                 }
                 if (filteredUpdates.size != progressUpdates.size) {
                     PrefManager.setVal(PrefName.PendingProgressUpdates, filteredUpdates)

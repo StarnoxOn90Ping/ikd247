@@ -14,10 +14,8 @@ import ani.dantotsu.DatePickerFragment
 import ani.dantotsu.InputFilterMinMax
 import ani.dantotsu.R
 import ani.dantotsu.Refresh
-import ani.dantotsu.connections.PendingProgressUpdate
 import ani.dantotsu.connections.anilist.Anilist
 import ani.dantotsu.connections.anilist.api.FuzzyDate
-import ani.dantotsu.connections.mal.MAL
 import ani.dantotsu.databinding.BottomSheetMediaListSmallBinding
 import ani.dantotsu.navBarHeight
 import ani.dantotsu.others.getSerialized
@@ -171,12 +169,7 @@ class MediaListDialogSmallFragment : BottomSheetDialogFragment() {
             }
         }
 
-        val isRescueMode = PrefManager.getVal<Boolean>(PrefName.RescueMode)
-        if (isRescueMode) {
-            binding.mediaListPrivate.apply { (parent as? ViewGroup)?.removeView(this) }
-        } else {
-            binding.mediaListPrivate.visibility = View.VISIBLE
-        }
+        binding.mediaListPrivate.visibility = View.VISIBLE
         binding.mediaListPrivate.isChecked = media.isListPrivate
         binding.mediaListPrivate.setOnCheckedChangeListener { _, checked ->
             media.isListPrivate = checked
@@ -198,41 +191,13 @@ class MediaListDialogSmallFragment : BottomSheetDialogFragment() {
                     val score = (_binding?.mediaListScore?.text.toString().toDoubleOrNull()?.times(10))?.toInt()
                     val statusText = _binding?.mediaListStatus?.text.toString()
                     val status = statuses[statusStrings.indexOf(statusText).coerceAtLeast(0)]
-                    val startD = media.userStartedAt
-                    val endD = media.userCompletedAt
-                    val rescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
-                    if (rescueMode) {
-                        val pending = PendingProgressUpdate(
-                            mediaId = media.id,
-                            idMAL = media.idMAL,
-                            isAnime = media.anime != null,
-                            progress = progress ?: 0,
-                            status = status,
-                            score = score,
-                            isPrivate = media.isListPrivate,
-                        )
-                        val existing: List<PendingProgressUpdate> =
-                            PrefManager.getVal(PrefName.PendingProgressUpdates, listOf())
-                        val updated = existing.filterNot { it.mediaId == media.id } + pending
-                        PrefManager.setVal(PrefName.PendingProgressUpdates, updated)
-                    } else {
-                        Anilist.mutation.editList(
-                            mediaID = media.id,
-                            progress = progress,
-                            progressVolumes = progressVolumes,
-                            score = score,
-                            status = status,
-                            private = media.isListPrivate
-                        )
-                    }
-                    MAL.query.editList(
-                        media.idMAL,
-                        media.anime != null,
-                        progress,
-                        score,
-                        status,
-                        start = startD,
-                        end = endD
+                    Anilist.mutation.editList(
+                        mediaID = media.id,
+                        progress = progress,
+                        progressVolumes = progressVolumes,
+                        score = score,
+                        status = status,
+                        private = media.isListPrivate
                     )
                 }
                 if (remove == true) {

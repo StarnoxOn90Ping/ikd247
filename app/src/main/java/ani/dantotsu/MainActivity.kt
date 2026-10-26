@@ -159,22 +159,6 @@ class MainActivity : AppCompatActivity() {
         layoutParams.topMargin = 11 * offset / 12
         binding.incognito.layoutParams = layoutParams
 
-        val rescueLayoutParams = binding.rescueModeIcon.layoutParams as ViewGroup.MarginLayoutParams
-        rescueLayoutParams.topMargin = 11 * offset / 12
-        binding.rescueModeIcon.layoutParams = rescueLayoutParams
-
-      
-        fun syncRescueIconMargin(incognitoOn: Boolean) {
-            val p = binding.rescueModeIcon.layoutParams as ViewGroup.MarginLayoutParams
-            p.marginStart = if (incognitoOn) {
-                (54f * resources.displayMetrics.density).toInt()
-            } else {
-                (16f * resources.displayMetrics.density).toInt()
-            }
-            binding.rescueModeIcon.layoutParams = p
-        }
-        syncRescueIconMargin(PrefManager.getVal(PrefName.Incognito))
-
         incognitoLiveData = PrefManager.getLiveVal(
             PrefName.Incognito,
             false
@@ -190,7 +174,6 @@ class MainActivity : AppCompatActivity() {
                 slideDownAnim.duration = 200
                 slideDownAnim.start()
                 binding.incognito.visibility = View.VISIBLE
-                if (PrefManager.getVal<Boolean>(PrefName.RescueMode)) syncRescueIconMargin(true)
             } else {
                 val slideUpAnim = ObjectAnimator.ofFloat(
                     binding.incognito,
@@ -202,49 +185,10 @@ class MainActivity : AppCompatActivity() {
                 slideUpAnim.start()
                 Handler(Looper.getMainLooper()).postDelayed({
                     binding.incognito.visibility = View.GONE
-                    if (PrefManager.getVal<Boolean>(PrefName.RescueMode)) syncRescueIconMargin(false)
                 }, 200)
             }
         }
 
-        val rescueModeLiveData = PrefManager.getLiveVal(PrefName.RescueMode, false).asLiveBool()
-        rescueModeLiveData.observe(this) {
-            if (it) {
-                syncRescueIconMargin(PrefManager.getVal(PrefName.Incognito))
-                val slideDownAnim = ObjectAnimator.ofFloat(
-                    binding.rescueModeIcon,
-                    View.TRANSLATION_Y,
-                    -(200f + statusBarHeight),
-                    0f
-                )
-                slideDownAnim.duration = 200
-                slideDownAnim.start()
-                binding.rescueModeIcon.visibility = View.VISIBLE
-            } else {
-                val slideUpAnim = ObjectAnimator.ofFloat(
-                    binding.rescueModeIcon,
-                    View.TRANSLATION_Y,
-                    0f,
-                    -(200f + statusBarHeight)
-                )
-                slideUpAnim.duration = 200
-                slideUpAnim.start()
-                //wait for animation to finish
-                Handler(Looper.getMainLooper()).postDelayed(
-                    { binding.rescueModeIcon.visibility = View.GONE },
-                    200
-                )
-            }
-        }
-        binding.rescueModeIcon.setOnClickListener {
-            PrefManager.setVal(PrefName.RescueMode, false)
-            val intent = Intent(this, MainActivity::class.java)
-            intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
-            startActivity(intent)
-            overridePendingTransition(0, 0)
-            finish()
-            overridePendingTransition(0, 0)
-        }
         incognitoNotification(this)
 
         var doubleBackToExitPressedOnce = false
@@ -386,23 +330,19 @@ class MainActivity : AppCompatActivity() {
                 launched = true
                 startActivity(detailIntent)
             } else if (fragmentToLoad == "FEED" && activityId != -1) {
-                if (!PrefManager.getVal<Boolean>(PrefName.RescueMode)) {
-                    val feedIntent = Intent(this, FeedActivity::class.java).apply {
-                        putExtra("FRAGMENT_TO_LOAD", "NOTIFICATIONS")
-                        putExtra("activityId", activityId)
-                    }
-                    launched = true
-                    startActivity(feedIntent)
+                val feedIntent = Intent(this, FeedActivity::class.java).apply {
+                    putExtra("FRAGMENT_TO_LOAD", "NOTIFICATIONS")
+                    putExtra("activityId", activityId)
                 }
+                launched = true
+                startActivity(feedIntent)
             } else if (fragmentToLoad == "NOTIFICATIONS" && activityId != -1) {
                 Logger.log("MainActivity, onCreate: $activityId")
-                if (!PrefManager.getVal<Boolean>(PrefName.RescueMode)) {
-                    val notificationIntent = Intent(this, NotificationActivity::class.java).apply {
-                        putExtra("activityId", activityId)
-                    }
-                    launched = true
-                    startActivity(notificationIntent)
+                val notificationIntent = Intent(this, NotificationActivity::class.java).apply {
+                    putExtra("activityId", activityId)
                 }
+                launched = true
+                startActivity(notificationIntent)
             }
         }
         val offlineMode: Boolean = PrefManager.getVal(PrefName.OfflineMode)
@@ -422,12 +362,11 @@ class MainActivity : AppCompatActivity() {
                         model.loadMain(this@MainActivity)
                         val id = intent.extras?.getInt("mediaId", 0)?.takeIf { it != 0 }
                             ?: intent.extras?.getInt("media", 0) ?: 0
-                        val isMAL = intent.extras?.getBoolean("mal") ?: false
                         val cont = intent.extras?.getBoolean("continue") ?: false
                         val mediaType = intent.extras?.getString("mediaType")
                         if (id != 0) {
                             val media = withContext(Dispatchers.IO) {
-                                Anilist.query.getMedia(id, isMAL, mediaType)
+                                Anilist.query.getMedia(id, mediaType)
                             }
                             if (media != null) {
                                 media.cameFromContinue = cont
@@ -461,8 +400,8 @@ class MainActivity : AppCompatActivity() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     if (!(PrefManager.getVal(PrefName.AllowOpeningLinks) as Boolean)) {
                         CustomBottomDialog.newInstance().apply {
-                            title = "Allow Dantotsu to automatically open Anilist & MAL Links?"
-                            val md = "Open settings & click +Add Links & select Anilist & Mal urls"
+                            title = "Allow Dantotsu to automatically open Anilist Links?"
+                            val md = "Open settings & click +Add Links & select Anilist urls"
                             addView(TextView(this@MainActivity).apply {
                                 val markWon =
                                     Markwon.builder(this@MainActivity)
@@ -643,15 +582,9 @@ class MainActivity : AppCompatActivity() {
         override fun getItemCount(): Int = 3
 
         override fun createFragment(position: Int): Fragment {
-            val rescueMode = PrefManager.getVal<Boolean>(PrefName.RescueMode)
             when (position) {
                 0 -> return AnimeFragment()
-                1 -> return if (rescueMode) {
-                    val hasMalLogin = PrefManager.getVal(PrefName.MALUserName, null as String?).let { !it.isNullOrBlank() }
-                    if (hasMalLogin) HomeFragment() else LoginFragment()
-                } else {
-                    if (Anilist.token != null) HomeFragment() else LoginFragment()
-                }
+                1 -> return if (Anilist.token != null) HomeFragment() else LoginFragment()
                 2 -> return MangaFragment()
             }
             return LoginFragment()
@@ -688,32 +621,27 @@ class MainActivity : AppCompatActivity() {
                 startActivity(detailIntent)
                 return
             } else if (fragmentToLoad == "FEED" && activityId != -1) {
-                if (!PrefManager.getVal<Boolean>(PrefName.RescueMode)) {
-                    val feedIntent = Intent(this, FeedActivity::class.java).apply {
-                        putExtra("FRAGMENT_TO_LOAD", "NOTIFICATIONS")
-                        putExtra("activityId", activityId)
-                    }
-                    startActivity(feedIntent)
-                    return
+                val feedIntent = Intent(this, FeedActivity::class.java).apply {
+                    putExtra("FRAGMENT_TO_LOAD", "NOTIFICATIONS")
+                    putExtra("activityId", activityId)
                 }
+                startActivity(feedIntent)
+                return
             } else if (fragmentToLoad == "NOTIFICATIONS" && activityId != -1) {
-                if (!PrefManager.getVal<Boolean>(PrefName.RescueMode)) {
-                    val notificationIntent = Intent(this, NotificationActivity::class.java).apply {
-                        putExtra("activityId", activityId)
-                    }
-                    startActivity(notificationIntent)
-                    return
+                val notificationIntent = Intent(this, NotificationActivity::class.java).apply {
+                    putExtra("activityId", activityId)
                 }
+                startActivity(notificationIntent)
+                return
             }
 
             val id = extras.getInt("mediaId", 0).takeIf { it != 0 }
                 ?: extras.getInt("media", 0)
-            val isMAL = extras.getBoolean("mal", false)
             val cont = extras.getBoolean("continue", false)
             val mediaType = extras.getString("mediaType")
             if (id > 0) {
                 scope.launch(Dispatchers.IO) {
-                    val media = Anilist.query.getMedia(id, isMAL, mediaType)
+                    val media = Anilist.query.getMedia(id, mediaType)
                     if (media != null) {
                         media.cameFromContinue = cont
                         startActivity(

@@ -38,7 +38,6 @@
     <string name="coffee" translatable="false">https://github.com/sponsors/rebelonion</string>
 
     <string name="anilist_link">https://anilist.co/user/%1$s/</string>
-    <string name="myanilist_link">https://myanimelist.net/profile/%1$s/</string>
     <string name="discord_link">https://discord.com/users/%1$s/</string>
 
     <string name="home">Home</string>
@@ -441,26 +440,8 @@
     <string name="faq">FAQ</string>
     <string name="accounts">Accounts</string>
     <string name="addons">Add-ons</string>
-    <string name="myanimelist">MyAnimeList</string>
     <string name="login_with_anilist">Login with Anilist!</string>
     <string name="anilist">Anilist</string>
-    <string name="account_help">How does this work\?</string>
-    <string name="full_account_help">
-        Dantotsu is an Anilist Based App, so for syncing with your MAL Account, It needs an Anilist account to be logged in.
-        \nOnce logged in with both Anilist and MAL accounts, the app will automatically update your MAL account whenever:
-        \n- Add a new Media
-        \n- Edit a Media
-        \n- Delete a Media
-
-        \n\nNote: The app will not sync old Media\'s from Anilist to MAL, It\'s recommended to sync them.
-        \n- Check __FAQs__ for _Easy Method_
-
-        \n\nAnd for _Intermediates_ :
-        \n- [How to sync Anilist data with MAL](https://anilist.co/forum/thread/2654)
-        \n- [How to sync MAL data with Anilist](https://anilist.co/forum/thread/3393)
-
-        \n\n_It is not required to sync both MAL and Anilist accounts._
-    </string>
     <string name="notification_for_checking_subscriptions">Checking Subscriptions notification</string>
     <string name="subscription_prompt_at_end">Subscription popup at media end</string>
     <string name="use_alarm_manager">Use Alarm Manager</string>
@@ -496,14 +477,12 @@
     <string name="discord_rich_presence">Discord Rich Presence</string>
     <string name="stream_on_dantotsu">Stream on Dantotsu</string>
     <string name="view_my_anilist">View My AniList</string>
-    <string name="view_my_mal">View My MAL</string>
     <string name="discord_preview">Preview</string>
     <string name="discord_playing_game">Playing a game</string>
     <string name="discord_just_now">Just Now</string>
     <string name="discord_select_service">Select Icon Service &amp; Links</string>
     <string name="discord_dantotsu_mode">Dantotsu Mode</string>
     <string name="discord_anilist_mode">AniList Mode</string>
-    <string name="discord_mal_mode">MAL Mode</string>
     <string name="discord_anime_presence">Anime Presence</string>
     <string name="discord_manga_presence">Manga Presence</string>
     <string name="discord_disable_adult_media_rpc">Disable RPC on adult media</string>
@@ -540,7 +519,6 @@
     <string name="auto_select_server_error">Couldn\'t auto select the server, Please try again!</string>
     <string name="empty_episodes_list">Episode list is empty, Please try again!</string>
     <string name="stream_selection_empty">No streams available! Try another source.</string>
-    <string name="logging_in_mal">Logging into MAL</string>
     <string name="getting_user_data">Getting User Data</string>
     <string name="no_next_episode">No next episode found!</string>
     <string name="enable_banner_animations">Try enabling \"Banner Animations\" in settings</string>
@@ -554,8 +532,6 @@
     <string name="what_did_you_open">What did you even open?</string>
     <string name="error_getting_data">Error getting data from Anilist.</string>
     <string name="empty_response">Empty response! Does your internet suck, perhaps?</string>
-    <string name="error_loading_mal_user_data">Error loading MAL user data</string>
-    <string name="error_loading_mal_data">Failed to load data from MAL</string>
     <string name="error_loading_anilist_user_data">Error loading Anilist user data</string>
     <string name="episode_not_found">Couldn\'t find episode : %1$s</string>
     <string name="list_updated">List Updated</string>
@@ -573,20 +549,12 @@
     <string name="loading_image_failed">Loading Image Failed</string>
     <string name="copied_device_info">Copied device info</string>
     <string name="anilist_down">Seems like Anilist is down, maybe try using a VPN or you can wait for it to come back.</string>
-    <string name="rescue_mode">Rescue Mode (MAL)</string>
-    <string name="rescue_mode_prompt_title">AniList Unavailable</string>
-    <string name="rescue_mode_prompt_message">AniList seems to be disabled or unavailable. Would you like to enable Rescue Mode and use MAL/Jikan as a fallback? Your progress will be cached and synced back to AniList when it comes back online.</string>
-    <string name="rescue_mode_enable">Enable Rescue Mode</string>
-    <string name="rescue_mode_active">Rescue Mode Active (MAL)</string>
     <string name="syncing_progress">Syncing %1$d pending updates to AniList…</string>
     <string name="syncing_deletions">Syncing %1$d pending deletions to AniList…</string>
     <string name="sync_complete">All progress synced to AniList!</string>
     <string name="sync_partial">%1$d updates could not be synced yet</string>
     <string name="failed_to_load_data">Failed to load saved data of %1$d</string>
     <string name="access_not_available">Wasn\'t able to get access</string>
-    <string name="mal_login_uri_not_found">Mal Login : Uri not Found</string>
-    <string name="mal_login_code_challenge_not_found">Mal Login : codeChallenge not found</string>
-    <string name="mal_login_code_not_present">Mal Login : Code not present in redirected URI</string>
     <string name="refresh_token_load_failed">Refresh Token : Failed to load saved token</string>
     <string name="refreshing_token_failed">Refreshing Token Failed</string>
     <string name="episode_release_countdown">Episode %1$d will be released in</string>
@@ -723,11 +691,6 @@
     <string name="question_9">How to enable NSFW content?</string>
     <string name="answer_9">You can enable NSFW content by enabling 18+ contents from this [link](https://anilist.co/settings/media). You also have to enable NSFW extensions in \`Settings > Extensions > NSFW extensions\` </string>
 
-    <string name="question_10">How to import my MAL/Kitsu lists to Anilist?</string>
-    <string name="answer_10">Here is how you do it,\n\nExport:\n\n1. Go to this [link](https://malscraper.azurewebsites.net).\n2. Give your Kitsu/MAL username and download both anime and manga list. (They will be in XML format)\nNote: You have to write the username of the tracker you selected\n\nImport:\n\n1. After exporting your anime and manga list from Kitsu/MAL, now go [here](https://anilist.co/settings/import) \n2. Select/drop the anime XML file on the box above.\n|→Select/drop the manga XML file on the box below.</string>
-
-    <string name="question_11">How to import my Anilist/Kitsu lists to MAL?</string>
-    <string name="answer_11">Here is how you do it,\n\nExport:\n\n1. Go to this [link](https://malscraper.azurewebsites.net/). \n2. Give your Anilist username/Kitsu ID in the \'Username/Kitsu User ID\' box. \n3. Select list type and enable \'update_on_import\'. \n4. Download the file; it will be in .xml format. Be sure to download both Anime and Manga lists.\n\nImport:\n1. To import it in your MAL account, go to this [link](https://myanimelist.net/import.php) and choose \'MyAnimeList Import\' as import type. \n2. Press on \'Choose File\'and select the downloaded anime/manga list XML file. \n3. Press on \'Import Data\'. \nCongratulations, you just imported the selected list to your MAL account.</string>
 
     <string name="question_12">Why can\'t I find a specific anime/manga title?</string>
     <string name="answer_12">Let\'s say you are looking for Castlevania in Dantotsu. But Anilist doesn\'t have it, so Dantotsu doesn\'t either.\nA solution to the above problem is as follows:\n1) Go to any anime that\'s not in your list.\n2) Go to the watch section.\n3) Select any source and press on the \'Wrong Title?\'.\n4) Now search for Castlevania (The anime you were looking for) and select it.\n5) ENJOY!\n\nIf you can\'t find the anime even through these steps, then that\'s bad luck for you, bud. Even that source doesn\'t have it. Try a different source.</string>

@@ -10,7 +10,6 @@ import android.os.Parcelable
 import android.view.LayoutInflater
 import android.view.View
 import ani.dantotsu.connections.updateProgress
-import ani.dantotsu.connections.mal.MAL
 import ani.dantotsu.connections.anilist.Anilist
 import ani.dantotsu.Refresh
 import androidx.activity.OnBackPressedCallback
@@ -655,7 +654,7 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
             toast("Not available in incognito mode")
             return
         }
-        if (PrefManager.getVal<Boolean>(PrefName.RescueMode) || Anilist.userid == null) {
+        if (Anilist.userid == null) {
             toast("Can't change progress right now")
             return
         }
@@ -669,7 +668,6 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
                     try {
                         Anilist.applyLocalProgressChange(media.anime != null, newProgress - (media.userProgress ?: 0))
                         Anilist.mutation.editList(media.id, newProgress, status = status)
-                        MAL.query.editList(media.idMAL, media.anime != null, newProgress, null, status)
                         media.userProgress = newProgress
                         Anilist.query.invalidateHomePageCache()
                         Anilist.query.invalidateUserStatusCache()

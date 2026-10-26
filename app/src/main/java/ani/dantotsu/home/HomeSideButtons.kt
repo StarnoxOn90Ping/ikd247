@@ -12,7 +12,6 @@ import ani.dantotsu.databinding.ItemNavbarBinding
 import ani.dantotsu.download.hub.DownloadActivityState
 import ani.dantotsu.download.hub.DownloadArrowAnimator
 import ani.dantotsu.download.hub.DownloadsActivity
-import ani.dantotsu.media.CalendarActivity
 import ani.dantotsu.settings.saving.PrefManager
 import ani.dantotsu.settings.saving.PrefName
 import ani.dantotsu.util.setPressBounce
@@ -55,10 +54,7 @@ class HomeSideButtons(
     }
 
     private fun openCalendar() {
-        val rescue: Boolean = PrefManager.getVal(PrefName.RescueMode)
-        // Rescue mode has no AniList, so fall back to the MAL/Jikan powered release calendar
-        val target = if (rescue) CalendarActivity::class.java else AiringCalendarActivity::class.java
-        activity.startActivity(Intent(activity, target))
+        activity.startActivity(Intent(activity, AiringCalendarActivity::class.java))
     }
 
     /** Shrinks the circles a little on very narrow phones so the gaps never get cramped. */

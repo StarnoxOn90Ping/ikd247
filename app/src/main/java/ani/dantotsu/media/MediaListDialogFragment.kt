@@ -15,10 +15,8 @@ import ani.dantotsu.DatePickerFragment
 import ani.dantotsu.InputFilterMinMax
 import ani.dantotsu.R
 import ani.dantotsu.Refresh
-import ani.dantotsu.connections.PendingProgressUpdate
 import ani.dantotsu.connections.anilist.Anilist
 import ani.dantotsu.connections.anilist.api.FuzzyDate
-import ani.dantotsu.connections.mal.MAL
 import ani.dantotsu.databinding.BottomSheetMediaListBinding
 import ani.dantotsu.navBarHeight
 import ani.dantotsu.settings.saving.PrefManager
@@ -222,12 +220,7 @@ class MediaListDialogFragment : BottomSheetDialogFragment() {
                     }
                 }
 
-                val isRescueMode = PrefManager.getVal<Boolean>(PrefName.RescueMode)
-                if (isRescueMode) {
-                    binding.mediaListPrivate.apply { (parent as? ViewGroup)?.removeView(this) }
-                } else {
-                    binding.mediaListPrivate.visibility = View.VISIBLE
-                }
+                binding.mediaListPrivate.visibility = View.VISIBLE
                 binding.mediaListPrivate.isChecked = media?.isListPrivate ?: false
                 binding.mediaListPrivate.setOnCheckedChangeListener { _, checked ->
                     media?.isListPrivate = checked
@@ -246,21 +239,19 @@ class MediaListDialogFragment : BottomSheetDialogFragment() {
                     binding.mediaListNotes.setText(this)
                 }
 
-                if (media?.inCustomListsOf?.isEmpty() != false || isRescueMode)
+                if (media?.inCustomListsOf?.isEmpty() != false)
                     binding.mediaListAddCustomList.apply {
                         (parent as? ViewGroup)?.removeView(this)
                     }
 
-                if (!isRescueMode) {
-                    media?.inCustomListsOf?.forEach {
-                        MaterialSwitch(requireContext()).apply {
-                            isChecked = it.value
-                            text = it.key
-                            setOnCheckedChangeListener { _, isChecked ->
-                                media?.inCustomListsOf?.put(it.key, isChecked)
-                            }
-                            binding.mediaListCustomListContainer.addView(this)
+                media?.inCustomListsOf?.forEach {
+                    MaterialSwitch(requireContext()).apply {
+                        isChecked = it.value
+                        text = it.key
+                        setOnCheckedChangeListener { _, isChecked ->
+                            media?.inCustomListsOf?.put(it.key, isChecked)
                         }
+                        binding.mediaListCustomListContainer.addView(this)
                     }
                 }
 
@@ -287,51 +278,18 @@ class MediaListDialogFragment : BottomSheetDialogFragment() {
                                 val notes = notesText
                                 val startD = start.date
                                 val endD = end.date
-                                val rescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
-                                if (rescueMode) {
-                                    val pending = PendingProgressUpdate(
-                                        mediaId = media!!.id,
-                                        idMAL = media!!.idMAL,
-                                        isAnime = media!!.anime != null,
-                                        progress = progress ?: 0,
-                                        status = status,
-                                        score = score,
-                                        rewatch = rewatch,
-                                        notes = notes,
-                                        isPrivate = media?.isListPrivate ?: false,
-                                        startDate = startD,
-                                        endDate = endD,
-                                        customLists = media?.inCustomListsOf
-                                            ?.mapNotNull { if (it.value) it.key else null },
-                                    )
-                                    val existing: List<PendingProgressUpdate> =
-                                        PrefManager.getVal(PrefName.PendingProgressUpdates, listOf())
-                                    val updated = existing.filterNot { it.mediaId == media!!.id } + pending
-                                    PrefManager.setVal(PrefName.PendingProgressUpdates, updated)
-                                } else {
-                                    Anilist.mutation.editList(
-                                        mediaID = media!!.id,
-                                        progress = progress,
-                                        progressVolumes = progressVolumes,
-                                        score = score,
-                                        repeat = rewatch,
-                                        notes = notes,
-                                        status = status,
-                                        private = media?.isListPrivate ?: false,
-                                        startedAt = startD,
-                                        completedAt = endD,
-                                        customList = media?.inCustomListsOf?.mapNotNull { if (it.value) it.key else null }
-                                    )
-                                }
-                                MAL.query.editList(
-                                    media!!.idMAL,
-                                    media!!.anime != null,
-                                    progress,
-                                    score,
-                                    status,
-                                    rewatch,
-                                    startD,
-                                    endD
+                                Anilist.mutation.editList(
+                                    mediaID = media!!.id,
+                                    progress = progress,
+                                    progressVolumes = progressVolumes,
+                                    score = score,
+                                    repeat = rewatch,
+                                    notes = notes,
+                                    status = status,
+                                    private = media?.isListPrivate ?: false,
+                                    startedAt = startD,
+                                    completedAt = endD,
+                                    customList = media?.inCustomListsOf?.mapNotNull { if (it.value) it.key else null }
                                 )
                             }
                         }

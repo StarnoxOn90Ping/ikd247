@@ -35,7 +35,6 @@ import ani.dantotsu.Refresh
 import ani.dantotsu.ZoomOutPageTransformer
 import ani.dantotsu.blurImage
 import ani.dantotsu.connections.anilist.Anilist
-import ani.dantotsu.connections.mal.MAL
 import ani.dantotsu.copyToClipboard
 import ani.dantotsu.databinding.ActivityMediaBinding
 import ani.dantotsu.getThemeColor
@@ -162,20 +161,8 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             ?: savedId
             ?: -1
         if (id != -1 && media.name == "No media found") {
-            val rescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
             runBlocking(Dispatchers.IO) {
-                if (rescueMode) {
-                    val animeNode = MAL.query.getAnimeDetails(id)
-                    if (animeNode != null) {
-                        media = Media(animeNode, true)
-                    } else {
-                        val mangaNode = MAL.query.getMangaDetails(id)
-                        media = if (mangaNode != null) Media(mangaNode, false)
-                        else emptyMedia()
-                    }
-                } else {
-                    media = Anilist.query.getMedia(id, false) ?: emptyMedia()
-                }
+                media = Anilist.query.getMedia(id, false) ?: emptyMedia()
             }
         }
         this.media = media
@@ -312,11 +299,10 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             "#222222"
         )
         binding.mediaStatus.text = media.status ?: ""
-        val rescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
 
         fun fav(media: Media):  PopImageButton? {
             //Fav Button
-            return if (Anilist.userid != null && !rescueMode) {
+            return if (Anilist.userid != null) {
                 if (media.isFav) binding.mediaFav.setImageDrawable(
                     AppCompatResources.getDrawable(
                         this,
@@ -369,7 +355,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         }
         var isFavSyncRunning = false
         fun syncMediaFavStateIfNeeded(favButton: PopImageButton?) {
-            if (rescueMode || Anilist.userid == null || favButton == null || media.isFav || isFavSyncRunning) return
+            if (Anilist.userid == null || favButton == null || media.isFav || isFavSyncRunning) return
             isFavSyncRunning = true
             scope.launch {
                 try {
@@ -443,12 +429,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             }
             total()
             binding.mediaAddToList.setOnClickListener {
-                if (rescueMode) {
-                    if (MAL.token != null) {
-                        if (supportFragmentManager.findFragmentByTag("dialog") == null)
-                            MediaListDialogFragment().show(supportFragmentManager, "dialog")
-                    } else snackString("Please login to MAL")
-                } else if (Anilist.userid != null) {
+                if (Anilist.userid != null) {
                     if (supportFragmentManager.findFragmentByTag("dialog") == null)
                         MediaListDialogFragment().show(supportFragmentManager, "dialog")
                 } else snackString(getString(R.string.please_login_anilist))
@@ -560,20 +541,20 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             navBar.createTab(R.drawable.ic_round_comment_24, R.string.comments, R.id.comment)
         navBar.addTab(infoTab)
         navBar.addTab(watchTab)
-        if (PrefManager.getVal<Int>(PrefName.CommentsEnabled) == 1 && !rescueMode) {
+        if (PrefManager.getVal<Int>(PrefName.CommentsEnabled) == 1) {
             navBar.addTab(commentTab)
         }
         if (model.continueMedia == null && media.cameFromContinue) {
             model.continueMedia = PrefManager.getVal(PrefName.ContinueMedia)
         }
-        if (intent.getStringExtra("FRAGMENT_TO_LOAD") != null && PrefManager.getVal<Int>(PrefName.CommentsEnabled) == 1 && !rescueMode) selected = 2
+        if (intent.getStringExtra("FRAGMENT_TO_LOAD") != null && PrefManager.getVal<Int>(PrefName.CommentsEnabled) == 1) selected = 2
         if (viewPager.currentItem != selected) viewPager.post {
             viewPager.setCurrentItem(selected, false)
         }
         binding.commentInputLayout.isVisible = selected == 2
 
         // Ensure that if we are returning from the comments tab, we go back to the media content tab
-        if (selected == 2 && (PrefManager.getVal<Int>(PrefName.CommentsEnabled) != 1 || rescueMode)) {
+        if (selected == 2 && (PrefManager.getVal<Int>(PrefName.CommentsEnabled) != 1)) {
             selected = 1
         }
         navBar.selectTabAt(selected)
@@ -698,7 +679,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
     ) :
         FragmentStateAdapter(fragmentManager, lifecycle) {
 
-        override fun getItemCount(): Int = if (PrefManager.getVal<Int>(PrefName.CommentsEnabled) == 1 && !PrefManager.getVal<Boolean>(PrefName.RescueMode)) 3 else 2
+        override fun getItemCount(): Int = if (PrefManager.getVal<Int>(PrefName.CommentsEnabled) == 1) 3 else 2
 
         override fun createFragment(position: Int): Fragment = when (position) {
             0 -> MediaInfoFragment()
@@ -709,7 +690,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             }
 
             2 -> { // Index 2
-                if (PrefManager.getVal<Int>(PrefName.CommentsEnabled) == 1 && !PrefManager.getVal<Boolean>(PrefName.RescueMode)) {
+                if (PrefManager.getVal<Int>(PrefName.CommentsEnabled) == 1) {
                     val fragment = CommentsFragment()
                     val bundle = Bundle()
                     bundle.putInt("mediaId", media.id)

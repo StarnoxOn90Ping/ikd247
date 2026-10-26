@@ -8,7 +8,6 @@ import ani.dantotsu.BottomSheetDialogFragment
 import ani.dantotsu.R
 import ani.dantotsu.connections.discord.Discord
 import ani.dantotsu.connections.discord.RPCManager
-import ani.dantotsu.connections.mal.MAL
 import ani.dantotsu.databinding.BottomSheetDiscordRpcBinding
 import ani.dantotsu.settings.saving.PrefManager
 import ani.dantotsu.settings.saving.PrefName
@@ -39,13 +38,6 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Setup MAL login requirement
-        val malEnabled = MAL.token != null
-        binding.radioMal.isEnabled = malEnabled
-        if (!malEnabled) {
-            binding.radioMal.text = "${getString(R.string.discord_mal_mode)} (Login Required)"
-        }
-
         // Listeners for Controls
         binding.switchShowIcon.setOnCheckedChangeListener { _, isChecked ->
             if (isLoadingSettings) return@setOnCheckedChangeListener
@@ -68,7 +60,6 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
                 binding.radioNothing.id -> "nothing"
                 binding.radioDantotsu.id -> "dantotsu"
                 binding.radioAnilist.id -> "anilist"
-                binding.radioMal.id -> "mal"
                 else -> "dantotsu"
             }
             if (isMangaTabSelected) {
@@ -150,7 +141,6 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
             "nothing" -> binding.radioNothing.isChecked = true
             "dantotsu" -> binding.radioDantotsu.isChecked = true
             "anilist" -> binding.radioAnilist.isChecked = true
-            "mal" -> binding.radioMal.isChecked = true
             else -> binding.radioDantotsu.isChecked = true
         }
 
@@ -191,7 +181,6 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
             binding.previewSmallImage.visibility = View.VISIBLE
             val iconUrl = when (mode) {
                 "anilist" -> Discord.small_Image_AniList
-                "mal" -> Discord.small_Image_MAL
                 else -> Discord.small_Image
             }
             Glide.with(this).load(iconUrl).into(binding.previewSmallImage)
@@ -207,10 +196,7 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
             binding.previewButton1.visibility = View.VISIBLE
             binding.previewButton2.visibility = View.VISIBLE
 
-            binding.previewButton1.text = when (mode) {
-                "mal" -> "VIEW ON MYANIMELIST"
-                else -> "VIEW ON ANILIST"
-            }
+            binding.previewButton1.text = "VIEW ON ANILIST"
 
             binding.previewButton2.text = when (mode) {
                 "dantotsu" -> "DANTOTSU PROFILE"

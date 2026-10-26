@@ -4,7 +4,6 @@ import android.graphics.Color
 import ani.dantotsu.connections.PendingDeletion
 import ani.dantotsu.connections.PendingProgressUpdate
 import ani.dantotsu.connections.comments.AuthResponse
-import ani.dantotsu.connections.mal.MAL
 import ani.dantotsu.media.SearchHistory
 import ani.dantotsu.notifications.comment.CommentStore
 import ani.dantotsu.notifications.subscription.SubscriptionStore
@@ -245,7 +244,6 @@ enum class PrefName(val data: Pref) {
 
     //Irrelevant
     Incognito(Pref(Location.Irrelevant, Boolean::class, false)),
-    RescueMode(Pref(Location.Irrelevant, Boolean::class, false)),
     PendingProgressUpdates(Pref(Location.Irrelevant, List::class, listOf<PendingProgressUpdate>())),
     PendingDeletions(Pref(Location.Irrelevant, List::class, listOf<PendingDeletion>())),
     OfflineMode(Pref(Location.Irrelevant, Boolean::class, false)),
@@ -299,10 +297,6 @@ enum class PrefName(val data: Pref) {
     AnilistToken(Pref(Location.Protected, String::class, "")),
     AnilistUserName(Pref(Location.Protected, String::class, "")),
     AnilistUserId(Pref(Location.Protected, String::class, "")),
-    MALUserName(Pref(Location.Protected, String::class, "")),
-    MALAvatar(Pref(Location.Protected, String::class, "")),
-    MALCodeChallenge(Pref(Location.Protected, String::class, "")),
-    MALToken(Pref(Location.Protected, MAL.ResponseToken::class, "")),
     AppPassword(Pref(Location.Protected, String::class, "")),
     BiometricToken(Pref(Location.Protected, String::class, "")),
     OverridePassword(Pref(Location.Protected, Boolean::class, false)),

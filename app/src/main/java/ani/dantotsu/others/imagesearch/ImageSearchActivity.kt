@@ -86,7 +86,7 @@ class ImageSearchActivity : AppCompatActivity() {
                         toast(getString(R.string.no_anilist_id_found))
                         return@launch
                     }
-                    val media = Anilist.query.getMedia(id, false)
+                    val media = Anilist.query.getMedia(id)
 
                     withContext(Dispatchers.Main) {
                         media?.let {

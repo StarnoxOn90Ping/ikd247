@@ -3,7 +3,6 @@ package ani.dantotsu.home
 import android.animation.ObjectAnimator
 import android.content.Intent
 import android.graphics.drawable.Animatable
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
@@ -11,7 +10,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LayoutAnimationController
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
@@ -23,13 +21,11 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import ani.dantotsu.MainActivity
 import ani.dantotsu.R
 import ani.dantotsu.Refresh
 import ani.dantotsu.blurImage
 import ani.dantotsu.bottomBarOrNull
 import ani.dantotsu.connections.anilist.Anilist
-import ani.dantotsu.connections.mal.MAL
 import ani.dantotsu.connections.anilist.AnilistHomeViewModel
 import ani.dantotsu.connections.anilist.getUserId
 import ani.dantotsu.currContext
@@ -41,7 +37,6 @@ import ani.dantotsu.media.MediaAdaptor
 import ani.dantotsu.media.MediaListViewActivity
 import ani.dantotsu.media.user.ListActivity
 import ani.dantotsu.navBarHeight
-import ani.dantotsu.openLinkInBrowser
 import ani.dantotsu.profile.ProfileActivity
 import ani.dantotsu.profile.User
 import ani.dantotsu.setSafeOnClickListener
@@ -55,7 +50,6 @@ import ani.dantotsu.snackString
 import ani.dantotsu.statusBarHeight
 import ani.dantotsu.tryWithSuspend
 import ani.dantotsu.util.Logger
-import ani.dantotsu.util.customAlertDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -95,29 +89,17 @@ class HomeFragment : Fragment() {
             Logger.log("Loading HomeFragment")
             if (activity != null && _binding != null) viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
                 val currentBinding = _binding ?: return@launch
-                val rescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
-                if (rescueMode && MAL.token != null) {
-                    currentBinding.homeUserName.text = MAL.username ?: Anilist.username
-                    currentBinding.homeUserAvatar.loadImage(MAL.avatar ?: Anilist.avatar)
-                } else {
-                    currentBinding.homeUserName.text = Anilist.username
-                    currentBinding.homeUserAvatar.loadImage(Anilist.avatar)
-                }
+                currentBinding.homeUserName.text = Anilist.username
+                currentBinding.homeUserAvatar.loadImage(Anilist.avatar)
 
-                if (!rescueMode) {
-                    currentBinding.homeUserEpisodesWatched.text = Anilist.episodesWatched.toString()
-                    currentBinding.homeUserChaptersRead.text = Anilist.chapterRead.toString()
-                    currentBinding.homeNotificationCount.isVisible = Anilist.unreadNotificationCount > 0
-                            && PrefManager.getVal<Boolean>(PrefName.ShowNotificationRedDot) == true
-                    currentBinding.homeNotificationCount.text = Anilist.unreadNotificationCount.toString()
-                } else {
-                    currentBinding.homeUserEpisodesWatched.text = MAL.episodesWatched?.toString() ?: "—"
-                    currentBinding.homeUserChaptersRead.text = MAL.chaptersRead?.toString() ?: "—"
-                    currentBinding.homeNotificationCount.isVisible = false
-                }
+                currentBinding.homeUserEpisodesWatched.text = Anilist.episodesWatched.toString()
+                currentBinding.homeUserChaptersRead.text = Anilist.chapterRead.toString()
+                currentBinding.homeNotificationCount.isVisible = Anilist.unreadNotificationCount > 0
+                        && PrefManager.getVal<Boolean>(PrefName.ShowNotificationRedDot) == true
+                currentBinding.homeNotificationCount.text = Anilist.unreadNotificationCount.toString()
 
                 val bannerAnimations: Boolean = PrefManager.getVal(PrefName.BannerAnimations)
-                val bannerUrl = if (rescueMode) (Anilist.bg ?: MAL.avatar) else Anilist.bg
+                val bannerUrl = Anilist.bg
                 blurImage(
                     if (bannerAnimations) currentBinding.homeUserBg else currentBinding.homeUserBgNoKen,
                     bannerUrl
@@ -125,7 +107,7 @@ class HomeFragment : Fragment() {
                 currentBinding.homeUserDataProgressBar.visibility = View.GONE
 
                 val listUserId = Anilist.userid ?: 0
-                val listUsername = if (rescueMode) MAL.username ?: Anilist.username else Anilist.username
+                val listUsername = Anilist.username
                 currentBinding.homeAnimeList.setOnClickListener {
                     ContextCompat.startActivity(
                         requireActivity(), Intent(requireActivity(), ListActivity::class.java)
@@ -172,26 +154,10 @@ class HomeFragment : Fragment() {
         }
         binding.homeUserAvatarContainer.setOnLongClickListener {
             it.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-            if (!PrefManager.getVal<Boolean>(PrefName.RescueMode)) {
-                ContextCompat.startActivity(
-                    requireContext(), Intent(requireContext(), ProfileActivity::class.java)
-                        .putExtra("userId", Anilist.userid), null
-                )
-            } else {
-                val malUsername = MAL.username
-                if (!malUsername.isNullOrBlank()) {
-                    try {
-                        CustomTabsIntent.Builder().build().launchUrl(
-                            requireContext(),
-                            Uri.parse("https://myanimelist.net/profile/$malUsername")
-                        )
-                    } catch (e: Exception) {
-                        openLinkInBrowser("https://myanimelist.net/profile/$malUsername")
-                    }
-                } else {
-                    snackString(getString(R.string.rescue_mode_active))
-                }
-            }
+            ContextCompat.startActivity(
+                requireContext(), Intent(requireContext(), ProfileActivity::class.java)
+                    .putExtra("userId", Anilist.userid), null
+            )
             false
         }
 
@@ -455,7 +421,7 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
             }
         })
         val storiesEnabled = PrefManager.getVal<List<Boolean>>(PrefName.HomeLayout)
-            .getOrElse(7) { true } && !PrefManager.getVal<Boolean>(PrefName.RescueMode)
+            .getOrElse(7) { true }
         binding.homeUserStatusContainer.visibility =
             if (storiesEnabled) View.VISIBLE else View.GONE
         binding.homeUserStatusProgressBar.visibility =
@@ -471,8 +437,7 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
             when {
                 users == null -> {
                     val show = PrefManager.getVal<List<Boolean>>(PrefName.HomeLayout)
-                        .getOrElse(7) { true } &&
-                        !PrefManager.getVal<Boolean>(PrefName.RescueMode)
+                        .getOrElse(7) { true }
                     if (show) {
                         binding.homeUserStatusContainer.visibility = View.VISIBLE
                         binding.homeUserStatusProgressBar.visibility = View.VISIBLE
@@ -589,100 +554,53 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
 
         Anilist.userStatsChanged.observe(viewLifecycleOwner) {
             val b = _binding ?: return@observe
-            if (!PrefManager.getVal<Boolean>(PrefName.RescueMode)) {
-                b.homeUserEpisodesWatched.text = Anilist.episodesWatched?.toString() ?: "—"
-                b.homeUserChaptersRead.text = Anilist.chapterRead?.toString() ?: "—"
-            }
+            b.homeUserEpisodesWatched.text = Anilist.episodesWatched?.toString() ?: "—"
+            b.homeUserChaptersRead.text = Anilist.chapterRead?.toString() ?: "—"
         }
 
-        PrefManager.getLiveVal(PrefName.RescueMode, false).asLiveBool()
-            .observe(viewLifecycleOwner) { inRescueMode ->
-
-                val alOnlySections = listOf(
-                    binding.homeFavAnimeContainer,
-                    binding.homeFavMangaContainer,
-                    binding.homeUserStatusContainer,
-                    binding.homeMissingSequelsContainer,
-                )
-                binding.homeRescueModeBanner.visibility =
-                    if (inRescueMode) View.VISIBLE else View.GONE
-                if (inRescueMode) {
-                    alOnlySections.forEach { it.visibility = View.GONE }
-
-                    binding.homeContinueWatchingContainer.visibility = View.VISIBLE
-                    binding.homePlannedAnimeContainer.visibility = View.VISIBLE
-                    binding.homeContinueReadingContainer.visibility = View.VISIBLE
-                    binding.homePlannedMangaContainer.visibility = View.VISIBLE
+        run {
+            val alOnlySections = listOf(
+                binding.homeFavAnimeContainer,
+                binding.homeFavMangaContainer,
+                binding.homeUserStatusContainer,
+                binding.homeMissingSequelsContainer,
+            )
+            val homeLayoutShow: List<Boolean> = PrefManager.getVal(PrefName.HomeLayout)
+            val alOnlyIndices = listOf(1, 4, 7, 8)
+            alOnlySections.forEachIndexed { idx, view ->
+                if (homeLayoutShow.getOrElse(alOnlyIndices[idx]) { true }) {
+                    view.visibility = View.VISIBLE
                 } else {
-                    val homeLayoutShow: List<Boolean> = PrefManager.getVal(PrefName.HomeLayout)
-                    val alOnlyIndices = listOf(1, 4, 7, 8)
-                    alOnlySections.forEachIndexed { idx, view ->
-                        if (homeLayoutShow.getOrElse(alOnlyIndices[idx]) { true }) {
-                            view.visibility = View.VISIBLE
-                        } else {
-                            view.visibility = View.GONE
-                        }
-                    }
+                    view.visibility = View.GONE
                 }
             }
+        }
 
         live.observe(viewLifecycleOwner) { shouldRefresh ->
             if (!running && shouldRefresh) {
                 running = true
                 scope.launch {
                     withContext(Dispatchers.IO) {
-                        val rescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
-                        if (rescueMode) {
-                            if (MAL.token != null && MAL.episodesWatched == null) {
-                                tryWithSuspend { MAL.query.getUserData() }
-                            }
-                            withContext(Dispatchers.Main) { load() }
-                        } else {
-                            // The header totals used to be fetched only once at login, so they
-                            // went stale until the next re-login. Re-fetch on every refresh.
-                            if (Anilist.initialized) tryWithSuspend { Anilist.query.refreshUserStats() }
-                            Anilist.userid =
-                                PrefManager.getNullableVal<String>(PrefName.AnilistUserId, null)
-                                    ?.toIntOrNull()
-                            if (Anilist.userid == null) {
-                                withContext(Dispatchers.Main) {
-                                    getUserId(context) {
-                                        load()
-                                    }
+                        // The header totals used to be fetched only once at login, so they
+                        // went stale until the next re-login. Re-fetch on every refresh.
+                        if (Anilist.initialized) tryWithSuspend { Anilist.query.refreshUserStats() }
+                        Anilist.userid =
+                            PrefManager.getNullableVal<String>(PrefName.AnilistUserId, null)
+                                ?.toIntOrNull()
+                        if (Anilist.userid == null) {
+                            withContext(Dispatchers.Main) {
+                                getUserId(context) {
+                                    load()
                                 }
-                            } else {
-                                launch(Dispatchers.Main) {
-                                    getUserId(context) {
-                                        load()
-                                    }
+                            }
+                        } else {
+                            launch(Dispatchers.Main) {
+                                getUserId(context) {
+                                    load()
                                 }
                             }
                         }
                         model.loaded = true
-                    }
-
-                    if (Anilist.anilistDisabledSignal && !PrefManager.getVal<Boolean>(PrefName.RescueMode)) {
-                        withContext(Dispatchers.Main) {
-                            val ctx = context ?: return@withContext
-                            if (isAdded && _binding != null) {
-                                ctx.customAlertDialog().apply {
-                                    setTitle(R.string.rescue_mode_prompt_title)
-                                    setMessage(R.string.rescue_mode_prompt_message)
-                                    setPosButton(R.string.rescue_mode_enable) {
-                                        PrefManager.setVal(PrefName.RescueMode, true)
-                                        Anilist.anilistDisabledSignal = false
-                                        val intent = Intent(ctx, MainActivity::class.java)
-                                        intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
-                                        startActivity(intent)
-                                        activity?.overridePendingTransition(0, 0)
-                                        activity?.finish()
-                                        activity?.overridePendingTransition(0, 0)
-                                    }
-                                    setNegButton(R.string.no)
-                                    show()
-                                }
-                            }
-                        }
                     }
 
                     var empty = true
@@ -713,13 +631,10 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
                         }
                     }
 
-                    val rescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
                     val isPullToRefresh = _binding?.homeRefresh?.isRefreshing == true
                     val initHomePage = async(Dispatchers.IO) { model.initHomePage(forceRefresh = isPullToRefresh) }
                     async(Dispatchers.IO) { model.setListImages() }
-                    if (!rescueMode) {
-                        async(Dispatchers.IO) { model.initUserStatus(forceRefresh = isPullToRefresh) }
-                    }
+                    async(Dispatchers.IO) { model.initUserStatus(forceRefresh = isPullToRefresh) }
                     initHomePage.await()
 
                     withContext(Dispatchers.Main) {
@@ -738,13 +653,11 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
     override fun onResume() {
         if (!model.loaded) Refresh.activity[1]!!.postValue(true)
         if (_binding != null) {
-            val rescueMode: Boolean = PrefManager.getVal(PrefName.RescueMode)
-            binding.homeNotificationCount.isVisible = !rescueMode
-                    && Anilist.unreadNotificationCount > 0
+            binding.homeNotificationCount.isVisible = Anilist.unreadNotificationCount > 0
                     && PrefManager.getVal<Boolean>(PrefName.ShowNotificationRedDot) == true
             binding.homeNotificationCount.text = Anilist.unreadNotificationCount.toString()
             // Coming back from a media page / the player: pick up progress made in the meantime.
-            if (!rescueMode && Anilist.initialized) {
+            if (Anilist.initialized) {
                 viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                     tryWithSuspend { Anilist.query.refreshUserStats() }
                 }
