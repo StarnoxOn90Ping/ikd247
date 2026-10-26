@@ -162,7 +162,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             ?: -1
         if (id != -1 && media.name == "No media found") {
             runBlocking(Dispatchers.IO) {
-                media = Anilist.query.getMedia(id, false) ?: emptyMedia()
+                media = Anilist.query.getMedia(id) ?: emptyMedia()
             }
         }
         this.media = media

@@ -24,7 +24,6 @@ import ani.dantotsu.others.Anify
 import ani.dantotsu.others.AniskipCsvFallback
 import ani.dantotsu.others.IdMappers
 import ani.dantotsu.others.IntroDbService
-import ani.dantotsu.others.Jikan
 import ani.dantotsu.others.Kitsu
 import ani.dantotsu.others.TmdbService
 import ani.dantotsu.media.novel.NovelStorage
@@ -265,14 +264,9 @@ class MediaDetailsViewModel : ViewModel() {
         MutableLiveData<Map<String, Episode>>(null)
 
     fun getFillerEpisodes(): LiveData<Map<String, Episode>> = fillerEpisodes
+    // Jikan (MyAnimeList) was the only filler-flag source and was removed with MAL.
+    @Suppress("UNUSED_PARAMETER")
     suspend fun loadFillerEpisodes(s: Media, force: Boolean = false) {
-        tryWithSuspend {
-            if (fillerEpisodes.value == null || force) fillerEpisodes.postValue(
-                Jikan.getEpisodes(
-                    s.idMAL ?: return@tryWithSuspend
-                )
-            )
-        }
     }
 
     var watchSources: WatchSources? = null
