@@ -83,8 +83,6 @@ object Discord {
         "https://cdn.discordapp.com/emojis/1167344924874784828.webp?size=128&quality=lossless"
     const val small_Image_AniList: String =
         "https://anilist.co/img/icons/android-chrome-512x512.png"
-    const val small_Image_MAL: String =
-        "https://cdn.myanimelist.net/img/sp/icon/apple-touch-icon-256.png"
     const val small_Image_Simkl: String =
         "https://eu.simkl.in/img_favicon/v2/favicon-192x192.png"
 }

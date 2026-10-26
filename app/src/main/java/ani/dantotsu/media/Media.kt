@@ -29,7 +29,6 @@ data class Media(
     val id: Int,
 
     var idMAL: Int? = null,
-    var typeMAL: String? = null,
 
     val name: String?,
     val nameRomaji: String,
@@ -90,7 +89,6 @@ data class Media(
     var vrvId: String? = null,
     var crunchySlug: String? = null,
 
-    var nameMAL: String? = null,
     var folderName: String? = null,
     var shareLink: String? = null,
     var selected: Selected? = null,
@@ -221,7 +219,7 @@ data class Media(
         this.relation = mediaEdge.relationType?.toString()
     }
 
-    fun mainName() = name ?: nameMAL ?: nameRomaji
+    fun mainName() = name ?: nameRomaji
     fun mangaName() = if (countryOfOrigin != "JP") mainName() else nameRomaji
 }
 

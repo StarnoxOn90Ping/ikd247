@@ -56,7 +56,7 @@ object CarouselLogoResolver {
             val tmdbId = media.idTMDB?.toIntOrNull()
                 ?: runCatching { IdMappers.getIds(media.id)?.tmdbId }.getOrNull()
             if (tmdbId != null && tmdbId > 0) {
-                val isMovie = media.anime?.totalEpisodes == 1 || media.typeMAL?.equals("Movie", ignoreCase = true) == true
+                val isMovie = media.anime?.totalEpisodes == 1
                 logo = TmdbService.getClearLogo(tmdbId, isMovie)
             }
         }

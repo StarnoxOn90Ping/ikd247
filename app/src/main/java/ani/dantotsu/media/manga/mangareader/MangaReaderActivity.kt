@@ -555,9 +555,6 @@ class MangaReaderActivity : AppCompatActivity() {
                     lifecycleScope.launch {
                         val buttons = mutableListOf<RPC.Link>()
                         buttons.add(RPC.Link("View Manga", "https://anilist.co/manga/${media.id}/"))
-                        media.idMAL?.let {
-                            buttons.add(RPC.Link("View on MyAnimeList", "https://myanimelist.net/manga/$it"))
-                        }
                         val rpcData = RPC.Companion.RPCData(
                             applicationId = Discord.application_Id,
                             type = RPC.Type.WATCHING,

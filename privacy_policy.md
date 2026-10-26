@@ -35,7 +35,6 @@ This information is only shared while you are actively using Dantotsu and have D
 
 While we facilitate these connections, we do not store your login credentials. Authentication tokens are stored securely on your device only. Please note that these third-party services may collect additional information according to their own privacy policies, which we encourage you to review:
 - [AniList Privacy Policy Link](https://anilist.co/terms)
-- [MyAnimeList Privacy Policy Link](https://myanimelist.net/about/privacy_policy)
 - [Discord Privacy Policy Link](https://discord.com/privacy)
 
 ### Comments System

@@ -5,7 +5,6 @@ import ani.dantotsu.FileUrl
 import ani.dantotsu.R
 import ani.dantotsu.asyncMap
 import ani.dantotsu.currContext
-import ani.dantotsu.others.MalSyncBackup
 import ani.dantotsu.settings.saving.PrefManager
 import ani.dantotsu.tryWithSuspend
 import eu.kanade.tachiyomi.animesource.model.SAnime
@@ -168,27 +167,14 @@ abstract class AnimeParser : BaseParser() {
      * **/
     open var selectDub = false
 
-    /**
-     * Name used to get Shows Directly from MALSyncBackup's github dump
-     *
-     * Do not override if the site is not present on it.
-     * **/
-    open val malSyncBackupName = ""
-
-    /**
-     * Overridden to add MalSyncBackup support for Anime Sites
-     * **/
     override suspend fun loadSavedShowResponse(mediaId: Int): ShowResponse? {
         checkIfVariablesAreEmpty()
         val dub = if (isDubAvailableSeparately()) "_${if (selectDub) "dub" else "sub"}" else ""
-        var loaded = PrefManager.getNullableCustomVal(
+        val loaded = PrefManager.getNullableCustomVal(
             "${saveName}${dub}_$mediaId",
             null,
             ShowResponse::class.java
         )
-        if (loaded == null && malSyncBackupName.isNotEmpty())
-            loaded = MalSyncBackup.get(mediaId, malSyncBackupName, selectDub)
-                ?.also { saveShowResponse(mediaId, it, true) }
         return loaded
     }
 

@@ -69,10 +69,6 @@ object IdMappers {
         return getAniZipId(anilistId = anilistId)
     }
 
-    suspend fun getImdbIdFromMal(malId: Int): String? {
-        return getAniZipId(malId = malId)
-    }
-
     suspend fun getMalId(anilistId: Int): Int? {
         return getIds(anilistId)?.malId
     }

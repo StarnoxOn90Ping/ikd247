@@ -7,7 +7,6 @@ package ani.dantotsu.connections.discord
 
 import android.content.Context
 import ani.dantotsu.connections.discord.models.DiscordActivity
-import ani.dantotsu.connections.mal.MAL
 import ani.dantotsu.settings.saving.PrefManager
 import ani.dantotsu.settings.saving.PrefName
 import ani.dantotsu.util.Logger
@@ -286,7 +285,6 @@ object RPCManager {
         val (smallIconUrl, smallIconText) = if (showSmallIcon) {
             when (mode) {
                 "anilist" -> Discord.small_Image_AniList to "AniList"
-                "mal" -> Discord.small_Image_MAL to "MyAnimeList"
                 else -> Discord.small_Image to "Dantotsu"
             }
         } else {
@@ -297,11 +295,8 @@ object RPCManager {
         val buttons = mutableListOf<DiscordActivity.Button>()
         if (mode != "nothing") {
             // Button 1: Media Link (Primary Tracker)
-            val trackers = runCatching { data.buttons.filter { it.url.contains("anilist.co") || it.url.contains("myanimelist.net") } }.getOrDefault(emptyList())
-            val primaryTracker = when (mode) {
-                "mal" -> trackers.find { it.url.contains("myanimelist.net") } ?: trackers.find { it.url.contains("anilist.co") }
-                else -> trackers.find { it.url.contains("anilist.co") } ?: trackers.find { it.url.contains("myanimelist.net") }
-            }
+            val trackers = runCatching { data.buttons.filter { it.url.contains("anilist.co") } }.getOrDefault(emptyList())
+            val primaryTracker = trackers.firstOrNull()
             
             primaryTracker?.let {
                 if (it.url.isValidUrl()) {
@@ -311,10 +306,8 @@ object RPCManager {
 
             // Button 2: User Profile Link
             val anilistUser = PrefManager.getVal(PrefName.AnilistUserName, "")
-            val malUser = MAL.username ?: PrefManager.getVal(PrefName.MALUserName, "")
             
             val (userProfileUrl, profileLabel) = when (mode) {
-                "mal" -> (if (malUser.isNotEmpty()) "https://myanimelist.net/profile/$malUser" else null) to "View Profile"
                 "anilist" -> (if (anilistUser.isNotEmpty()) "https://anilist.co/user/$anilistUser/" else null) to "View Profile"
                 "dantotsu" -> (if (anilistUser.isNotEmpty()) "https://dantotsu.app/u/$anilistUser" else null) to "Dantotsu Profile"
                 else -> null to null

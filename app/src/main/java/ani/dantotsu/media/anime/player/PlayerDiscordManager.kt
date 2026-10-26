@@ -41,9 +41,6 @@ class PlayerDiscordManager(
             activity.lifecycleScope.launch {
                 val buttons = mutableListOf<RPC.Link>()
                 buttons.add(RPC.Link("View Anime", "https://anilist.co/anime/${media.id}/"))
-                media.idMAL?.let {
-                    buttons.add(RPC.Link("View on MyAnimeList", "https://myanimelist.net/anime/$it"))
-                }
 
                 val now = System.currentTimeMillis()
                 val currentPosMs = if (player.currentPosition > 0) player.currentPosition else 0L

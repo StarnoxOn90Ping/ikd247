@@ -18,12 +18,11 @@ class UrlMedia : Activity() {
                 ?: extras?.getInt("media", 0)?.takeIf { it != 0 }
             if (mediaId != null && mediaId > 0) {
                 val mediaType = extras?.getString("mediaType") ?: "ANIME"
-                val isMAL = extras?.getBoolean("mal", false) ?: false
                 val continueMedia = extras?.getBoolean("continue", true) ?: true
                 loadMedia = mediaId
                 startMainActivity(
                     this,
-                    createMediaBundle(mediaId, isMAL, continueMedia, mediaType)
+                    createMediaBundle(mediaId, continueMedia, mediaType)
                 )
             } else {
                 startMainActivity(this)
@@ -62,7 +61,6 @@ class UrlMedia : Activity() {
             else -> uri.getQueryParameter("id")
         }
 
-        val isMAL = uri.getBooleanQueryParameter("mal", false) || uri.getQueryParameter("source")?.equals("mal", ignoreCase = true) == true
         val continueMedia = uri.getBooleanQueryParameter("continue", false) || action == "watch" || action == "read"
 
         when (action) {
@@ -72,7 +70,7 @@ class UrlMedia : Activity() {
                     loadMedia = id
                     startMainActivity(
                         this,
-                        createMediaBundle(id, isMAL, continueMedia, "ANIME")
+                        createMediaBundle(id, continueMedia, "ANIME")
                     )
                 } else {
                     startMainActivity(this)
@@ -84,7 +82,7 @@ class UrlMedia : Activity() {
                     loadMedia = id
                     startMainActivity(
                         this,
-                        createMediaBundle(id, isMAL, continueMedia, "MANGA")
+                        createMediaBundle(id, continueMedia, "MANGA")
                     )
                 } else {
                     startMainActivity(this)
@@ -97,7 +95,7 @@ class UrlMedia : Activity() {
                     loadMedia = id
                     startMainActivity(
                         this,
-                        createMediaBundle(id, isMAL, continueMedia, type)
+                        createMediaBundle(id, continueMedia, type)
                     )
                 } else {
                     startMainActivity(this)
@@ -134,11 +132,9 @@ class UrlMedia : Activity() {
 
         var id: Int? = intent?.extras?.getInt("mediaId", 0)?.takeIf { it != 0 }
             ?: intent?.extras?.getInt("media", 0) ?: 0
-        var isMAL = false
         var continueMedia = true
         if (id == 0) {
             continueMedia = false
-            isMAL = host.contains("myanimelist.net")
             id = segments.getOrNull(1)?.toIntOrNull()
         } else {
             loadMedia = id
@@ -152,7 +148,7 @@ class UrlMedia : Activity() {
 
         startMainActivity(
             this,
-            createMediaBundle(id ?: 0, isMAL, continueMedia, mediaType)
+            createMediaBundle(id ?: 0, continueMedia, mediaType)
         )
     }
 
@@ -162,11 +158,10 @@ class UrlMedia : Activity() {
             val id = data.pathSegments?.getOrNull(1)?.toIntOrNull()
                 ?: intent?.extras?.getInt("mediaId", 0)?.takeIf { it != 0 }
                 ?: intent?.extras?.getInt("media", 0) ?: 0
-            val isMAL = data.host != "anilist.co"
             val mediaType = type?.uppercase()
             startMainActivity(
                 this,
-                createMediaBundle(id, isMAL, false, mediaType)
+                createMediaBundle(id, false, mediaType)
             )
         } else {
             val username = data.pathSegments?.getOrNull(1)
@@ -178,10 +173,9 @@ class UrlMedia : Activity() {
         }
     }
 
-    private fun createMediaBundle(id: Int, isMAL: Boolean, continueMedia: Boolean, mediaType: String?): Bundle {
+    private fun createMediaBundle(id: Int, continueMedia: Boolean, mediaType: String?): Bundle {
         return Bundle().apply {
             putInt("mediaId", id)
-            putBoolean("mal", isMAL)
             putBoolean("continue", continueMedia)
             if (mediaType != null) putString("mediaType", mediaType)
         }

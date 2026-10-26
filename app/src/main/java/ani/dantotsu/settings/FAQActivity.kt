@@ -76,16 +76,6 @@ class FAQActivity : AppCompatActivity() {
                 currContext()?.getString(R.string.answer_9) ?: ""
             ),
             Triple(
-                R.drawable.ic_round_smart_button_24,
-                currContext()?.getString(R.string.question_10) ?: "",
-                currContext()?.getString(R.string.answer_10) ?: ""
-            ),
-            Triple(
-                R.drawable.ic_round_smart_button_24,
-                currContext()?.getString(R.string.question_11) ?: "",
-                currContext()?.getString(R.string.answer_11) ?: ""
-            ),
-            Triple(
                 R.drawable.ic_round_info_24,
                 currContext()?.getString(R.string.question_12) ?: "",
                 currContext()?.getString(R.string.answer_12) ?: ""

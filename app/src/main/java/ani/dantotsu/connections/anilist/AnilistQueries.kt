@@ -23,8 +23,6 @@ import ani.dantotsu.media.Author
 import ani.dantotsu.media.Character
 import ani.dantotsu.media.Media
 import ani.dantotsu.media.Studio
-import ani.dantotsu.others.MalScraper
-import ani.dantotsu.connections.mal.MAL
 import ani.dantotsu.profile.User
 import ani.dantotsu.settings.saving.PrefManager
 import ani.dantotsu.settings.saving.PrefName
@@ -165,10 +163,10 @@ class AnilistQueries {
         return true
     }
 
-    suspend fun getMedia(id: Int, mal: Boolean = false, type: String? = null): Media? {
+    suspend fun getMedia(id: Int, type: String? = null): Media? {
         val typeArg = if (type != null) "type: $type," else ""
         val response = executeQuery<Query.Media>(
-            """{Media($typeArg${if (!mal) "id:" else "idMal:"}$id){id idMal status chapters episodes nextAiringEpisode{episode}type meanScore isAdult isFavourite format bannerImage coverImage{large}title{english romaji userPreferred}mediaListEntry{progress private score(format:POINT_100)status}}}""",
+            """{Media($typeArg id:$id){id idMal status chapters episodes nextAiringEpisode{episode}type meanScore isAdult isFavourite format bannerImage coverImage{large}title{english romaji userPreferred}mediaListEntry{progress private score(format:POINT_100)status}}}""",
             force = true
         )
         val fetchedMedia = response?.data?.media ?: return null
@@ -534,9 +532,6 @@ class AnilistQueries {
                 }
                 if (media.idMAL == null && media.id != 0) {
                     media.idMAL = ani.dantotsu.others.IdMappers.getMalId(media.id)
-                }
-                if (media.idMAL != null) {
-                    MalScraper.loadMedia(media)
                 }
             }
             awaitAll(anilist, mal)
@@ -1046,22 +1041,6 @@ class AnilistQueries {
 
 
     private suspend fun bannerImage(type: String): String? {
-        if (PrefManager.getVal<Boolean>(PrefName.RescueMode)) {
-            if (MAL.token != null) {
-                val isAnime = type == "ANIME"
-                val status = if (isAnime) "watching" else "reading"
-                val listRes = tryWithSuspend {
-                    if (isAnime) MAL.query.getUserAnimeList(status = status, limit = 25)
-                    else MAL.query.getUserMangaList(status = status, limit = 25)
-                }
-                val randomCover = listRes?.data?.mapNotNull {
-                    it.node.mainPicture?.large ?: it.node.mainPicture?.medium
-                }?.randomOrNull()
-                if (randomCover != null) return randomCover
-            }
-            return MAL.avatar
-        }
-
         val image = BannerImage(
             PrefManager.getCustomVal("banner_${type}_url", ""),
             PrefManager.getCustomVal("banner_${type}_time", 0L)
