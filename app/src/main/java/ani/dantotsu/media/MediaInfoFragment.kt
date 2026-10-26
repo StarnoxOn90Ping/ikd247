@@ -694,11 +694,6 @@ class MediaInfoFragment : Fragment() {
                             }
                         }
                     }
-                    } else {
-                    bind.mediaInfoGenresProgressBar.visibility = View.GONE
-                    media.genres.forEach { genre ->
-                         adapter.addGenre(Pair(genre, ""))
-                    }
                     parent.addView(bind.root)
                 }
 
