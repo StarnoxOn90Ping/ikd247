@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- The offline preload can be hundreds of MB and is re-creatable, so keep it out of Android backups. -->
-<full-backup-content>
-    <exclude domain="file" path="offline_cache/" />
-</full-backup-content>
