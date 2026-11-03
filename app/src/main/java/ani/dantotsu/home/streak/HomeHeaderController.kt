@@ -30,7 +30,7 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
     private val ctx = b.root.context
     private val d = ctx.resources.displayMetrics.density
 
-    private val primary = themeColor(com.google.android.material.R.attr.colorPrimary)
+    private val primary = themeColor(androidx.appcompat.R.attr.colorPrimary)
     private val surface = themeColor(com.google.android.material.R.attr.colorSurface)
     private val onSurface = themeColor(com.google.android.material.R.attr.colorOnSurface)
 
@@ -248,5 +248,8 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
             }
             box.getChildAt(i).background = shape
         }
+    }
+}
+
     }
 }
