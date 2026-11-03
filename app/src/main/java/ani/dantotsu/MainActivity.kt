@@ -475,7 +475,11 @@ class MainActivity : AppCompatActivity() {
     private fun showOfflineBanner() {
         if (offlineBanner != null || !::binding.isInitialized) return
         offlineModeChosen = true
-        offlineBanner = OfflineBanner(binding.offlineBanner.root, binding.offlineBanner)
+        // inflated here (not <include>d in activity_main.xml) so no layout edit is needed
+        val bannerBinding = ani.dantotsu.databinding.ViewOfflineBannerBinding
+            .inflate(layoutInflater, binding.root as ViewGroup, false)
+        (binding.root as ViewGroup).addView(bannerBinding.root)
+        offlineBanner = OfflineBanner(bannerBinding.root, bannerBinding)
             .also { banner ->
                 banner.show()
                 offlinePill?.onRecoveredChanged = { banner.setRecovered(it) }
