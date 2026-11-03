@@ -43,6 +43,7 @@ import ani.dantotsu.home.AnimeFragment
 import ani.dantotsu.home.HomeFragment
 import ani.dantotsu.home.LoginFragment
 import ani.dantotsu.home.MangaFragment
+import ani.dantotsu.home.OfflineLaunchDialog
 import ani.dantotsu.home.OfflinePill
 import ani.dantotsu.media.MediaDetailsActivity
 import ani.dantotsu.notifications.TaskScheduler
@@ -87,6 +88,7 @@ class MainActivity : AppCompatActivity() {
     private var load = false
     private var sideButtons: ani.dantotsu.home.HomeSideButtons? = null
     private var offlinePill: OfflinePill? = null
+    private var offlineDialog: OfflineLaunchDialog? = null
 
     /** True when the app was launched without internet: only Home (cached) is available. */
     private var offlineMode = false
@@ -330,6 +332,11 @@ class MainActivity : AppCompatActivity() {
             }
             binding.includedNavbar.navbarContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                 bottomMargin = navBarHeight
+            }
+            // offline at launch: ask whether to retry, use the cached Home, or open Downloads.
+            // Only once per launch (not again after a rotation / recreate).
+            if (offlineMode && savedInstanceState == null) {
+                offlineDialog = OfflineLaunchDialog(this).also { it.show() }
             }
         }
 
@@ -711,6 +718,8 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         offlinePill?.release()
         offlinePill = null
+        offlineDialog?.dismiss()
+        offlineDialog = null
         if (::binding.isInitialized) {
             binding.viewpager.adapter = null
         }
