@@ -123,6 +123,14 @@ class PlayerProgressManager(
                 (duration > 0f && player.currentPosition.toFloat() / duration > PrefManager.getVal<Float>(PrefName.WatchPercentage))
         val episode0 = currentEpisodeIndex == 0 && PrefManager.getVal<Boolean>(PrefName.ChapterZeroPlayer)
 
+        // Streak: an episode counts once it is 80% watched (independent of the Anilist threshold)
+        if (!incognito && (forceComplete ||
+                    player.playbackState == Player.STATE_ENDED ||
+                    (duration > 0f && player.currentPosition.toFloat() / duration >= 0.8f))
+        ) {
+            ani.dantotsu.home.streak.StreakManager.recordActivity()
+        }
+
         if (!incognito && (episodeEnd || episode0) && Anilist.userid != null) {
             if (PrefManager.getCustomVal("${m.id}_save_progress", true) &&
                 (if (m.isAdult) PrefManager.getVal(PrefName.UpdateForHPlayer) else true)

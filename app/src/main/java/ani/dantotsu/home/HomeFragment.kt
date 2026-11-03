@@ -30,6 +30,7 @@ import ani.dantotsu.connections.anilist.AnilistHomeViewModel
 import ani.dantotsu.connections.anilist.getUserId
 import ani.dantotsu.currContext
 import ani.dantotsu.databinding.FragmentHomeBinding
+import ani.dantotsu.home.streak.HomeHeaderController
 import ani.dantotsu.home.status.UserStatusAdapter
 import ani.dantotsu.loadImage
 import ani.dantotsu.media.Media
@@ -62,6 +63,7 @@ import kotlin.math.min
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
+    private var headerController: HomeHeaderController? = null
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -72,6 +74,8 @@ class HomeFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        headerController?.release()
+        headerController = null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             _binding?.homeScroll?.setOnScrollChangeListener(null as View.OnScrollChangeListener?)
         }
@@ -85,15 +89,15 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val scope = viewLifecycleOwner.lifecycleScope
         Logger.log("HomeFragment")
+        headerController = HomeHeaderController(binding).also { it.start() }
         fun load() {
             Logger.log("Loading HomeFragment")
             if (activity != null && _binding != null) viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
                 val currentBinding = _binding ?: return@launch
                 currentBinding.homeUserName.text = Anilist.username
+                headerController?.styleUsername()
                 currentBinding.homeUserAvatar.loadImage(Anilist.avatar)
 
-                currentBinding.homeUserEpisodesWatched.text = Anilist.episodesWatched.toString()
-                currentBinding.homeUserChaptersRead.text = Anilist.chapterRead.toString()
                 currentBinding.homeNotificationCount.isVisible = Anilist.unreadNotificationCount > 0
                         && PrefManager.getVal<Boolean>(PrefName.ShowNotificationRedDot) == true
                 currentBinding.homeNotificationCount.text = Anilist.unreadNotificationCount.toString()
@@ -552,12 +556,6 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
         var running = false
         val live = Refresh.activity.getOrPut(1) { MutableLiveData(true) }
 
-        Anilist.userStatsChanged.observe(viewLifecycleOwner) {
-            val b = _binding ?: return@observe
-            b.homeUserEpisodesWatched.text = Anilist.episodesWatched?.toString() ?: "—"
-            b.homeUserChaptersRead.text = Anilist.chapterRead?.toString() ?: "—"
-        }
-
         run {
             val alOnlySections = listOf(
                 binding.homeFavAnimeContainer,
@@ -656,10 +654,18 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
             binding.homeNotificationCount.isVisible = Anilist.unreadNotificationCount > 0
                     && PrefManager.getVal<Boolean>(PrefName.ShowNotificationRedDot) == true
             binding.homeNotificationCount.text = Anilist.unreadNotificationCount.toString()
+            headerController?.refresh()
             // Coming back from a media page / the player: pick up progress made in the meantime.
             if (Anilist.initialized) {
                 viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                     tryWithSuspend { Anilist.query.refreshUserStats() }
+                }
+            }
+        }
+        super.onResume()
+    }
+}
+   tryWithSuspend { Anilist.query.refreshUserStats() }
                 }
             }
         }

@@ -1394,6 +1394,9 @@ class MangaReaderActivity : AppCompatActivity() {
         val chapterCompleted = forceComplete || (maxChapterPage > 0 && maxChapterPage - currentChapterPage <= 1)
         if (chapterCompleted) {
             maybeHandleSubscriptionAfterChapterCompletion()
+            if (!PrefManager.getVal<Boolean>(PrefName.Incognito)) {
+                ani.dantotsu.home.streak.StreakManager.recordActivity()
+            }
         }
         if (chapterCompleted && Anilist.userid != null) {
             showProgressDialog =
