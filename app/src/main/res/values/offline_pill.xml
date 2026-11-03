@@ -22,4 +22,44 @@
     <string name="offline_banner_subtitle" translatable="false">Your downloads are one tap away</string>
     <string name="offline_banner_back_title" translatable="false">Back online</string>
     <string name="offline_banner_back_subtitle" translatable="false">Tap Reconnect to load everything</string>
+
+    <string name="offline_screen_title" translatable="false">You\'re offline</string>
+    <string name="offline_screen_hint" translatable="false">Your downloads are one tap away</string>
+    <string name="offline_screen_back_kicker" translatable="false">SIGNAL RESTORED</string>
+    <string name="offline_screen_back_title" translatable="false">Back online</string>
+    <string name="offline_screen_back_line" translatable="false">Tap Reconnect below to load everything.</string>
+    <string name="offline_screen_back_hint" translatable="false">Welcome back to the internet</string>
+
+    <string-array name="offline_lines_generic" translatable="false">
+        <item>The internet took a day off. Your downloads didn\'t.</item>
+        <item>No Wi-Fi, no problem. Well, mostly no problem.</item>
+        <item>Even the cloud needs a nap sometimes.</item>
+        <item>Somewhere, a router is feeling very smug.</item>
+        <item>Plot twist: the episodes were on your phone all along.</item>
+        <item>Offline, but never out of anime.</item>
+        <item>Have you tried turning the Wi-Fi off and on again? We\'ll wait.</item>
+        <item>It\'s quiet here. Too quiet.</item>
+        <item>No signal. Maximum focus.</item>
+        <item>The web is down, but your watchlist isn\'t.</item>
+    </string-array>
+    <string-array name="offline_lines_morning" translatable="false">
+        <item>Good morning! The internet hasn\'t woken up yet.</item>
+        <item>Coffee first, Wi-Fi later.</item>
+        <item>Rise and shine. Your downloads are already awake.</item>
+    </string-array>
+    <string-array name="offline_lines_afternoon" translatable="false">
+        <item>Taking a lunch break from the internet?</item>
+        <item>Afternoon slump? So is your signal.</item>
+        <item>Perfect time for an episode you saved earlier.</item>
+    </string-array>
+    <string-array name="offline_lines_evening" translatable="false">
+        <item>Wi-Fi\'s gone, but the evening is young.</item>
+        <item>Great night to rewatch an old favourite.</item>
+        <item>Snacks ready? The signal isn\'t, but the downloads are.</item>
+    </string-array>
+    <string-array name="offline_lines_night" translatable="false">
+        <item>Late night and offline: peak binge conditions.</item>
+        <item>The signal went to bed. You didn\'t.</item>
+        <item>One more episode won\'t hurt. Go on.</item>
+    </string-array>
 </resources>

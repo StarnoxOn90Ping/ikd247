@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Full-screen replacement for the cached Home in "Offline mode". Sits under the pill + side buttons. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground"
+    android:clickable="true"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:focusable="true">
+
+    <LinearLayout
+        android:id="@+id/offlineScreenContent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingHorizontal="32dp">
+
+        <FrameLayout
+            android:id="@+id/offlineScreenIconBox"
+            android:layout_width="190dp"
+            android:layout_height="190dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+
+            <View
+                android:id="@+id/offlineScreenGlow"
+                android:layout_width="340dp"
+                android:layout_height="340dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_offline_glow" />
+
+            <View
+                android:id="@+id/offlineScreenRingOne"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_offline_pulse" />
+
+            <View
+                android:id="@+id/offlineScreenRingTwo"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_offline_pulse" />
+
+            <FrameLayout
+                android:id="@+id/offlineScreenDisc"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_offline_icon_disc">
+
+                <ImageView
+                    android:id="@+id/offlineScreenIcon"
+                    android:layout_width="70dp"
+                    android:layout_height="70dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_wifi_off_24"
+                    app:tint="@color/offline_accent" />
+            </FrameLayout>
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/offlineScreenKicker"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:alpha="0.85"
+            android:fontFamily="@font/poppins_bold"
+            android:letterSpacing="0.2"
+            android:textColor="@color/offline_accent"
+            android:textSize="12sp"
+            tools:text="GOOD EVENING" xmlns:tools="http://schemas.android.com/tools" />
+
+        <TextView
+            android:id="@+id/offlineScreenTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="@font/poppins_bold"
+            android:text="@string/offline_screen_title"
+            android:textColor="@color/offline_accent"
+            android:textSize="36sp" />
+
+        <TextView
+            android:id="@+id/offlineScreenLine"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:alpha="0.8"
+            android:fontFamily="@font/poppins"
+            android:gravity="center"
+            android:lineSpacingMultiplier="1.15"
+            android:minLines="2"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/offlineScreenHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:alpha="0.5"
+            android:fontFamily="@font/poppins"
+            android:text="@string/offline_screen_hint"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="12sp" />
+    </LinearLayout>
+</FrameLayout>

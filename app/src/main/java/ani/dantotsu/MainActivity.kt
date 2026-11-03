@@ -43,7 +43,7 @@ import ani.dantotsu.home.AnimeFragment
 import ani.dantotsu.home.HomeFragment
 import ani.dantotsu.home.LoginFragment
 import ani.dantotsu.home.MangaFragment
-import ani.dantotsu.home.OfflineBanner
+import ani.dantotsu.home.OfflineScreen
 import ani.dantotsu.home.OfflineLaunchDialog
 import ani.dantotsu.home.OfflinePill
 import ani.dantotsu.media.MediaDetailsActivity
@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity() {
     private var sideButtons: ani.dantotsu.home.HomeSideButtons? = null
     private var offlinePill: OfflinePill? = null
     private var offlineDialog: OfflineLaunchDialog? = null
-    private var offlineBanner: OfflineBanner? = null
+    private var offlineScreen: OfflineScreen? = null
     private var offlineModeChosen = false
 
     /** True when the app was launched without internet: only Home (cached) is available. */
@@ -471,20 +471,30 @@ class MainActivity : AppCompatActivity() {
         window.navigationBarColor = ContextCompat.getColor(this, android.R.color.transparent)
     }
 
-    /** "Offline mode" from the launch popup: cached Home + pill as usual, plus the fancy banner. */
+    /**
+     * "Offline mode" from the launch popup: the cached Home is covered by an empty, fancy offline
+     * screen. It is inserted right above the pager, so the pill and the calendar/downloads buttons
+     * (in the navbar include, added after it) stay on top and keep working.
+     */
     private fun showOfflineBanner() {
-        if (offlineBanner != null || !::binding.isInitialized) return
+        if (offlineScreen != null || !::binding.isInitialized) return
         offlineModeChosen = true
-        // inflated here (not <include>d in activity_main.xml) so no layout edit is needed
-        val bannerBinding = ani.dantotsu.databinding.ViewOfflineBannerBinding
-            .inflate(layoutInflater, binding.root as ViewGroup, false)
-        (binding.root as ViewGroup).addView(bannerBinding.root)
-        offlineBanner = OfflineBanner(bannerBinding.root, bannerBinding)
-            .also { banner ->
-                banner.show()
-                offlinePill?.onRecoveredChanged = { banner.setRecovered(it) }
-                if (isOnline(this)) banner.setRecovered(true)
-            }
+        val root = binding.root as ViewGroup
+        val screenBinding = ani.dantotsu.databinding.ViewOfflineScreenBinding
+            .inflate(layoutInflater, root, false)
+        root.addView(screenBinding.root, root.indexOfChild(binding.viewpager) + 1)
+        // keep the centred content clear of the pill / buttons at the bottom
+        screenBinding.offlineScreenContent.setPadding(
+            screenBinding.offlineScreenContent.paddingLeft,
+            screenBinding.offlineScreenContent.paddingTop,
+            screenBinding.offlineScreenContent.paddingRight,
+            (96 * resources.displayMetrics.density).toInt() + navBarHeight
+        )
+        offlineScreen = OfflineScreen(screenBinding).also { screen ->
+            screen.show()
+            offlinePill?.onRecoveredChanged = { screen.setRecovered(it) }
+            if (isOnline(this)) screen.setRecovered(true)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -749,8 +759,8 @@ class MainActivity : AppCompatActivity() {
         offlinePill = null
         offlineDialog?.dismiss()
         offlineDialog = null
-        offlineBanner?.release()
-        offlineBanner = null
+        offlineScreen?.release()
+        offlineScreen = null
         if (::binding.isInitialized) {
             binding.viewpager.adapter = null
         }
