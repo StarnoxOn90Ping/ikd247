@@ -4,12 +4,14 @@ import android.animation.ValueAnimator
 import android.graphics.LinearGradient
 import android.graphics.Matrix
 import android.graphics.Shader
-import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
 import android.view.HapticFeedbackConstants
 import android.view.View
+import android.view.ViewGroup
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
-import android.widget.LinearLayout
+import android.widget.FrameLayout
 import androidx.core.graphics.ColorUtils
 import ani.dantotsu.R
 import ani.dantotsu.databinding.FragmentHomeBinding
@@ -17,11 +19,13 @@ import com.google.android.material.color.MaterialColors
 import kotlin.random.Random
 
 /**
- * Drives the redesigned Home header:
- *  - the big, softly shimmering username
- *  - the streak card (fire, count, funny line, last-7-days dots)
- *  - the fire on the Anime / Manga list buttons once the streak reaches
- *    [StreakManager.BUTTON_FIRE_STREAK]
+ * Drives the streak shown in the left of the Home header:
+ *
+ *   [big fire]  [number on fire]  [short funny line]            [search] [pfp]
+ *
+ * It also sets the fire burning along the bottom of the Anime / Manga list buttons once the
+ * streak reaches [StreakManager.BUTTON_FIRE_STREAK]. That fire is added to the cards from code,
+ * so the list buttons' own layout stays exactly as it was.
  *
  * Everything here reads local data only, so it works the same in Pre-cached (offline) mode.
  */
@@ -29,106 +33,85 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
 
     private val ctx = b.root.context
     private val d = ctx.resources.displayMetrics.density
+    private val onSurface = MaterialColors.getColor(
+        b.root, com.google.android.material.R.attr.colorOnSurface
+    )
 
-    private val primary = themeColor(androidx.appcompat.R.attr.colorPrimary)
-    private val surface = themeColor(com.google.android.material.R.attr.colorSurface)
-    private val onSurface = themeColor(com.google.android.material.R.attr.colorOnSurface)
-
-    private var nameAnim: ValueAnimator? = null
+    private var waveAnim: ValueAnimator? = null
+    private var glowAnim: ValueAnimator? = null
     private var countAnim: ValueAnimator? = null
+    private var styledStatus: StreakManager.Status? = null
     private var shown = false
     private var lastCount = -1
     private var lastLineKey = ""
     private var tapCount = 0
     private var released = false
 
-    private fun themeColor(attr: Int) = MaterialColors.getColor(b.root, attr)
+    private var animeFire: FireView? = null
+    private var mangaFire: FireView? = null
 
     // ---- setup --------------------------------------------------------------------------------
 
     fun start() {
-        // card look: translucent surface, theme-coloured hairline and a soft theme wash
-        b.homeStreakCard.setCardBackgroundColor(ColorUtils.setAlphaComponent(surface, 205))
-        b.homeStreakCard.strokeColor = ColorUtils.setAlphaComponent(primary, 120)
-        b.homeStreakGlow.background = GradientDrawable(
-            GradientDrawable.Orientation.LEFT_RIGHT,
-            intArrayOf(ColorUtils.setAlphaComponent(primary, 80), ColorUtils.setAlphaComponent(primary, 0))
-        )
-
-        b.homeStreakCard.setOnClickListener {
+        b.homeUserDataProgressBar.visibility = View.GONE
+        b.homeUserDataContainer.visibility = View.VISIBLE
+        b.homeUserDataContainer.setOnClickListener {
             tapCount++
             it.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
             b.homeStreakFire.flare()
+            b.homeStreakNumFire.flare()
             refresh(forceNewLine = true)
         }
-
-        styleUsername()
         refresh()
 
-        // entrance: the card rises into place
-        b.homeStreakCard.apply {
-            visibility = View.VISIBLE
-            alpha = 0f
-            translationY = 18f * d
-            animate().alpha(1f).translationY(0f)
-                .setStartDelay(150L).setDuration(520L)
+        // entrance: the three parts fade up one after another. (Alpha is animated on the leaf
+        // views only, never on a parent, so nothing gets clipped by an off-screen layer.)
+        listOf(b.homeStreakFire, b.homeStreakNumberBox, b.homeStreakLine).forEachIndexed { i, v ->
+            val target = v.alpha
+            v.alpha = 0f
+            v.translationY = 16f * d
+            v.animate().alpha(target).translationY(0f)
+                .setStartDelay(120L + i * 120L).setDuration(520L)
                 .setInterpolator(DecelerateInterpolator()).start()
         }
     }
 
     fun release() {
         released = true
-        nameAnim?.cancel(); nameAnim = null
+        waveAnim?.cancel(); waveAnim = null
+        glowAnim?.cancel(); glowAnim = null
         countAnim?.cancel(); countAnim = null
-        b.homeUserName.paint.shader = null
+        b.homeStreakCount.paint.shader = null
     }
 
-    // ---- username -----------------------------------------------------------------------------
-
-    /** Theme-coloured gradient with a slow light wave running through the name. Call after the text is set. */
-    fun styleUsername() {
-        val tv = b.homeUserName
-        tv.post {
-            if (released) return@post
-            val text = tv.text?.toString().orEmpty()
-            val w = tv.paint.measureText(text).coerceAtLeast(1f)
-            val bright = ColorUtils.blendARGB(primary, 0xFFFFFFFF.toInt(), 0.75f)
-            val shader = LinearGradient(
-                0f, 0f, w, 0f, intArrayOf(primary, bright, primary), null, Shader.TileMode.MIRROR
-            )
-            tv.paint.shader = shader
-            val m = Matrix()
-            nameAnim?.cancel()
-            // the pattern repeats every [w] pixels, so sliding by exactly [w] loops without a jump
-            nameAnim = ValueAnimator.ofFloat(0f, w).apply {
-                duration = 5200L
-                repeatCount = ValueAnimator.INFINITE
-                interpolator = LinearInterpolator()
-                addUpdateListener {
-                    m.setTranslate(it.animatedValue as Float, 0f)
-                    shader.setLocalMatrix(m)
-                    tv.invalidate()
-                }
-                start()
-            }
-        }
-    }
-
-    // ---- streak -------------------------------------------------------------------------------
+    // ---- refresh ------------------------------------------------------------------------------
 
     fun refresh(forceNewLine: Boolean = false) {
         if (released) return
         val snap = StreakManager.snapshot()
+        val level = StreakManager.fireLevel(snap.count)
+        val dim = when (snap.status) {
+            StreakManager.Status.ACTIVE -> 0f
+            StreakManager.Status.AT_RISK, StreakManager.Status.GRACE -> 0.45f
+            else -> 1f
+        }
 
-        // fire + count
-        b.homeStreakFire.setLevel(StreakManager.fireLevel(snap.count))
-        b.homeStreakFire.setDim(
-            when (snap.status) {
-                StreakManager.Status.ACTIVE -> 0f
-                StreakManager.Status.AT_RISK, StreakManager.Status.GRACE -> 0.45f
-                else -> 1f
-            }
-        )
+        // big fire on the left
+        b.homeStreakFire.setLevel(level)
+        b.homeStreakFire.setDim(dim)
+
+        // flames licking up behind the number (only while there is a streak)
+        val numFire = b.homeStreakNumFire
+        if (snap.count > 0) {
+            numFire.setMode(FireView.Mode.EDGE)
+            numFire.setLevel(level * 0.8f)
+            numFire.setDim(dim)
+            numFire.visibility = View.VISIBLE
+        } else {
+            numFire.visibility = View.GONE
+        }
+
+        styleNumber(snap.status)
         setCount(snap.count)
 
         // funny line (re-rolled when the situation changes, when tapped, or on a new day)
@@ -136,24 +119,73 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
         if (forceNewLine || key != lastLineKey) {
             lastLineKey = key
             val line = pickLine(snap)
-            if (!shown || forceNewLine) swapLine(line, animate = shown) else b.homeStreakLine.text = line
+            if (shown && forceNewLine) swapLine(line) else b.homeStreakLine.text = line
         }
 
-        renderDots(snap.week)
-
-        // fire on the list buttons from 30 days on
-        val burning = snap.count >= StreakManager.BUTTON_FIRE_STREAK
-        listOf(b.homeAnimeFire, b.homeMangaFire).forEach { f ->
-            if (burning) {
-                f.setMode(FireView.Mode.EDGE)
-                f.setLevel(StreakManager.fireLevel(snap.count))
-                f.setDim(if (snap.status == StreakManager.Status.ACTIVE) 0f else 0.35f)
-                f.visibility = View.VISIBLE
-            } else {
-                f.visibility = View.GONE
-            }
-        }
+        updateButtonFire(snap)
         shown = true
+    }
+
+    // ---- the number ---------------------------------------------------------------------------
+
+    /**
+     * Fire-coloured gradient that slowly rises through the digits, plus a pulsing orange glow.
+     * Muted when the streak is waiting for today's episode, grey when there is no streak.
+     */
+    private fun styleNumber(status: StreakManager.Status) {
+        if (status == styledStatus) return
+        styledStatus = status
+
+        val tv = b.homeStreakCount
+        waveAnim?.cancel(); glowAnim?.cancel()
+
+        val fm = tv.paint.fontMetrics
+        val h = (fm.descent - fm.ascent).coerceAtLeast(1f)
+
+        val fire = intArrayOf(0xFFFF5722.toInt(), 0xFFFFA000.toInt(), 0xFFFFE082.toInt(), 0xFFFFA000.toInt(), 0xFFFF5722.toInt())
+        val grey = ColorUtils.setAlphaComponent(onSurface, 130)
+
+        val burning = status == StreakManager.Status.ACTIVE
+        val muted = status == StreakManager.Status.AT_RISK || status == StreakManager.Status.GRACE
+
+        val colors = when {
+            burning -> fire
+            muted -> fire.map { ColorUtils.blendARGB(it, 0xFF808080.toInt(), 0.5f) }.toIntArray()
+            else -> intArrayOf(grey, grey)
+        }
+        val shader = LinearGradient(0f, 0f, 0f, h, colors, null, Shader.TileMode.MIRROR)
+        tv.paint.shader = shader
+
+        if (burning || muted) {
+            val m = Matrix()
+            // the colour pattern repeats every [h] pixels, so sliding by [h] loops seamlessly
+            waveAnim = ValueAnimator.ofFloat(0f, h).apply {
+                duration = if (burning) 1600L else 3400L
+                repeatCount = ValueAnimator.INFINITE
+                interpolator = LinearInterpolator()
+                addUpdateListener {
+                    m.setTranslate(0f, -(it.animatedValue as Float))
+                    shader.setLocalMatrix(m)
+                    tv.invalidate()
+                }
+                start()
+            }
+            val glow = if (burning) 0xFFFF6D00.toInt() else 0x99B5651D.toInt()
+            val maxR = (if (burning) 16f else 7f) * d
+            glowAnim = ValueAnimator.ofFloat(4f * d, maxR).apply {
+                duration = 900L
+                repeatCount = ValueAnimator.INFINITE
+                repeatMode = ValueAnimator.REVERSE
+                interpolator = AccelerateDecelerateInterpolator()
+                addUpdateListener {
+                    tv.setShadowLayer(it.animatedValue as Float, 0f, 0f, glow)
+                }
+                start()
+            }
+        } else {
+            tv.setShadowLayer(0f, 0f, 0f, 0)
+            tv.invalidate()
+        }
     }
 
     private fun setCount(count: Int) {
@@ -168,17 +200,19 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
                 start()
             }
             b.homeStreakFire.flare(1800L)
+            b.homeStreakNumFire.flare(1800L)
         } else {
             tv.text = count.toString()
         }
         lastCount = count
     }
 
-    private fun swapLine(line: String, animate: Boolean) {
+    // ---- the line -----------------------------------------------------------------------------
+
+    private fun swapLine(line: String) {
         val tv = b.homeStreakLine
-        if (!animate) { tv.text = line; return }
         tv.animate().cancel()
-        tv.animate().alpha(0f).translationY(-6f * d).setDuration(150L).withEndAction {
+        tv.animate().alpha(0f).translationY(-6f * d).setStartDelay(0L).setDuration(150L).withEndAction {
             if (released) return@withEndAction
             tv.text = line
             tv.translationY = 8f * d
@@ -218,35 +252,37 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
         return lines[Random(seed).nextInt(lines.size)]
     }
 
-    private fun renderDots(week: List<StreakManager.Dot>) {
-        val box = b.homeStreakDots
-        val size = (8 * d).toInt()
-        val gap = (3 * d).toInt()
-        if (box.childCount != week.size) {
-            box.removeAllViews()
-            repeat(week.size) {
-                box.addView(View(ctx), LinearLayout.LayoutParams(size, size).apply {
-                    marginStart = gap; marginEnd = gap
-                })
+    // ---- fire on the Anime / Manga list buttons ----------------------------------------------
+
+    private fun updateButtonFire(snap: StreakManager.Snapshot) {
+        val burning = snap.count >= StreakManager.BUTTON_FIRE_STREAK
+        if (burning) {
+            animeFire = animeFire ?: addFire(b.homeAnimeList)
+            mangaFire = mangaFire ?: addFire(b.homeMangaList)
+        }
+        listOfNotNull(animeFire, mangaFire).forEach { f ->
+            if (burning) {
+                f.setLevel(StreakManager.fireLevel(snap.count))
+                f.setDim(if (snap.status == StreakManager.Status.ACTIVE) 0f else 0.35f)
+                f.visibility = View.VISIBLE
+            } else {
+                f.visibility = View.GONE
             }
         }
-        week.forEachIndexed { i, dot ->
-            val isToday = i == week.lastIndex
-            val shape = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                when (dot) {
-                    StreakManager.Dot.LIT -> setColor(primary)
-                    StreakManager.Dot.GRACE -> {
-                        setColor(ColorUtils.setAlphaComponent(primary, 70))
-                        setStroke((1.5f * d).toInt(), primary)
-                    }
-                    StreakManager.Dot.EMPTY -> {
-                        setColor(ColorUtils.setAlphaComponent(onSurface, 50))
-                        if (isToday) setStroke((1.5f * d).toInt(), ColorUtils.setAlphaComponent(primary, 170))
-                    }
-                }
-            }
-            box.getChildAt(i).background = shape
-        }
+    }
+
+    /** Adds a fire strip to a list card, between its dark scrim and its label (index 2). */
+    private fun addFire(card: ViewGroup): FireView {
+        val fire = FireView(ctx).apply { setMode(FireView.Mode.EDGE) }
+        card.addView(
+            fire,
+            minOf(2, card.childCount),
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                (44 * d).toInt(),
+                Gravity.BOTTOM
+            )
+        )
+        return fire
     }
 }

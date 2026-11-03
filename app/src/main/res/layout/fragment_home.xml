@@ -59,63 +59,81 @@
                         android:baselineAligned="false"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:padding="32dp">
+                        android:paddingHorizontal="24dp"
+                        android:paddingVertical="32dp">
 
-                        <FrameLayout
+                        <LinearLayout
+                            android:id="@+id/homeUserDataContainer"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:minHeight="64dp">
+                            android:clickable="true"
+                            android:clipChildren="false"
+                            android:clipToPadding="false"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:minHeight="64dp"
+                            android:orientation="horizontal"
+                            android:visibility="gone"
+                            tools:visibility="visible">
 
-                            <LinearLayout
-                                android:id="@+id/homeUserDataContainer"
-                                android:layout_width="match_parent"
+                            <ani.dantotsu.home.streak.FireView
+                                android:id="@+id/homeStreakFire"
+                                android:layout_width="52dp"
+                                android:layout_height="58dp" />
+
+                            <FrameLayout
+                                android:id="@+id/homeStreakNumberBox"
+                                android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_gravity="center_vertical"
-                                android:orientation="vertical"
-                                android:visibility="gone"
-                                tools:visibility="visible">
+                                android:layout_marginStart="2dp"
+                                android:clipChildren="false"
+                                android:clipToPadding="false">
+
+                                <ani.dantotsu.home.streak.FireView
+                                    android:id="@+id/homeStreakNumFire"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="30dp"
+                                    android:layout_gravity="bottom" />
 
                                 <TextView
-                                    android:id="@+id/homeUserName"
-                                    android:layout_width="match_parent"
+                                    android:id="@+id/homeStreakCount"
+                                    android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:ellipsize="end"
                                     android:fontFamily="@font/poppins_bold"
-                                    android:gravity="start"
                                     android:includeFontPadding="false"
-                                    android:letterSpacing="0.01"
-                                    android:maxLines="1"
-                                    android:shadowColor="#99000000"
-                                    android:shadowDx="0"
-                                    android:shadowDy="2"
-                                    android:shadowRadius="14"
-                                    android:text="@string/username"
-                                    android:textSize="30sp"
-                                    app:autoSizeMaxTextSize="30sp"
-                                    app:autoSizeMinTextSize="18sp"
-                                    app:autoSizeTextType="uniform" />
+                                    android:minWidth="22dp"
+                                    android:padding="6dp"
+                                    android:textSize="34sp"
+                                    tools:text="12" />
+                            </FrameLayout>
 
-                                <View
-                                    android:id="@+id/homeUserNameAccent"
-                                    android:layout_width="36dp"
-                                    android:layout_height="3dp"
-                                    android:layout_marginTop="8dp"
-                                    android:background="@drawable/bg_name_accent" />
-
-                            </LinearLayout>
-
-                            <ProgressBar
-                                android:id="@+id/homeUserDataProgressBar"
-                                style="?android:attr/progressBarStyleHorizontal"
-                                android:layout_width="match_parent"
+                            <TextView
+                                android:id="@+id/homeStreakLine"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_gravity="center"
-                                android:layout_marginEnd="16dp"
-                                android:indeterminate="true"
-                                tools:visibility="gone" />
+                                android:layout_marginStart="12dp"
+                                android:layout_marginEnd="12dp"
+                                android:layout_weight="1"
+                                android:alpha="0.85"
+                                android:fontFamily="@font/poppins"
+                                android:gravity="start|center_vertical"
+                                android:lineSpacingMultiplier="1.05"
+                                android:maxLines="3"
+                                app:autoSizeMaxTextSize="12sp"
+                                app:autoSizeMinTextSize="8sp"
+                                app:autoSizeTextType="uniform"
+                                tools:text="Flickering. One episode saves it." />
 
-                        </FrameLayout>
+                        </LinearLayout>
+
+                        <ProgressBar
+                            android:id="@+id/homeUserDataProgressBar"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:indeterminate="true"
+                            android:visibility="gone" />
 
                         <FrameLayout
                             android:layout_width="wrap_content"
@@ -185,98 +203,6 @@
 
                     </LinearLayout>
 
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/homeStreakCard"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="32dp"
-                        android:layout_marginTop="2dp"
-                        android:layout_marginEnd="32dp"
-                        android:layout_marginBottom="10dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:visibility="gone"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="0dp"
-                        app:strokeWidth="1dp"
-                        tools:visibility="visible">
-
-                        <View
-                            android:id="@+id/homeStreakGlow"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal"
-                            android:paddingStart="10dp"
-                            android:paddingTop="8dp"
-                            android:paddingEnd="16dp"
-                            android:paddingBottom="8dp">
-
-                            <ani.dantotsu.home.streak.FireView
-                                android:id="@+id/homeStreakFire"
-                                android:layout_width="52dp"
-                                android:layout_height="58dp" />
-
-                            <LinearLayout
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="6dp"
-                                android:layout_weight="1"
-                                android:orientation="vertical">
-
-                                <LinearLayout
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:baselineAligned="true"
-                                    android:orientation="horizontal">
-
-                                    <TextView
-                                        android:id="@+id/homeStreakCount"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:fontFamily="@font/poppins_bold"
-                                        android:includeFontPadding="false"
-                                        android:textColor="?attr/colorPrimary"
-                                        android:textSize="28sp"
-                                        tools:text="12" />
-
-                                    <TextView
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:layout_marginStart="6dp"
-                                        android:alpha="0.7"
-                                        android:fontFamily="@font/poppins"
-                                        android:includeFontPadding="false"
-                                        android:text="@string/streak_label"
-                                        android:textSize="12sp" />
-                                </LinearLayout>
-
-                                <TextView
-                                    android:id="@+id/homeStreakLine"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginTop="2dp"
-                                    android:alpha="0.85"
-                                    android:fontFamily="@font/poppins"
-                                    android:maxLines="2"
-                                    android:textSize="11.5sp"
-                                    tools:text="Your flame is flickering. One episode saves it." />
-                            </LinearLayout>
-
-                            <LinearLayout
-                                android:id="@+id/homeStreakDots"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="8dp"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:id="@+id/homeListContainer"
                         android:layout_width="match_parent"
@@ -314,20 +240,6 @@
                                 android:layout_height="match_parent"
                                 android:alpha="0.6"
                                 android:background="@color/bg_black" />
-
-                            <ani.dantotsu.home.streak.FireView
-                                android:id="@+id/homeMangaFire"
-                                android:layout_width="match_parent"
-                                android:layout_height="44dp"
-                                android:layout_gravity="bottom"
-                                android:visibility="gone" />
-
-                            <ani.dantotsu.home.streak.FireView
-                                android:id="@+id/homeAnimeFire"
-                                android:layout_width="match_parent"
-                                android:layout_height="44dp"
-                                android:layout_gravity="bottom"
-                                android:visibility="gone" />
 
                             <LinearLayout
                                 android:layout_width="wrap_content"
@@ -1172,6 +1084,113 @@
                         android:layout_marginStart="24dp"
                         android:layout_weight="1"
                         android:fontFamily="@font/poppins_bold"
+                        android:padding="8dp"
+                        android:text="@string/recommended"
+                        android:textSize="16sp" />
+
+                    <ImageView
+                        android:id="@+id/homeRecommendedMore"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="16dp"
+                        android:fontFamily="@font/poppins_bold"
+                        android:padding="8dp"
+                        android:src="@drawable/arrow_mark"
+                        android:textSize="16sp"
+                        tools:ignore="ContentDescription" />
+                </LinearLayout>
+
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="250dp">
+
+                    <LinearLayout
+                        android:id="@+id/homeRecommendedEmpty"
+                        android:layout_width="match_parent"
+                        android:layout_height="250dp"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:visibility="gone"
+                        tools:ignore="UseCompoundDrawables">
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="32dp"
+                            android:alpha="0.58"
+                            android:src="@drawable/ic_round_auto_awesome_24"
+                            tools:ignore="ContentDescription" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="16dp"
+                            android:alpha="0.58"
+                            android:text="@string/get_recommendations"
+                            android:textAlignment="center" />
+
+                    </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/homeRecommendedProgressBar"
+                        style="?android:attr/progressBarStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_margin="90dp" />
+
+                    <ani.dantotsu.FadingEdgeRecyclerView
+                        android:id="@+id/homeRecommendedRecyclerView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clipToPadding="false"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp"
+                        android:requiresFadingEdge="horizontal"
+                        tools:itemCount="4"
+                        tools:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                        tools:listitem="@layout/item_media_compact"
+                        tools:orientation="horizontal" />
+                </FrameLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/homeDantotsuContainer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/homeDantotsuIcon"
+                    android:layout_width="match_parent"
+                    android:layout_height="480dp"
+                    android:contentDescription="@string/app_name"
+                    android:padding="32dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/anim_splash" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="32dp"
+                    android:layout_marginEnd="32dp"
+                    android:fontFamily="@font/poppins_thin"
+                    android:text="@string/app_name"
+                    android:textAlignment="center"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="64sp" />
+            </LinearLayout>
+
+            <View
+                android:id="@+id/homeSpace"
+                android:layout_width="match_parent"
+                android:layout_height="128dp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>ns_bold"
                         android:padding="8dp"
                         android:text="@string/recommended"
                         android:textSize="16sp" />

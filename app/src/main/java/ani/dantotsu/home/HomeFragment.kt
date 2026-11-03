@@ -94,8 +94,6 @@ class HomeFragment : Fragment() {
             Logger.log("Loading HomeFragment")
             if (activity != null && _binding != null) viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
                 val currentBinding = _binding ?: return@launch
-                currentBinding.homeUserName.text = Anilist.username
-                headerController?.styleUsername()
                 currentBinding.homeUserAvatar.loadImage(Anilist.avatar)
 
                 currentBinding.homeNotificationCount.isVisible = Anilist.unreadNotificationCount > 0
@@ -659,6 +657,13 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
             if (Anilist.initialized) {
                 viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                     tryWithSuspend { Anilist.query.refreshUserStats() }
+                }
+            }
+        }
+        super.onResume()
+    }
+}
+spend { Anilist.query.refreshUserStats() }
                 }
             }
         }
