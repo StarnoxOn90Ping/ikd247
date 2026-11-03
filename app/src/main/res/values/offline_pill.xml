@@ -10,13 +10,16 @@
     <string name="offline_title" translatable="false">Offline</string>
     <string name="offline_reconnect_title" translatable="false">Reconnect</string>
 
+
     <string name="offline_dialog_title" translatable="false">You\'re offline</string>
-    <string name="offline_dialog_message" translatable="false">Dantotsu can\'t reach the internet right now. How would you like to continue?</string>
+    <string name="offline_dialog_message" translatable="false">Looks like the connection dropped. Retry, or keep going with what\'s saved on your device.</string>
     <string name="offline_dialog_try_again" translatable="false">Try again</string>
     <string name="offline_dialog_checking" translatable="false">Checking…</string>
     <string name="offline_dialog_still_offline" translatable="false">Still offline</string>
     <string name="offline_dialog_cached" translatable="false">Pre-cached home</string>
-    <string name="offline_dialog_cached_hint" translatable="false">Browse what was saved last time</string>
     <string name="offline_dialog_downloads" translatable="false">Offline mode</string>
-    <string name="offline_dialog_downloads_hint" translatable="false">Open your downloads</string>
+    <string name="offline_banner_title" translatable="false">You\'re offline</string>
+    <string name="offline_banner_subtitle" translatable="false">Your downloads are one tap away</string>
+    <string name="offline_banner_back_title" translatable="false">Back online</string>
+    <string name="offline_banner_back_subtitle" translatable="false">Tap Reconnect to load everything</string>
 </resources>

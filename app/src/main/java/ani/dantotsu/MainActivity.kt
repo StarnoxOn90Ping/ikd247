@@ -43,6 +43,7 @@ import ani.dantotsu.home.AnimeFragment
 import ani.dantotsu.home.HomeFragment
 import ani.dantotsu.home.LoginFragment
 import ani.dantotsu.home.MangaFragment
+import ani.dantotsu.home.OfflineBanner
 import ani.dantotsu.home.OfflineLaunchDialog
 import ani.dantotsu.home.OfflinePill
 import ani.dantotsu.media.MediaDetailsActivity
@@ -89,6 +90,8 @@ class MainActivity : AppCompatActivity() {
     private var sideButtons: ani.dantotsu.home.HomeSideButtons? = null
     private var offlinePill: OfflinePill? = null
     private var offlineDialog: OfflineLaunchDialog? = null
+    private var offlineBanner: OfflineBanner? = null
+    private var offlineModeChosen = false
 
     /** True when the app was launched without internet: only Home (cached) is available. */
     private var offlineMode = false
@@ -335,8 +338,13 @@ class MainActivity : AppCompatActivity() {
             }
             // offline at launch: ask whether to retry, use the cached Home, or open Downloads.
             // Only once per launch (not again after a rotation / recreate).
-            if (offlineMode && savedInstanceState == null) {
-                offlineDialog = OfflineLaunchDialog(this).also { it.show() }
+            if (offlineMode) {
+                if (savedInstanceState?.getBoolean(KEY_OFFLINE_CHOSEN) == true) {
+                    showOfflineBanner() // rotated while in Offline mode: keep the banner
+                } else if (savedInstanceState == null) {
+                    offlineDialog = OfflineLaunchDialog(this) { showOfflineBanner() }
+                        .also { it.show() }
+                }
             }
         }
 
@@ -461,6 +469,23 @@ class MainActivity : AppCompatActivity() {
     override fun onRestart() {
         super.onRestart()
         window.navigationBarColor = ContextCompat.getColor(this, android.R.color.transparent)
+    }
+
+    /** "Offline mode" from the launch popup: cached Home + pill as usual, plus the fancy banner. */
+    private fun showOfflineBanner() {
+        if (offlineBanner != null || !::binding.isInitialized) return
+        offlineModeChosen = true
+        offlineBanner = OfflineBanner(binding.offlineBanner.root, binding.offlineBanner)
+            .also { banner ->
+                banner.show()
+                offlinePill?.onRecoveredChanged = { banner.setRecovered(it) }
+                if (isOnline(this)) banner.setRecovered(true)
+            }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_OFFLINE_CHOSEN, offlineModeChosen)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -720,9 +745,13 @@ class MainActivity : AppCompatActivity() {
         offlinePill = null
         offlineDialog?.dismiss()
         offlineDialog = null
+        offlineBanner?.release()
+        offlineBanner = null
         if (::binding.isInitialized) {
             binding.viewpager.adapter = null
         }
         clearBottomBar()
     }
 }
+
+private const val KEY_OFFLINE_CHOSEN = "offline_mode_chosen"

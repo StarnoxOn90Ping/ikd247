@@ -3,19 +3,19 @@ package ani.dantotsu.home
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
 import android.app.Dialog
-import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.DecelerateInterpolator
+import android.view.animation.LinearInterpolator
 import android.view.animation.OvershootInterpolator
 import androidx.appcompat.app.AppCompatActivity
 import ani.dantotsu.R
 import ani.dantotsu.databinding.DialogOfflineLaunchBinding
-import ani.dantotsu.download.hub.DownloadsActivity
 import ani.dantotsu.isOnline
 import ani.dantotsu.util.setPressBounce
 
@@ -23,12 +23,16 @@ import ani.dantotsu.util.setPressBounce
  * Shown when the app is launched with no internet:
  *  - Try again       -> re-checks the connection; if it is back the activity is recreated normally
  *  - Pre-cached home -> closes the popup, leaving the cached Home + "Offline" pill underneath
- *  - Offline mode    -> closes the popup and opens the Downloads page
+ *  - Offline mode    -> same as above, plus [onOfflineMode] (MainActivity shows the offline banner)
  */
-class OfflineLaunchDialog(private val activity: AppCompatActivity) {
+class OfflineLaunchDialog(
+    private val activity: AppCompatActivity,
+    private val onOfflineMode: () -> Unit
+) {
 
     private var dialog: Dialog? = null
-    private var pulse: ObjectAnimator? = null
+    private val animators = mutableListOf<ObjectAnimator>()
+    private var spinner: ObjectAnimator? = null
     private var checking = false
 
     fun show() {
@@ -42,19 +46,19 @@ class OfflineLaunchDialog(private val activity: AppCompatActivity) {
                 setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                 setDimAmount(0.6f)
             }
-            setOnDismissListener { stopPulse() }
+            setOnDismissListener { stopAnimations() }
         }
         dialog = d
 
         b.offlineTryAgain.setPressBounce(0.95f)
-        b.offlineCachedOption.setPressBounce(0.96f)
-        b.offlineDownloadsOption.setPressBounce(0.96f)
+        b.offlineCachedOption.setPressBounce(0.95f)
+        b.offlineDownloadsOption.setPressBounce(0.95f)
 
         b.offlineTryAgain.setOnClickListener { tryAgain(b) }
         b.offlineCachedOption.setOnClickListener { d.dismiss() }
         b.offlineDownloadsOption.setOnClickListener {
             d.dismiss()
-            activity.startActivity(Intent(activity, DownloadsActivity::class.java))
+            onOfflineMode()
         }
 
         // entrance: card rises with a little overshoot
@@ -71,36 +75,81 @@ class OfflineLaunchDialog(private val activity: AppCompatActivity) {
             .setInterpolator(OvershootInterpolator(1.2f))
             .start()
 
-        pulse = ObjectAnimator.ofPropertyValuesHolder(
-            b.offlineDialogPulse,
-            PropertyValuesHolder.ofFloat(View.SCALE_X, 0.7f, 1.25f),
-            PropertyValuesHolder.ofFloat(View.SCALE_Y, 0.7f, 1.25f),
-            PropertyValuesHolder.ofFloat(View.ALPHA, 0.7f, 0f)
-        ).apply {
-            duration = 1800L
-            repeatCount = ObjectAnimator.INFINITE
-            interpolator = DecelerateInterpolator()
-            start()
-        }
+        startAnimations(b)
     }
 
     fun dismiss() {
-        stopPulse()
+        stopAnimations()
         runCatching { dialog?.dismiss() }
         dialog = null
     }
 
-    private fun stopPulse() {
-        pulse?.cancel()
-        pulse = null
+    // ---- animations ---------------------------------------------------------------------------
+
+    private fun startAnimations(b: DialogOfflineLaunchBinding) {
+        // Two staggered rings. They grow from the disc's size (104dp) to 1.45x (~151dp), which still
+        // fits the 160dp icon box, and fade out completely before reaching its edge.
+        listOf(b.offlineRingOne to 0L, b.offlineRingTwo to 900L).forEach { (ring, delay) ->
+            ring.alpha = 0f
+            animators += ObjectAnimator.ofPropertyValuesHolder(
+                ring,
+                PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.45f),
+                PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.45f),
+                PropertyValuesHolder.ofFloat(View.ALPHA, 0.65f, 0f)
+            ).apply {
+                duration = 1800L
+                startDelay = delay
+                repeatCount = ObjectAnimator.INFINITE
+                interpolator = DecelerateInterpolator()
+                start()
+            }
+        }
+        // the disc + icon gently breathe
+        animators += ObjectAnimator.ofPropertyValuesHolder(
+            b.offlineIconDisc,
+            PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.06f),
+            PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.06f)
+        ).apply {
+            duration = 1500L
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
+        animators += ObjectAnimator.ofFloat(b.offlineDialogIcon, View.ALPHA, 1f, 0.65f).apply {
+            duration = 1500L
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
     }
+
+    private fun stopAnimations() {
+        animators.forEach { it.cancel() }
+        animators.clear()
+        spinner?.cancel()
+        spinner = null
+    }
+
+    // ---- try again ----------------------------------------------------------------------------
 
     private fun tryAgain(b: DialogOfflineLaunchBinding) {
         if (checking) return
         checking = true
-        b.offlineTryAgain.setText(R.string.offline_dialog_checking)
+        b.offlineTryAgainText.setText(R.string.offline_dialog_checking)
+        // the refresh icon spins while we "check"
+        spinner = ObjectAnimator.ofFloat(b.offlineTryAgainIcon, View.ROTATION, 0f, 360f).apply {
+            duration = 700L
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = LinearInterpolator()
+            start()
+        }
         b.offlineTryAgain.postDelayed({
             checking = false
+            spinner?.cancel()
+            spinner = null
+            b.offlineTryAgainIcon.rotation = 0f
             if (activity.isFinishing || activity.isDestroyed) return@postDelayed
             if (isOnline(activity)) {
                 dismiss()
@@ -108,19 +157,24 @@ class OfflineLaunchDialog(private val activity: AppCompatActivity) {
                 activity.recreate()
             } else {
                 b.offlineTryAgain.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                b.offlineTryAgain.setText(R.string.offline_dialog_still_offline)
+                b.offlineTryAgainText.setText(R.string.offline_dialog_still_offline)
                 shake(b.offlineCard)
                 b.offlineTryAgain.postDelayed({
-                    b.offlineTryAgain.setText(R.string.offline_dialog_try_again)
-                }, 1400L)
+                    b.offlineTryAgainText.setText(R.string.offline_dialog_try_again)
+                }, 1500L)
             }
-        }, 700L)
+        }, 900L)
     }
 
+    /** Medium-speed shake; the card has room to swing because nothing above it clips. */
     private fun shake(v: View) {
-        val d = 8f * v.resources.displayMetrics.density
+        val d = 10f * v.resources.displayMetrics.density
         ObjectAnimator.ofFloat(
-            v, View.TRANSLATION_X, 0f, -d, d, -d * 0.7f, d * 0.7f, -d * 0.35f, 0f
-        ).apply { duration = 380L; start() }
+            v, View.TRANSLATION_X, 0f, -d, d, -d * 0.75f, d * 0.75f, -d * 0.4f, d * 0.4f, 0f
+        ).apply {
+            duration = 750L
+            interpolator = AccelerateDecelerateInterpolator()
+            start()
+        }
     }
 }

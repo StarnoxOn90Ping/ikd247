@@ -42,6 +42,9 @@ class OfflinePill(
     private var recovered = false
     private var released = false
 
+    /** Called with true when the connection returns, false if it drops again. */
+    var onRecoveredChanged: ((Boolean) -> Unit)? = null
+
     fun show() {
         val pill = nav.offlinePill
         pill.visibility = View.VISIBLE
@@ -83,6 +86,7 @@ class OfflinePill(
     private fun markRecovered() {
         if (released || recovered) return
         recovered = true
+        onRecoveredChanged?.invoke(true)
 
         nav.offlinePill.setBackgroundResource(R.drawable.bg_online_pill)
         nav.offlinePulse.setBackgroundResource(R.drawable.bg_online_pulse)
@@ -103,6 +107,7 @@ class OfflinePill(
     private fun markOffline() {
         if (released || !recovered) return
         recovered = false
+        onRecoveredChanged?.invoke(false)
 
         nav.offlinePill.setBackgroundResource(R.drawable.bg_offline_pill)
         nav.offlinePulse.setBackgroundResource(R.drawable.bg_offline_pulse)

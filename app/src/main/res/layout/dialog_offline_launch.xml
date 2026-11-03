@@ -1,47 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- clipChildren/clipToPadding are off all the way up so rings, bounces and the shake are never cut off -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="24dp">
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:padding="36dp">
 
     <LinearLayout
         android:id="@+id/offlineCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_offline_dialog"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:padding="22dp">
+        android:paddingHorizontal="24dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="26dp">
 
         <FrameLayout
-            android:layout_width="72dp"
-            android:layout_height="72dp">
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
 
             <View
-                android:id="@+id/offlineDialogPulse"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:id="@+id/offlineRingOne"
+                android:layout_width="104dp"
+                android:layout_height="104dp"
+                android:layout_gravity="center"
                 android:background="@drawable/bg_offline_pulse" />
 
-            <ImageView
-                android:id="@+id/offlineDialogIcon"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+            <View
+                android:id="@+id/offlineRingTwo"
+                android:layout_width="104dp"
+                android:layout_height="104dp"
                 android:layout_gravity="center"
-                android:importantForAccessibility="no"
-                android:src="@drawable/ic_wifi_off_24"
-                app:tint="@color/offline_accent" />
+                android:background="@drawable/bg_offline_pulse" />
+
+            <FrameLayout
+                android:id="@+id/offlineIconDisc"
+                android:layout_width="104dp"
+                android:layout_height="104dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_offline_icon_disc">
+
+                <ImageView
+                    android:id="@+id/offlineDialogIcon"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_wifi_off_24"
+                    app:tint="@color/offline_accent" />
+            </FrameLayout>
         </FrameLayout>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="6dp"
             android:fontFamily="@font/poppins_bold"
             android:text="@string/offline_dialog_title"
             android:textColor="?attr/colorOnSurface"
-            android:textSize="20sp" />
+            android:textSize="24sp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -50,76 +75,96 @@
             android:alpha="0.7"
             android:fontFamily="@font/poppins"
             android:gravity="center"
+            android:lineSpacingMultiplier="1.1"
             android:text="@string/offline_dialog_message"
             android:textColor="?attr/colorOnSurface"
-            android:textSize="13sp" />
+            android:textSize="14sp" />
 
-        <TextView
+        <LinearLayout
             android:id="@+id/offlineTryAgain"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="20dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="24dp"
             android:background="@drawable/bg_offline_primary"
-            android:fontFamily="@font/poppins_bold"
+            android:clipChildren="false"
             android:gravity="center"
-            android:text="@string/offline_dialog_try_again"
-            android:textColor="#1A1A1A"
-            android:textSize="15sp" />
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/offlineTryAgainIcon"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_offline_refresh"
+                app:tint="#1A1A1A" />
+
+            <TextView
+                android:id="@+id/offlineTryAgainText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:fontFamily="@font/poppins_bold"
+                android:text="@string/offline_dialog_try_again"
+                android:textColor="#1A1A1A"
+                android:textSize="15sp" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/offlineCachedOption"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/bg_offline_option"
-            android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="10dp">
+            android:clipChildren="false"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/offlineCachedOptionIcon"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_offline_home"
+                app:tint="@color/offline_accent" />
 
             <TextView
+                android:id="@+id/offlineCachedOptionText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
                 android:fontFamily="@font/poppins_bold"
                 android:text="@string/offline_dialog_cached"
                 android:textColor="@color/offline_accent"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:alpha="0.65"
-                android:fontFamily="@font/poppins"
-                android:text="@string/offline_dialog_cached_hint"
-                android:textColor="?attr/colorOnSurface"
-                android:textSize="11sp" />
+                android:textSize="15sp" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/offlineDownloadsOption"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_height="56dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/bg_offline_option"
-            android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="10dp">
+            android:clipChildren="false"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/offlineDownloadsOptionIcon"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_offline_download"
+                app:tint="@color/offline_accent" />
 
             <TextView
+                android:id="@+id/offlineDownloadsOptionText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
                 android:fontFamily="@font/poppins_bold"
                 android:text="@string/offline_dialog_downloads"
                 android:textColor="@color/offline_accent"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:alpha="0.65"
-                android:fontFamily="@font/poppins"
-                android:text="@string/offline_dialog_downloads_hint"
-                android:textColor="?attr/colorOnSurface"
-                android:textSize="11sp" />
+                android:textSize="15sp" />
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>
