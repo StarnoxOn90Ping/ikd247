@@ -250,6 +250,3 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
         }
     }
 }
-
-    }
-}
