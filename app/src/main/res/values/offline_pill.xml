@@ -41,6 +41,14 @@
         <item>It\'s quiet here. Too quiet.</item>
         <item>No signal. Maximum focus.</item>
         <item>The web is down, but your watchlist isn\'t.</item>
+        <item>Your Wi-Fi is on a coffee break. Union rules.</item>
+        <item>Buffering... just kidding, there\'s nothing to buffer.</item>
+        <item>404: Internet not found.</item>
+        <item>The signal left without saying goodbye.</item>
+        <item>Airplane mode, but make it involuntary.</item>
+        <item>Your downloads are loyal. The Wi-Fi is not.</item>
+        <item>Fun fact: villains never have good Wi-Fi either.</item>
+        <item>Breaking news: nothing is loading, and that\'s fine.</item>
     </string-array>
     <string-array name="offline_lines_morning" translatable="false">
         <item>Good morning! The internet hasn\'t woken up yet.</item>

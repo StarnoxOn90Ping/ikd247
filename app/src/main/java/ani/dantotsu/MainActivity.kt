@@ -469,6 +469,8 @@ class MainActivity : AppCompatActivity() {
     override fun onRestart() {
         super.onRestart()
         window.navigationBarColor = ContextCompat.getColor(this, android.R.color.transparent)
+        // back from Downloads / Calendar / etc. while in Offline mode: show a fresh line
+        offlineScreen?.nextLine()
     }
 
     /**
