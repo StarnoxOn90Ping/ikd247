@@ -223,9 +223,3 @@ object StreakManager {
         }
     }
 }
-tatus = status, lostStreak = 0,
-                doneToday = status == Status.ACTIVE
-            )
-        }
-    }
-}

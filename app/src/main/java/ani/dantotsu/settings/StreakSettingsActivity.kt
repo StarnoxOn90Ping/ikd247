@@ -208,11 +208,3 @@ class StreakSettingsActivity : AppCompatActivity() {
         binding.streakDebugStatus.text = getString(R.string.streak_debug_status, status)
     }
 }
-Texts() {
-        val count = PrefManager.getVal<Int>(PrefName.StreakDebugCount)
-        val names = resources.getStringArray(R.array.streak_debug_statuses)
-        val status = names.getOrElse(PrefManager.getVal<Int>(PrefName.StreakDebugStatus)) { names[0] }
-        binding.streakDebugEdit.text = getString(R.string.streak_debug_edit, count)
-        binding.streakDebugStatus.text = getString(R.string.streak_debug_status, status)
-    }
-}

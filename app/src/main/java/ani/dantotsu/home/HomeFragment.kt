@@ -660,7 +660,3 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
         super.onResume()
     }
 }
- }
-        super.onResume()
-    }
-}
