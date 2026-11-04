@@ -24,10 +24,10 @@ import kotlin.random.Random
  *  - [Mode.ICON]: a little campfire (two logs, flames, glow, sparks). This is the streak icon.
  *  - [Mode.EDGE]: a row of tongues along the bottom edge that fades out upwards, laid over the
  *    Anime / Manga list cards.
- *  - [Mode.AURA]: flames licking up from the top edge of a card and out from its two sides, so
- *    the whole card looks like it caught fire. The view has the exact size of the card and draws
- *    OUTSIDE its own bounds (its parents must have clipChildren=false). Upwards it never goes
- *    further than [setHeadroom], so it can't touch anything above the card.
+ *  - [Mode.AURA]: a wall of flames burning along the TOP edge of a card, with a heat glow and a
+ *    hot edge line. The view has the exact size of the card and draws ABOVE its own bounds (its
+ *    parents must have clipChildren=false). Upwards it never goes further than [setHeadroom],
+ *    so it can't touch anything above the card. Nothing is drawn at the sides or the bottom.
  *
  * What it looks like is set by [setStage] (0..5, see [StreakManager.stageOf]):
  *
@@ -230,6 +230,12 @@ class FireView @JvmOverloads constructor(
             val pos = floatArrayOf(0f, 0.55f, 1f)
             fun grad(c0: Int, c1: Int, c2: Int) =
                 LinearGradient(0f, 0f, 0f, -100f, intArrayOf(c0, c1, c2), pos, Shader.TileMode.CLAMP)
+            // heat glow: an ellipse sitting on the top edge, squashed to the headroom when drawn
+            glow.shader = RadialGradient(
+                w / 2f, 5f * d, w / 2f,
+                intArrayOf(0xFFFF7A00.toInt(), 0x80FF5500.toInt(), 0x00FF5500),
+                floatArrayOf(0f, 0.45f, 1f), Shader.TileMode.CLAMP
+            )
             outer.shader = grad(0xFFFF8F00.toInt(), 0xE6FF3D00.toInt(), 0x00FF3D00)
             mid.shader = grad(0xFFFFC107.toInt(), 0xE6FF9100.toInt(), 0x00FF9100)
             inner.shader = grad(0xFFFFFDE7.toInt(), 0xE6FFE082.toInt(), 0x00FFE082)
@@ -280,8 +286,8 @@ class FireView @JvmOverloads constructor(
 
         if (mode == Mode.AURA) {
             canvas.save()
-            // out to the sides and up to the headroom, never below the card
-            canvas.clipRect(-SIDE_OUT * d, -headroom, w + SIDE_OUT * d, h)
+            // only the top edge: up to the headroom, a hair past the corners, barely into the card
+            canvas.clipRect(-4f * d, -headroom, w + 4f * d, 10f * d)
         }
         when (mode) {
             Mode.ICON -> drawIcon(canvas, w, h, t, i)
@@ -407,42 +413,42 @@ class FireView @JvmOverloads constructor(
         if (i <= 0f) return
         val ii = min(i, 1f)
         val inset = 5f * d // flames start a little inside the card, so they grow out of its edge
-        val strength = 0.55f + 0.45f * ii
+        val strength = 0.6f + 0.4f * ii
+        val pulse = 0.85f + 0.15f * sin(t * 4.2f) + 0.05f * sin(t * 9.1f)
+        val reach = headroom + inset
 
-        // soft heat around the card edge
-        val pulse = 0.85f + 0.15f * sin(t * 4.2f)
-        rect.set(0f, 0f, w, h)
-        for ((sw, a) in listOf(16f to 0.07f, 9f to 0.12f, 3.5f to 0.22f)) {
-            aura.strokeWidth = sw * d
-            aura.color = (((a * strength * pulse).coerceIn(0f, 1f) * 255f).toInt() shl 24) or 0xFF6D00
-            canvas.drawRoundRect(rect, 16f * d, 16f * d, aura)
+        // 1. heat glow above the edge, wider and brighter than the flames themselves
+        if (reach > 0f) {
+            shaderM.setScale(1f, reach / (w / 2f), w / 2f, inset)
+            glow.shader?.setLocalMatrix(shaderM)
+            glow.alpha = (((0.35f + 0.4f * ii) * pulse).coerceIn(0f, 1f) * 255f).toInt()
+            canvas.drawRect(-4f * d, -headroom, w + 4f * d, inset + 2f * d, glow)
         }
 
-        val topMax = (headroom + inset) * strength
-        val sideMax = ((SIDE_OUT * d + inset) / 0.88f) * strength
-        val topCount = max(5, (w / (12f * d)).toInt())
-        val sideCount = max(3, (h / (15f * d)).toInt())
+        // 2. the hot edge: a thin glowing line along the top of the card
+        aura.strokeCap = Paint.Cap.ROUND
+        for ((sw, a) in listOf(7f to 0.16f, 3.5f to 0.32f, 1.6f to 0.7f)) {
+            aura.strokeWidth = sw * d
+            aura.color = (((a * strength * pulse).coerceIn(0f, 1f) * 255f).toInt() shl 24) or
+                    (if (sw < 2f) 0xFFC107 else 0xFF6D00)
+            canvas.drawLine(14f * d, inset * 0.5f, w - 14f * d, inset * 0.5f, aura)
+        }
+
+        // 3. the flames: three layers (red, orange, white-hot), dense and uneven so they lick
+        val topMax = reach * strength
+        val count = max(7, (w / (9f * d)).toInt())
         for (layer in 0 until 3) {
             val paint = if (layer == 0) outer else if (layer == 1) mid else inner
-            val sc = if (layer == 0) 1f else if (layer == 1) 0.66f else 0.36f
+            val sc = if (layer == 0) 1f else if (layer == 1) 0.68f else 0.38f
             val grow = if (sc == 1f) 1f else sc * 1.05f
-            // top edge: straight up
-            for (k in 0 until topCount) {
-                val cx = (k + 0.5f) * (w / topCount)
+            for (k in 0 until count) {
+                val cx = (k + 0.5f) * (w / count)
                 val n01 = 0.5f + 0.5f * noise(t * 1.3f, k * 2.37f)
-                val fh = topMax * (0.4f + 0.6f * n01) * grow
-                rooted(canvas, cx, inset, 0f, w / topCount * 2f * sc, fh, t * 1.1f, k * 2.37f + sc * 3f, 0f, paint)
-            }
-            // sides: out and up
-            for (k in 0 until sideCount) {
-                val cy = (k + 0.5f) * (h / sideCount)
-                val n01 = 0.5f + 0.5f * noise(t * 1.2f, 40f + k * 1.91f)
-                val fh = sideMax * (0.4f + 0.6f * n01) * grow
-                val fw = h / sideCount * 1.8f * sc
-                rooted(canvas, inset, cy, -62f, fw, fh, t * 1.05f, 40f + k * 1.91f + sc * 3f, 0f, paint)
-                val n02 = 0.5f + 0.5f * noise(t * 1.2f, 90f + k * 2.13f)
-                val fh2 = sideMax * (0.4f + 0.6f * n02) * grow
-                rooted(canvas, w - inset, cy, 62f, fw, fh2, t * 1.05f, 90f + k * 2.13f + sc * 3f, 0f, paint)
+                // slow waves of taller flames travelling along the edge
+                val wave = 0.82f + 0.18f * sin(t * 1.7f - k * 0.55f)
+                val fh = topMax * (0.35f + 0.65f * n01) * wave * grow
+                val lean = noise(t * 0.5f, k.toFloat()) * 0.7f
+                rooted(canvas, cx, inset, 0f, w / count * 2.3f * sc, fh, t * 1.1f, k * 2.37f + sc * 3f, lean, paint)
             }
         }
     }
@@ -495,8 +501,6 @@ class FireView @JvmOverloads constructor(
         /** The same for the list buttons: they only burn from stage 3 on. */
         val EDGE_INTENSITY = floatArrayOf(0f, 0f, 0f, 0.45f, 0.72f, 1f)
 
-        /** How far (dp) the flames of a card's AURA reach out to its sides. */
-        const val SIDE_OUT = 22f
 
         /** Flames of the icon, tallest first. Side flames lean outwards. */
         val TONGUES = listOf(

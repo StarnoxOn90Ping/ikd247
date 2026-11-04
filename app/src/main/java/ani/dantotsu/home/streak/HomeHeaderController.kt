@@ -29,8 +29,8 @@ import kotlin.random.Random
  *   [big fire]  [number on fire]  [short funny line]            [search] [pfp]
  *
  * It also sets the Anime / Manga list buttons on fire once the streak reaches stage
- * [StreakManager.BUTTON_FIRE_STAGE] (7 days): flames along the bottom edge inside each card, plus
- * flames growing out of the top and the sides of the card (the "aura"). Both are added from code,
+ * [StreakManager.BUTTON_FIRE_STAGE] (7 days): flames growing out of the top edge of each card.
+ * They are added from code,
  * so the list buttons' own layout stays exactly as it was.
  *
  * Everything here reads local data only, so it works the same in Pre-cached (offline) mode.
@@ -54,8 +54,6 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
     private var released = false
     private var resumedOnce = false
 
-    private var animeFire: FireView? = null
-    private var mangaFire: FireView? = null
     private var animeAura: FireView? = null
     private var mangaAura: FireView? = null
     private var headroomHooked = false
@@ -296,37 +294,13 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
                 PrefManager.getVal<Boolean>(PrefName.StreakButtonFire) &&
                 PrefManager.getVal<Boolean>(PrefName.StreakShow)
         if (burning) {
-            animeFire = animeFire ?: addFire(b.homeAnimeList)
-            mangaFire = mangaFire ?: addFire(b.homeMangaList)
             animeAura = animeAura ?: addAura(b.homeAnimeList)
             mangaAura = mangaAura ?: addAura(b.homeMangaList)
             hookHeadroom()
         }
         val dimmed = if (snap.status == StreakManager.Status.ACTIVE) 0f else 0.35f
 
-        // inside each card: the flames get taller as the stages go up: 7 days -> 14 days -> 30 days
-        val heightDp = when (stage) {
-            3 -> 40
-            4 -> 48
-            else -> 56
-        }
-        listOfNotNull(animeFire, mangaFire).forEach { f ->
-            if (burning) {
-                f.setStage(stage)
-                f.setBoost(boost)
-                f.setAnimated(animated)
-                f.setSparks(sparks)
-                f.setDim(dimmed)
-                f.layoutParams = (f.layoutParams as FrameLayout.LayoutParams).apply {
-                    height = (heightDp * d).toInt()
-                }
-                f.visibility = View.VISIBLE
-            } else {
-                f.visibility = View.GONE
-            }
-        }
-
-        // around each card: flames out of its top and sides
+        // flames on the top edge of each card
         listOfNotNull(animeAura, mangaAura).forEach { f ->
             if (burning) {
                 f.setStage(stage)
@@ -339,21 +313,6 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
                 f.visibility = View.GONE
             }
         }
-    }
-
-    /** Adds a fire strip to a list card, between its dark scrim and its label (index 2). */
-    private fun addFire(card: ViewGroup): FireView {
-        val fire = FireView(ctx).apply { setMode(FireView.Mode.EDGE) }
-        card.addView(
-            fire,
-            minOf(2, card.childCount),
-            FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                (44 * d).toInt(),
-                Gravity.BOTTOM
-            )
-        )
-        return fire
     }
 
     /**
