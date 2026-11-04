@@ -663,10 +663,3 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
         super.onResume()
     }
 }
-spend { Anilist.query.refreshUserStats() }
-                }
-            }
-        }
-        super.onResume()
-    }
-}
