@@ -29,6 +29,7 @@ import ani.dantotsu.connections.anilist.AnilistHomeViewModel
 import ani.dantotsu.connections.anilist.getUserId
 import ani.dantotsu.currContext
 import ani.dantotsu.databinding.FragmentHomeBinding
+import ani.dantotsu.home.pill.InfoPillController
 import ani.dantotsu.home.streak.HomeHeaderController
 import ani.dantotsu.home.status.UserStatusAdapter
 import ani.dantotsu.loadImage
@@ -63,6 +64,7 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
     private var headerController: HomeHeaderController? = null
+    private var pillController: InfoPillController? = null
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -75,6 +77,8 @@ class HomeFragment : Fragment() {
     override fun onDestroyView() {
         headerController?.release()
         headerController = null
+        pillController?.release()
+        pillController = null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             _binding?.homeScroll?.setOnScrollChangeListener(null as View.OnScrollChangeListener?)
         }
@@ -89,6 +93,7 @@ class HomeFragment : Fragment() {
         val scope = viewLifecycleOwner.lifecycleScope
         Logger.log("HomeFragment")
         headerController = HomeHeaderController(binding).also { it.start() }
+        pillController = InfoPillController(binding, viewLifecycleOwner, model).also { it.start() }
         fun load() {
             Logger.log("Loading HomeFragment")
             if (activity != null && _binding != null) viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
@@ -650,6 +655,7 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
                     && PrefManager.getVal<Boolean>(PrefName.ShowNotificationRedDot) == true
             binding.homeNotificationCount.text = Anilist.unreadNotificationCount.toString()
             headerController?.onReturn()
+            pillController?.onReturn()
             // Coming back from a media page / the player: pick up progress made in the meantime.
             if (Anilist.initialized) {
                 viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {

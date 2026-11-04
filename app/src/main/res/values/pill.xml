@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Home info pill (under the Anime / Manga list buttons) -->
+
+    <!-- "<anime title>" + this, e.g. "Frieren, ep 9 in 2h 14m" -->
+    <string name="pill_up_next_suffix">, ep %1$d in %2$s</string>
+
+    <plurals name="pill_airing_today">
+        <item quantity="one">%d episode from your list airs today</item>
+        <item quantity="other">%d episodes from your list air today</item>
+    </plurals>
+    <string name="pill_airing_today_partial">%1$d episodes from your list air today · %2$d already out</string>
+    <plurals name="pill_airing_today_done">
+        <item quantity="one">The episode from your list has aired today</item>
+        <item quantity="other">All %d episodes from your list have aired today</item>
+    </plurals>
+
+    <string name="pill_time_watched">%s watched today</string>
+    <string name="pill_time_read">%s read today</string>
+    <string name="pill_time_both">%s watched &amp; read today</string>
+
+    <string name="pill_lucky">Feeling lucky? Tap for a random planned pick</string>
+
+    <string name="pill_backlog_stale">%1$d planned, %2$d untouched for 30+ days</string>
+    <string name="pill_backlog_fresh">%d planned, none untouched for 30+ days</string>
+    <string name="pill_backlog_plain">%d on your planned lists</string>
+</resources>

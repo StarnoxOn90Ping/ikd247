@@ -91,6 +91,7 @@ class App : Application(), GraphProvider<AppGraph> {
             DynamicColors.applyToActivitiesIfAvailable(this)
         }
         registerActivityLifecycleCallbacks(mFTActivityLifecycleCallbacks)
+        ani.dantotsu.home.pill.WatchTimeTracker.install(this)
 
         runCatching {
             leakcanary.LeakCanary.config = leakcanary.LeakCanary.config.copy(

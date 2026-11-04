@@ -38,6 +38,10 @@ class PlayerProgressManager(
     private val progressRunnable = object : Runnable {
         override fun run() {
             checkAndPreloadProgress()
+            // Home pill: time actually spent watching today
+            ani.dantotsu.home.pill.WatchTimeTracker.tickAnime(
+                isTrackingProgress && getPlayer()?.isPlaying == true
+            )
             if (isTrackingProgress) {
                 handler.postDelayed(this, 2500)
             }
@@ -63,6 +67,7 @@ class PlayerProgressManager(
     fun stopTracking() {
         isTrackingProgress = false
         handler.removeCallbacks(progressRunnable)
+        ani.dantotsu.home.pill.WatchTimeTracker.stopAnime()
         updateWidgetState(isExiting = true)
     }
 
