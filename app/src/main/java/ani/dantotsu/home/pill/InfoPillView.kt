@@ -12,13 +12,19 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.RippleDrawable
+import android.os.Build
 import android.text.TextPaint
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.ViewOutlineProvider
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
+import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
@@ -26,42 +32,53 @@ import androidx.core.graphics.ColorUtils
 import ani.dantotsu.R
 import com.google.android.material.color.MaterialColors
 import kotlin.math.abs
-import kotlin.math.max
+import kotlin.math.min
 
 /**
- * The slim pill under the Anime / Manga list buttons.
+ * The slim bar under the Anime / Manga list buttons.
  *
- *  - fully rounded, filled with the theme colour, with a slow shimmer sweeping across
+ *  - rounded like the list buttons (see [CORNER_DP]), theme-coloured with a soft tonal gradient,
+ *    a glossy top edge, a hairline border, a theme-tinted glow and a slow shimmer
  *  - one line of text that slides / fades to the next one when the card changes
  *  - tiny page dots on the right: the active dot stretches into a little bar
  *
- * Two tap zones: the **text area** ([onContentClick]) and the **dots area** at the right end
- * ([onNextClick]), which always moves to the next card.
+ * The whole bar is one tap target:
+ *  - a tap reports its x position through [onTap] (the controller decides: text = card action,
+ *    anywhere else = next card)
+ *  - a horizontal swipe calls [onSwipe] (left = next card, right = previous card)
  */
 class InfoPillView(context: Context) : FrameLayout(context) {
 
-    var onContentClick: (() -> Unit)? = null
-    var onNextClick: (() -> Unit)? = null
+    var onTap: ((x: Float) -> Unit)? = null
+    var onSwipe: ((forward: Boolean) -> Unit)? = null
 
     private val d = resources.displayMetrics.density
+    private val corner = CORNER_DP * d
 
-    private val fill = MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary)
-    private val onFill = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnPrimary)
+    private val base = MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary)
+    private val onBase = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnPrimary)
 
     // ---- drawing ------------------------------------------------------------------------------
 
-    private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = fill }
+    private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = base }
     private val glossPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val shimmerPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 1f * d
+        color = ColorUtils.setAlphaComponent(0xFFFFFFFF.toInt(), 52)
+    }
+    private val borderRect = RectF()
     private val shimmerMatrix = Matrix()
     private var shimmerShader: LinearGradient? = null
     private var shimmerWidth = 0f
     private var shimmerProgress = -1f
     private var shimmerAnim: ValueAnimator? = null
 
-    private val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = onFill }
+    private val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = onBase }
     private val dotRect = RectF()
     private var dotCount = 0
+    private var dotsReserve = 0
     private var dotActive = 0f
     private var dotAnim: ValueAnimator? = null
 
@@ -70,38 +87,46 @@ class InfoPillView(context: Context) : FrameLayout(context) {
     private val textHost = FrameLayout(context)
     private var shown = makeText()
     private var hidden = makeText()
-    private val dotsZone = View(context)
+
+    // ---- touch --------------------------------------------------------------------------------
+
+    private val slop = ViewConfiguration.get(context).scaledTouchSlop
+    private var downX = 0f
+    private var downY = 0f
+    private var lastX = -1f
+    private var swiping = false
+    private var pressAnim: android.animation.ObjectAnimator? = null
 
     init {
         setWillNotDraw(false)
         clipChildren = true
         outlineProvider = object : ViewOutlineProvider() {
             override fun getOutline(view: View, outline: Outline) {
-                outline.setRoundRect(0, 0, view.width, view.height, view.height / 2f)
+                outline.setRoundRect(0, 0, view.width, view.height, corner)
             }
         }
         clipToOutline = true
-        contentDescription = null
+
+        // a soft glow in the theme colour under the bar
+        elevation = 5f * d
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            outlineSpotShadowColor = base
+            outlineAmbientShadowColor = base
+        }
 
         textHost.setPadding((14 * d).toInt(), 0, (4 * d).toInt(), 0)
         textHost.addView(shown)
         textHost.addView(hidden)
         hidden.alpha = 0f
-        textHost.isClickable = true
-        textHost.foreground = ripple()
-        textHost.setOnClickListener { onContentClick?.invoke() }
         addView(textHost, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
 
-        dotsZone.isClickable = true
-        dotsZone.foreground = ripple()
-        dotsZone.visibility = GONE
-        dotsZone.setOnClickListener { onNextClick?.invoke() }
-        addView(dotsZone, LayoutParams(0, LayoutParams.MATCH_PARENT, Gravity.END))
+        isClickable = true
+        isFocusable = true
+        foreground = RippleDrawable(
+            ColorStateList.valueOf(ColorUtils.setAlphaComponent(onBase, 70)),
+            null, ColorDrawable(0xFFFFFFFF.toInt())
+        )
     }
-
-    private fun ripple() = RippleDrawable(
-        ColorStateList.valueOf(ColorUtils.setAlphaComponent(onFill, 60)), null, ColorDrawable(0xFFFFFFFF.toInt())
-    )
 
     private fun makeText() = TextView(context).apply {
         layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
@@ -110,22 +135,90 @@ class InfoPillView(context: Context) : FrameLayout(context) {
         ellipsize = TextUtils.TruncateAt.END
         includeFontPadding = false
         setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
-        setTextColor(onFill)
+        letterSpacing = 0.02f
+        setTextColor(onBase)
+        setShadowLayer(1.6f * d, 0f, 0.7f * d, 0x40000000)
         typeface = ResourcesCompat.getFont(context, R.font.poppins_semi_bold)
+        isClickable = false
+        isFocusable = false
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+    }
+
+    // ---- touch --------------------------------------------------------------------------------
+
+    override fun onTouchEvent(e: MotionEvent): Boolean {
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                downX = e.x; downY = e.y; lastX = e.x
+                swiping = false
+                isPressed = true
+                foreground?.setHotspot(e.x, e.y)
+                pressTo(0.985f, 0.9f, 110, DecelerateInterpolator())
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                val dx = e.x - downX
+                val dy = e.y - downY
+                if (!swiping && abs(dx) > slop && abs(dx) > abs(dy) * 1.2f) {
+                    swiping = true
+                    parent?.requestDisallowInterceptTouchEvent(true) // keep the page from scrolling
+                }
+            }
+
+            MotionEvent.ACTION_UP -> {
+                val dx = e.x - downX
+                val dy = e.y - downY
+                release()
+                when {
+                    swiping && abs(dx) > 28 * d -> onSwipe?.invoke(dx < 0)
+                    !swiping && abs(dx) <= slop && abs(dy) <= slop -> performClick()
+                }
+            }
+
+            MotionEvent.ACTION_CANCEL -> release()
+        }
+        return true
+    }
+
+    private fun release() {
+        isPressed = false
+        pressTo(1f, 1f, 260, OvershootInterpolator(2.2f))
+    }
+
+    // own animator (not animate()), so it never disturbs the controller's entrance animation
+    private fun pressTo(sx: Float, sy: Float, ms: Long, ip: android.animation.TimeInterpolator) {
+        pressAnim?.cancel()
+        pressAnim = android.animation.ObjectAnimator.ofPropertyValuesHolder(
+            this,
+            android.animation.PropertyValuesHolder.ofFloat(SCALE_X, scaleX, sx),
+            android.animation.PropertyValuesHolder.ofFloat(SCALE_Y, scaleY, sy)
+        ).apply { duration = ms; interpolator = ip; start() }
+    }
+
+    override fun performClick(): Boolean {
+        val x = if (lastX < 0f) width / 2f else lastX
+        lastX = -1f
+        onTap?.invoke(x)
+        return super.performClick()
+    }
+
+    /** True when [x] (in this view's coordinates) is on the text itself, not on the empty sides. */
+    fun isOverText(x: Float): Boolean {
+        val avail = textWidthPx()
+        if (avail <= 0) return true
+        val textW = min(shown.paint.measureText(shown.text.toString()), avail.toFloat())
+        val centre = textHost.left + textHost.paddingLeft + avail / 2f
+        return abs(x - centre) <= textW / 2f + 10 * d
     }
 
     // ---- api ----------------------------------------------------------------------------------
 
-    /** Dots (one per card). With 0 or 1 card the dots area disappears. */
+    /** Dots (one per card). With 0 or 1 card the dots disappear. */
     fun setPages(count: Int, active: Int, animate: Boolean) {
         if (count != dotCount) {
             dotCount = count
-            val showDots = count > 1
-            dotsZone.visibility = if (showDots) VISIBLE else GONE
-            val zoneW = if (showDots) max((40 * d).toInt(), ((count * 8 + 10 + 16) * d).toInt()) else 0
-            dotsZone.layoutParams = (dotsZone.layoutParams as LayoutParams).also { it.width = zoneW }
-            (textHost.layoutParams as LayoutParams).marginEnd = zoneW
+            dotsReserve = if (count > 1) ((count * 8 + 10 + 18) * d).toInt() else 0
+            (textHost.layoutParams as LayoutParams).marginEnd = dotsReserve
             textHost.requestLayout()
         }
         dotAnim?.cancel()
@@ -175,14 +268,13 @@ class InfoPillView(context: Context) : FrameLayout(context) {
         incoming.translationY = dist
         incoming.alpha = 0f
         incoming.animate().translationY(0f).alpha(1f).setStartDelay(40).setDuration(300)
-            .setInterpolator(android.view.animation.DecelerateInterpolator(1.6f)).start()
+            .setInterpolator(DecelerateInterpolator(1.6f)).start()
         outgoing.animate().translationY(-dist).alpha(0f).setStartDelay(0).setDuration(240)
-            .setInterpolator(android.view.animation.AccelerateInterpolator(1.2f)).start()
+            .setInterpolator(AccelerateInterpolator(1.2f)).start()
     }
 
-    /** Width available for the text, for [fitTitle]. */
     private fun textWidthPx(): Int =
-        (textHost.width - textHost.paddingLeft - textHost.paddingRight).let { if (it > 0) it else 0 }
+        (textHost.width - textHost.paddingLeft - textHost.paddingRight).coerceAtLeast(0)
 
     /**
      * "<title><suffix>" where only the title is shortened (with …) when it does not fit, so the
@@ -192,17 +284,28 @@ class InfoPillView(context: Context) : FrameLayout(context) {
         val avail = textWidthPx()
         if (avail <= 0) return title + suffix
         val paint: TextPaint = shown.paint
-        val suffixW = paint.measureText(suffix)
-        val room = avail - suffixW
+        val room = avail - paint.measureText(suffix)
         if (paint.measureText(title) <= room) return title + suffix
         if (room <= 0f) return suffix.trim().trimStart(',').trim()
         return TextUtils.ellipsize(title, paint, room, TextUtils.TruncateAt.END).toString() + suffix
     }
 
-    // ---- shimmer + dots -----------------------------------------------------------------------
+    // ---- look: gradient, border, shimmer, dots ------------------------------------------------
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
+        // tonal gradient: a touch lighter on the left, a touch deeper on the right
+        fillPaint.shader = LinearGradient(
+            0f, 0f, w.toFloat(), 0f,
+            ColorUtils.blendARGB(base, 0xFFFFFFFF.toInt(), 0.12f),
+            ColorUtils.blendARGB(base, 0xFF000000.toInt(), 0.16f),
+            Shader.TileMode.CLAMP
+        )
+        glossPaint.shader = LinearGradient(
+            0f, 0f, 0f, h.toFloat(),
+            intArrayOf(0x33FFFFFF, 0x00FFFFFF, 0x1A000000), floatArrayOf(0f, 0.55f, 1f),
+            Shader.TileMode.CLAMP
+        )
         shimmerWidth = w * 0.34f
         shimmerShader = LinearGradient(
             0f, 0f, shimmerWidth, 0f,
@@ -210,12 +313,7 @@ class InfoPillView(context: Context) : FrameLayout(context) {
             Shader.TileMode.CLAMP
         )
         shimmerPaint.shader = shimmerShader
-        glossPaint.shader = LinearGradient(
-            0f, 0f, 0f, h.toFloat(),
-            intArrayOf(0x26FFFFFF, 0x00FFFFFF, 0x14000000), floatArrayOf(0f, 0.55f, 1f),
-            Shader.TileMode.CLAMP
-        )
-        invalidateOutline() // re-evaluate the rounded outline for the new size
+        invalidateOutline()
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -227,13 +325,17 @@ class InfoPillView(context: Context) : FrameLayout(context) {
         val p = shimmerProgress
         val shader = shimmerShader
         if (p in 0f..1f && shader != null) {
-            // the band crosses the pill during the first part of the cycle, then rests
+            // the band crosses the bar during the first part of the cycle, then rests
             val x = -shimmerWidth + (w + shimmerWidth) * p
             shimmerMatrix.setSkew(-0.35f, 0f)
             shimmerMatrix.postTranslate(x, 0f)
             shader.setLocalMatrix(shimmerMatrix)
             canvas.drawRect(0f, 0f, w, h, shimmerPaint)
         }
+
+        val half = borderPaint.strokeWidth / 2f
+        borderRect.set(half, half, w - half, h - half)
+        canvas.drawRoundRect(borderRect, corner - half, corner - half, borderPaint)
     }
 
     override fun dispatchDraw(canvas: Canvas) {
@@ -248,7 +350,7 @@ class InfoPillView(context: Context) : FrameLayout(context) {
             (dot + (bar - dot) * t).also { total += it }
         }
         total += gap * (dotCount - 1)
-        var x = width - dotsZone.width / 2f - total / 2f
+        var x = width - dotsReserve / 2f - total / 2f
         val cy = height / 2f
         for (i in 0 until dotCount) {
             val t = (1f - abs(i - dotActive)).coerceIn(0f, 1f)
@@ -289,6 +391,7 @@ class InfoPillView(context: Context) : FrameLayout(context) {
     override fun onDetachedFromWindow() {
         stopShimmer()
         dotAnim?.cancel()
+        pressAnim?.cancel()
         shown.animate().cancel()
         hidden.animate().cancel()
         super.onDetachedFromWindow()
@@ -297,5 +400,10 @@ class InfoPillView(context: Context) : FrameLayout(context) {
     override fun onWindowVisibilityChanged(visibility: Int) {
         super.onWindowVisibilityChanged(visibility)
         if (visibility == VISIBLE && isAttachedToWindow) startShimmer() else stopShimmer()
+    }
+
+    companion object {
+        /** Corner radius. The Anime / Manga list buttons use 16dp on a 72dp-tall card. */
+        const val CORNER_DP = 8f
     }
 }

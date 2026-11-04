@@ -36,8 +36,8 @@ import java.util.Calendar
  *  - Backlog        planned list size, and how many were not touched for 30+ days
  *  - Feeling lucky  tap the text -> info page of a random planned show (needs network)
  *
- * Tapping the dots on the right always goes to the next card. On cards that have no action of
- * their own the text area goes to the next card as well.
+ * Tapping the bar goes to the next card, swiping it goes forward / back. The two cards with an
+ * action (Up next, Feeling lucky) run it only when the tap lands on the text itself.
  *
  * Offline / Pre-cached: everything comes from on-device data (airing cache, airing alarms,
  * cached Home lists, local watch time). Only the lucky card needs the network and is skipped.
@@ -97,12 +97,14 @@ class InfoPillController(
                 // lines up with the outer edges of the two list buttons (24dp padding + 8dp margin)
                 marginStart = dp(32)
                 marginEnd = dp(32)
-                topMargin = dp(-6)
+                topMargin = 0 // set by alignGap() once the list buttons are measured
                 bottomMargin = dp(16)
             }
         )
-        pill.onContentClick = { onContentClick() }
-        pill.onNextClick = { next() }
+        pill.onTap = { x -> onTap(x) }
+        pill.onSwipe = { forward -> if (forward) next() else previous() }
+        // keep the gap under the list buttons equal to the gap between the two buttons (16dp)
+        b.homeListContainer.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> pill.post { alignGap() } }
 
         cachedAiring = InfoPillStore.loadAiring()?.items ?: emptyList()
         planned = InfoPillStore.loadPlanned()
@@ -118,8 +120,8 @@ class InfoPillController(
     fun release() {
         released = true
         pill.removeCallbacks(tickRunnable)
-        pill.onContentClick = null
-        pill.onNextClick = null
+        pill.onTap = null
+        pill.onSwipe = null
     }
 
     /** Home came back to the front (from a media page, the player, the calendar...). */
@@ -270,7 +272,7 @@ class InfoPillController(
             val card = cards.getOrNull(index)
             if (card != null) pill.showText(render(card), animate = false)
             pill.visibility = View.VISIBLE
-            setBannerExtra(dp(PILL_HEIGHT_DP) + dp(-6) + dp(16))
+            setBannerExtra(bannerNeeded())
             if (!shownOnce) {
                 shownOnce = true
                 pill.alpha = 0f
@@ -282,6 +284,25 @@ class InfoPillController(
             pill.visibility = View.GONE
             setBannerExtra(0)
         }
+    }
+
+    /** Space between the list buttons and the pill = space between the two list buttons. */
+    private fun alignGap() {
+        if (released) return
+        val list = b.homeListContainer
+        if (list.height <= 0) return
+        val lowest = maxOf(b.homeAnimeList.bottom, b.homeMangaList.bottom)
+        val wanted = dp(GAP_DP) - (list.height - lowest) // the container already has some room below
+        val lp = pill.layoutParams as LinearLayout.LayoutParams
+        if (lp.topMargin == wanted) return
+        lp.topMargin = wanted
+        pill.layoutParams = lp
+        if (pill.isVisible) setBannerExtra(bannerNeeded())
+    }
+
+    private fun bannerNeeded(): Int {
+        val lp = pill.layoutParams as LinearLayout.LayoutParams
+        return lp.height + lp.topMargin + lp.bottomMargin
     }
 
     /** The banner behind the header is a fixed height: grow it by the pill's height. */
@@ -383,10 +404,22 @@ class InfoPillController(
         pill.showText(text, animate = true, forward = true)
     }
 
-    private fun onContentClick() {
+    private fun previous() {
+        if (cards.size < 2) return
+        index = (index - 1 + cards.size) % cards.size
+        pill.setPages(cards.size, index, animate = true)
+        val text = render(cards[index])
+        pill.setReadableText(text)
+        pill.showText(text, animate = true, forward = false)
+    }
+
+    private fun onTap(x: Float) {
+        val onText = pill.isOverText(x)
         when (cards.getOrNull(index)) {
-            is Card.UpNext -> ctx.startActivity(Intent(ctx, AiringCalendarActivity::class.java))
-            Card.Lucky -> pickRandom()
+            is Card.UpNext ->
+                if (onText) ctx.startActivity(Intent(ctx, AiringCalendarActivity::class.java)) else next()
+
+            Card.Lucky -> if (onText) pickRandom() else next()
             else -> next()
         }
     }
@@ -409,6 +442,7 @@ class InfoPillController(
 
     private companion object {
         const val PILL_HEIGHT_DP = 24
+        const val GAP_DP = 16
         const val SOON_SECONDS = 3 * 3600L
         const val AIRING_REFRESH_MS = 30 * 60_000L
     }
