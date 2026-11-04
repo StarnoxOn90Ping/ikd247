@@ -36,8 +36,9 @@ import java.util.Calendar
  *  - Backlog        planned list size, and how many were not touched for 30+ days
  *  - Feeling lucky  tap the text -> info page of a random planned show (needs network)
  *
- * Tapping the bar goes to the next card, swiping it goes forward / back. The two cards with an
- * action (Up next, Feeling lucky) run it only when the tap lands on the text itself.
+ * Tapping the bar only cycles to the next card; swiping goes forward / back. The two cards with
+ * an action (Up next -> calendar, Feeling lucky -> random pick) show a small round button on the
+ * left of the bar, and only that button runs the action.
  *
  * Offline / Pre-cached: everything comes from on-device data (airing cache, airing alarms,
  * cached Home lists, local watch time). Only the lucky card needs the network and is skipped.
@@ -101,7 +102,8 @@ class InfoPillController(
                 bottomMargin = dp(16)
             }
         )
-        pill.onTap = { x -> onTap(x) }
+        pill.onTap = { next() }
+        pill.onAction = { runAction() }
         pill.onSwipe = { forward -> if (forward) next() else previous() }
         // keep the gap under the list buttons equal to the gap between the two buttons (16dp)
         b.homeListContainer.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> pill.post { alignGap() } }
@@ -121,6 +123,7 @@ class InfoPillController(
         released = true
         pill.removeCallbacks(tickRunnable)
         pill.onTap = null
+        pill.onAction = null
         pill.onSwipe = null
     }
 
@@ -259,6 +262,7 @@ class InfoPillController(
         applyVisibility()
         val card = cards.getOrNull(index) ?: return
         pill.setPages(cards.size, index, animate = false)
+        syncAction()
         val text = render(card)
         pill.setReadableText(text)
         if (cardChanged) pill.showText(text, animate = shownOnce && pill.isVisible) else pill.updateText(text)
@@ -399,6 +403,7 @@ class InfoPillController(
         if (cards.size < 2) return
         index = (index + 1) % cards.size
         pill.setPages(cards.size, index, animate = true)
+        syncAction()
         val text = render(cards[index])
         pill.setReadableText(text)
         pill.showText(text, animate = true, forward = true)
@@ -408,20 +413,29 @@ class InfoPillController(
         if (cards.size < 2) return
         index = (index - 1 + cards.size) % cards.size
         pill.setPages(cards.size, index, animate = true)
+        syncAction()
         val text = render(cards[index])
         pill.setReadableText(text)
         pill.showText(text, animate = true, forward = false)
     }
 
-    private fun onTap(x: Float) {
-        val onText = pill.isOverText(x)
+    private fun runAction() {
         when (cards.getOrNull(index)) {
-            is Card.UpNext ->
-                if (onText) ctx.startActivity(Intent(ctx, AiringCalendarActivity::class.java)) else next()
-
-            Card.Lucky -> if (onText) pickRandom() else next()
-            else -> next()
+            is Card.UpNext -> ctx.startActivity(Intent(ctx, AiringCalendarActivity::class.java))
+            Card.Lucky -> pickRandom()
+            else -> Unit
         }
+    }
+
+    /** Shows the round button only on the cards that have an action. */
+    private fun syncAction() {
+        pill.setAction(
+            when (cards.getOrNull(index)) {
+                is Card.UpNext -> InfoPillView.Action.CALENDAR
+                Card.Lucky -> InfoPillView.Action.DICE
+                else -> null
+            }
+        )
     }
 
     private fun pickRandom() {

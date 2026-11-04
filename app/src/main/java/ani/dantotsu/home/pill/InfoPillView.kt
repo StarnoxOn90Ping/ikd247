@@ -32,7 +32,6 @@ import androidx.core.graphics.ColorUtils
 import ani.dantotsu.R
 import com.google.android.material.color.MaterialColors
 import kotlin.math.abs
-import kotlin.math.min
 
 /**
  * The slim bar under the Anime / Manga list buttons.
@@ -42,14 +41,16 @@ import kotlin.math.min
  *  - one line of text that slides / fades to the next one when the card changes
  *  - tiny page dots on the right: the active dot stretches into a little bar
  *
- * The whole bar is one tap target:
- *  - a tap reports its x position through [onTap] (the controller decides: text = card action,
- *    anywhere else = next card)
- *  - a horizontal swipe calls [onSwipe] (left = next card, right = previous card)
+ * Tapping the bar only ever cycles ([onTap]); a horizontal swipe cycles too ([onSwipe]).
+ * Cards that can *do* something show a small round button at the left end ([setAction]);
+ * only that button runs [onAction].
  */
 class InfoPillView(context: Context) : FrameLayout(context) {
 
-    var onTap: ((x: Float) -> Unit)? = null
+    var onTap: (() -> Unit)? = null
+    var onAction: (() -> Unit)? = null
+
+    enum class Action { CALENDAR, DICE }
     var onSwipe: ((forward: Boolean) -> Unit)? = null
 
     private val d = resources.displayMetrics.density
@@ -96,6 +97,25 @@ class InfoPillView(context: Context) : FrameLayout(context) {
     private var lastX = -1f
     private var swiping = false
     private var pressAnim: android.animation.ObjectAnimator? = null
+    private var downOnAction = false
+
+    // ---- action button ------------------------------------------------------------------------
+
+    private var action: Action? = null
+    private var actionDrawn: Action = Action.CALENDAR // kept while the button fades out
+    private var actionShow = 0f
+    private var actionAnim: ValueAnimator? = null
+    private var actionPressed = false
+    private val actionFill = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val actionStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 1.2f * d
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+        color = onBase
+    }
+    private val actionDot = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = onBase }
+    private val actionRect = RectF()
 
     init {
         setWillNotDraw(false)
@@ -151,9 +171,13 @@ class InfoPillView(context: Context) : FrameLayout(context) {
             MotionEvent.ACTION_DOWN -> {
                 downX = e.x; downY = e.y; lastX = e.x
                 swiping = false
+                downOnAction = isOnAction(e.x)
+                actionPressed = downOnAction
                 isPressed = true
                 foreground?.setHotspot(e.x, e.y)
-                pressTo(0.985f, 0.9f, 110, DecelerateInterpolator())
+                // pressing the little button squishes it (drawn), pressing the bar squishes the bar
+                if (!downOnAction) pressTo(0.985f, 0.9f, 110, DecelerateInterpolator())
+                invalidate()
             }
 
             MotionEvent.ACTION_MOVE -> {
@@ -182,7 +206,9 @@ class InfoPillView(context: Context) : FrameLayout(context) {
 
     private fun release() {
         isPressed = false
+        actionPressed = false
         pressTo(1f, 1f, 260, OvershootInterpolator(2.2f))
+        invalidate()
     }
 
     // own animator (not animate()), so it never disturbs the controller's entrance animation
@@ -196,19 +222,68 @@ class InfoPillView(context: Context) : FrameLayout(context) {
     }
 
     override fun performClick(): Boolean {
-        val x = if (lastX < 0f) width / 2f else lastX
+        val onButton = downOnAction
+        downOnAction = false
         lastX = -1f
-        onTap?.invoke(x)
+        if (onButton) onAction?.invoke() else onTap?.invoke()
         return super.performClick()
     }
 
-    /** True when [x] (in this view's coordinates) is on the text itself, not on the empty sides. */
-    fun isOverText(x: Float): Boolean {
-        val avail = textWidthPx()
-        if (avail <= 0) return true
-        val textW = min(shown.paint.measureText(shown.text.toString()), avail.toFloat())
-        val centre = textHost.left + textHost.paddingLeft + avail / 2f
-        return abs(x - centre) <= textW / 2f + 10 * d
+    /** The button's touch area: the left end of the bar, the full height of it. */
+    private fun isOnAction(x: Float): Boolean = action != null && actionShow > 0.5f && x <= 34 * d
+
+    /** Shows the round button for a card that has an action, or hides it (null). */
+    fun setAction(a: Action?) {
+        if (a == action) return
+        action = a
+        if (a != null) actionDrawn = a
+        val target = if (a != null) 1f else 0f
+        (textHost.layoutParams as LayoutParams).marginStart = if (a != null) (26 * d).toInt() else 0
+        textHost.requestLayout()
+        actionAnim?.cancel()
+        if (!isLaidOut) {
+            actionShow = target
+            invalidate()
+            return
+        }
+        actionAnim = ValueAnimator.ofFloat(actionShow, target).apply {
+            duration = 240
+            interpolator = DecelerateInterpolator()
+            addUpdateListener { actionShow = it.animatedValue as Float; invalidate() }
+            start()
+        }
+    }
+
+    private fun drawAction(canvas: Canvas) {
+        val t = actionShow
+        if (t <= 0.01f) return
+        val r = 8f * d * (0.6f + 0.4f * t) * (if (actionPressed) 0.9f else 1f)
+        val cx = 14f * d
+        val cy = height / 2f
+        actionFill.color = ColorUtils.setAlphaComponent(onBase, ((if (actionPressed) 90 else 52) * t).toInt())
+        canvas.drawCircle(cx, cy, r, actionFill)
+        actionStroke.alpha = (255 * t).toInt()
+        actionDot.alpha = (255 * t).toInt()
+        val u = d * (0.6f + 0.4f * t)
+        when (actionDrawn) {
+            Action.CALENDAR -> {
+                // page with a header line and two binder rings
+                actionRect.set(cx - 4f * u, cy - 3f * u, cx + 4f * u, cy + 4f * u)
+                canvas.drawRoundRect(actionRect, 1.4f * u, 1.4f * u, actionStroke)
+                canvas.drawLine(cx - 4f * u, cy - 0.6f * u, cx + 4f * u, cy - 0.6f * u, actionStroke)
+                canvas.drawLine(cx - 2f * u, cy - 4.4f * u, cx - 2f * u, cy - 2f * u, actionStroke)
+                canvas.drawLine(cx + 2f * u, cy - 4.4f * u, cx + 2f * u, cy - 2f * u, actionStroke)
+            }
+
+            Action.DICE -> {
+                // a die showing three
+                actionRect.set(cx - 4f * u, cy - 4f * u, cx + 4f * u, cy + 4f * u)
+                canvas.drawRoundRect(actionRect, 1.8f * u, 1.8f * u, actionStroke)
+                canvas.drawCircle(cx - 1.9f * u, cy - 1.9f * u, 0.75f * u, actionDot)
+                canvas.drawCircle(cx, cy, 0.75f * u, actionDot)
+                canvas.drawCircle(cx + 1.9f * u, cy + 1.9f * u, 0.75f * u, actionDot)
+            }
+        }
     }
 
     // ---- api ----------------------------------------------------------------------------------
@@ -340,6 +415,7 @@ class InfoPillView(context: Context) : FrameLayout(context) {
 
     override fun dispatchDraw(canvas: Canvas) {
         super.dispatchDraw(canvas)
+        drawAction(canvas)
         if (dotCount < 2) return
         val dot = 4f * d
         val bar = 10f * d
@@ -392,6 +468,7 @@ class InfoPillView(context: Context) : FrameLayout(context) {
         stopShimmer()
         dotAnim?.cancel()
         pressAnim?.cancel()
+        actionAnim?.cancel()
         shown.animate().cancel()
         hidden.animate().cancel()
         super.onDetachedFromWindow()
