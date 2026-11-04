@@ -2,7 +2,8 @@
 <resources>
     <string name="streak_label" translatable="false">day streak</string>
 
-    <!-- Short on purpose: they sit in a small 2-3 line slot in the Home header. -->
+    <!-- Short on purpose: they sit in a small 2-3 line slot in the Home header (keep each under ~45 characters).
+         {n} is replaced with the current streak number. -->
 
     <!-- never started / streak too short to mourn -->
     <string-array name="streak_lines_none" translatable="false">
@@ -10,43 +11,152 @@
         <item>Finish one episode or chapter.</item>
         <item>It\'s cold in here. Start a fire.</item>
         <item>Zero days. Only way is up.</item>
+        <item>Your watchlist misses you.</item>
+        <item>Psst. Just one episode. That\'s it.</item>
+        <item>Day zero. The couch is ready.</item>
+        <item>No flame, no glory. Press play.</item>
+        <item>Even the logs are bored. Watch.</item>
+        <item>\"Just one episode\" has worked before.</item>
+        <item>Chapters don\'t read themselves.</item>
+        <item>Fire\'s out. Marshmallows are sad.</item>
     </string-array>
 
+    <!-- 1 day -->
     <string-array name="streak_lines_day1" translatable="false">
         <item>Day one. Legends start here.</item>
         <item>The first spark. Guard it.</item>
         <item>One down. Couch is proud.</item>
+        <item>Spark acquired. Don\'t sneeze on it.</item>
+        <item>Day 1. Villain origin story.</item>
+        <item>It begins. Tomorrow you\'re hooked.</item>
+        <item>One day. A streak. Technically.</item>
+        <item>First flame lit. Fire marshal nervous.</item>
+        <item>Welcome to the cult. Cookies later.</item>
+        <item>Day one done. The easy part. Enjoy.</item>
     </string-array>
 
+    <!-- 2-6 days -->
     <string-array name="streak_lines_early" translatable="false">
-        <item>A few in a row. Dangerous.</item>
+        <item>{n} days in a row. Dangerous.</item>
         <item>Becoming a habit. Uh oh.</item>
         <item>Look at you, consistent.</item>
         <item>The flame grows. Keep going.</item>
+        <item>{n} days. Doctor says touch grass.</item>
+        <item>Plot armor: activated.</item>
+        <item>{n} days. Fire safety? Never heard.</item>
+        <item>Your sleep schedule filed a complaint.</item>
+        <item>Habit loading... {n} days in.</item>
+        <item>Not obsessed. Just consistent.</item>
+        <item>Tomorrow\'s episode is already warm.</item>
+        <item>Cute streak. Let\'s make it scary.</item>
     </string-array>
 
+    <!-- 7-13 days -->
     <string-array name="streak_lines_week" translatable="false">
         <item>A whole week. Touch grass? Nah.</item>
         <item>Seven days. The buttons caught fire.</item>
         <item>You\'re literally on fire.</item>
+        <item>{n} days. Fire dept. is on hold.</item>
+        <item>Those flames on the buttons? You.</item>
+        <item>{n} days. Smoke detector gave up.</item>
+        <item>Week unlocked. Fire spreads, sorry.</item>
+        <item>{n} days. Even your couch glows.</item>
+        <item>Hot streak. Do not pet.</item>
+        <item>Neighbors smell smoke. It\'s you.</item>
+        <item>{n} days. The backlog trembles.</item>
+        <item>Main character arc: you, glowing.</item>
     </string-array>
 
+    <!-- 14-29 days -->
     <string-array name="streak_lines_fortnight" translatable="false">
         <item>Two weeks. Sleep is optional.</item>
         <item>A lifestyle, not a streak.</item>
         <item>Dedication. And screen time.</item>
+        <item>{n} days. This is a personality.</item>
+        <item>{n} days. Fire is not a hobby now.</item>
+        <item>{n} days. Protagonists take notes.</item>
+        <item>{n} days. Pillow calls you a stranger.</item>
+        <item>So hot, the pans ask for tips.</item>
+        <item>Training arc. Montage music on.</item>
+        <item>{n} days. Your eyes want a word.</item>
+        <item>{n} days. HR calls it commitment.</item>
+        <item>Two weeks. Fire insurance: denied.</item>
     </string-array>
 
+    <!-- 30-59 days -->
     <string-array name="streak_lines_month" translatable="false">
-        <item>30 days. Watchlist is shaking.</item>
-        <item>Maximum fire reached. You did that.</item>
+        <item>{n} days. The watchlist trembles.</item>
         <item>A month of flames. Respect.</item>
+        <item>Max fire reached. You did that.</item>
+        <item>{n} days. You are the final boss.</item>
+        <item>Month-plus. Scientists baffled.</item>
+        <item>{n} days. Fire is now furniture.</item>
+        <item>{n} days. The flames pay you rent.</item>
+        <item>Final form unlocked. Still going.</item>
+        <item>{n} days. NPCs bow as you pass.</item>
+        <item>{n} days. The sun asks for tips.</item>
+        <item>Hot take: you never stop.</item>
+        <item>Legend status pending. {n} days.</item>
     </string-array>
 
-    <string-array name="streak_lines_legend" translatable="false">
-        <item>Absolute legend. Cat\'s impressed.</item>
-        <item>Your flame has its own gravity.</item>
-        <item>Main character energy. Hydrate.</item>
+    <!-- 60-99 days -->
+    <string-array name="streak_lines_m60" translatable="false">
+        <item>{n} days. Two months of pure heat.</item>
+        <item>{n} days. The fire wrote your name.</item>
+        <item>Past 60. This is a documentary now.</item>
+        <item>{n} days. Your TBR fears you.</item>
+        <item>{n} days. Calendars bow quietly.</item>
+        <item>This streak is old enough to argue.</item>
+        <item>{n} days. The fire has a fan club.</item>
+        <item>Triple digits soon. Keep breathing.</item>
+        <item>{n} days. Sage-level consistency.</item>
+        <item>{n} days. Even Mondays respect you.</item>
+        <item>{n} days. The cat is concerned. Proud.</item>
+        <item>{n} days. Smoke signals say wow.</item>
+    </string-array>
+
+    <!-- 100-199 days -->
+    <string-array name="streak_lines_m100" translatable="false">
+        <item>{n} days. Triple digits. Absurd.</item>
+        <item>Past 100. The flame has a pension.</item>
+        <item>{n} days. Hall of Fame wing built.</item>
+        <item>{n} days. The fire is a nation now.</item>
+        <item>{n} days. You ARE the algorithm.</item>
+        <item>Triple digits. Touch grass? Too late.</item>
+        <item>{n} days. Writers want your schedule.</item>
+        <item>{n} days. Dragons ask you for advice.</item>
+        <item>{n} days. Legendary. Hydrate, please.</item>
+        <item>{n} days. History books updating.</item>
+        <item>{n} days. Fire is your co-pilot.</item>
+        <item>{n} days. Even the sun is jealous.</item>
+    </string-array>
+
+    <!-- 200-364 days -->
+    <string-array name="streak_lines_m200" translatable="false">
+        <item>{n} days. Fire bows to you now.</item>
+        <item>{n} days. Not a streak. Weather.</item>
+        <item>{n} days. Seasons changed. You didn\'t.</item>
+        <item>{n} days. The fire retired. You didn\'t.</item>
+        <item>Past 200. Statues are being carved.</item>
+        <item>{n} days. You don\'t watch. You are anime.</item>
+        <item>{n} days. Unstoppable. Slightly worrying.</item>
+        <item>{n} days. Whole sequels came and went.</item>
+        <item>{n} days. Absolute unit of dedication.</item>
+        <item>{n} days. Even time takes notes.</item>
+    </string-array>
+
+    <!-- 365+ days -->
+    <string-array name="streak_lines_m365" translatable="false">
+        <item>{n} days. A full year. Unreal.</item>
+        <item>{n} days. The fire named you heir.</item>
+        <item>Over a year. Gods send fan mail.</item>
+        <item>{n} days. Mythical. Go outside. Briefly.</item>
+        <item>{n} days. You are the lore now.</item>
+        <item>{n} days. Planets align for you.</item>
+        <item>{n} days. Statue pending. Subject: you.</item>
+        <item>{n} days. The fire is tired. You\'re not.</item>
+        <item>A year-plus. Please drink some water.</item>
+        <item>{n} days. Final boss of consistency.</item>
     </string-array>
 
     <!-- alive, but nothing finished today yet -->
@@ -55,6 +165,14 @@
         <item>Nothing yet today. Fire\'s hungry.</item>
         <item>Quick, an episode before it dies.</item>
         <item>Streak at risk. Not a drill.</item>
+        <item>The fire is sulking. Feed it.</item>
+        <item>One chapter. Just one. Do it.</item>
+        <item>Your flame is at 1% battery.</item>
+        <item>The cat side-eyes you. Press play.</item>
+        <item>Streak\'s sweating. So should you.</item>
+        <item>The fire asks: are you coming?</item>
+        <item>Clock\'s ticking. Fire\'s fading.</item>
+        <item>Procrastinating? The fire noticed.</item>
     </string-array>
 
     <!-- yesterday missed, grace day will cover it -->
@@ -62,6 +180,13 @@
         <item>Missed yesterday. Grace day\'s ready.</item>
         <item>Grace day on standby. Watch something.</item>
         <item>Close call. Grace day has your back.</item>
+        <item>Yesterday slipped. Today can fix it.</item>
+        <item>Grace day is hovering. Press play.</item>
+        <item>You blinked. Streak survived. Barely.</item>
+        <item>Free pass loaded. Don\'t waste it.</item>
+        <item>Plot twist: yesterday never happened.</item>
+        <item>Streak on thin ice. Skate fast.</item>
+        <item>Grace pending. Watch to cash it in.</item>
     </string-array>
 
     <!-- streak of 3+ just broke -->
@@ -70,6 +195,14 @@
         <item>Fresh start. The cat forgives you.</item>
         <item>Happens to the best. Relight it.</item>
         <item>The flame went out. Try again.</item>
+        <item>RIP streak. Gone but memed.</item>
+        <item>Plot twist: new origin story.</item>
+        <item>Fire\'s out. Matches in drawer one.</item>
+        <item>It was a good run. Run another.</item>
+        <item>Ashes today, bonfire tomorrow.</item>
+        <item>Comeback arc starts now.</item>
+        <item>Streak died dramatically. As planned.</item>
+        <item>Even phoenixes start at zero.</item>
     </string-array>
 
     <!-- Settings > Streak -->
@@ -82,12 +215,9 @@
     <string name="streak_show" translatable="false">Show streak on Home</string>
     <string name="streak_animated" translatable="false">Animate the fire</string>
     <string name="streak_button_fire" translatable="false">Fire on Anime / Manga buttons</string>
-    <string name="streak_number_flames" translatable="false">Flames behind the number</string>
     <string name="streak_sparks" translatable="false">Sparks and embers</string>
     <string name="streak_lines" translatable="false">Show the little message</string>
     <string name="streak_haptics" translatable="false">Vibrate when tapping the streak</string>
-    <string name="streak_intensity_label" translatable="false">Fire intensity: %1$d%%</string>
-    <string name="streak_intensity_note" translatable="false">Scales how big and bright every fire looks. Stages still work the same.</string>
     <string name="streak_grace" translatable="false">Grace day</string>
     <string name="streak_day_start_label" translatable="false">A new day starts at %1$02d:00</string>
     <string name="streak_threshold_label" translatable="false">Episode counts at %1$d%% watched</string>

@@ -51,18 +51,9 @@ class StreakSettingsActivity : AppCompatActivity() {
         bindSwitch(binding.streakShow, PrefName.StreakShow)
         bindSwitch(binding.streakAnimated, PrefName.StreakFireAnimated)
         bindSwitch(binding.streakButtonFire, PrefName.StreakButtonFire)
-        bindSwitch(binding.streakNumberFlames, PrefName.StreakNumberFlames)
         bindSwitch(binding.streakSparks, PrefName.StreakSparks)
         bindSwitch(binding.streakLines, PrefName.StreakLines)
         bindSwitch(binding.streakHaptics, PrefName.StreakHaptics)
-
-        bindSlider(
-            binding.streakIntensity, step = 10,
-            initial = (PrefManager.getVal<Float>(PrefName.StreakIntensity) * 100f).roundToInt()
-        ) { value ->
-            PrefManager.setVal(PrefName.StreakIntensity, value / 100f)
-            binding.streakIntensityLabel.text = getString(R.string.streak_intensity_label, value)
-        }
 
         // ---- rules --------------------------------------------------------------------------
         bindSwitch(binding.streakGrace, PrefName.StreakGraceDay)
@@ -210,6 +201,14 @@ class StreakSettingsActivity : AppCompatActivity() {
     }
 
     private fun refreshDebugTexts() {
+        val count = PrefManager.getVal<Int>(PrefName.StreakDebugCount)
+        val names = resources.getStringArray(R.array.streak_debug_statuses)
+        val status = names.getOrElse(PrefManager.getVal<Int>(PrefName.StreakDebugStatus)) { names[0] }
+        binding.streakDebugEdit.text = getString(R.string.streak_debug_edit, count)
+        binding.streakDebugStatus.text = getString(R.string.streak_debug_status, status)
+    }
+}
+Texts() {
         val count = PrefManager.getVal<Int>(PrefName.StreakDebugCount)
         val names = resources.getStringArray(R.array.streak_debug_statuses)
         val status = names.getOrElse(PrefManager.getVal<Int>(PrefName.StreakDebugStatus)) { names[0] }

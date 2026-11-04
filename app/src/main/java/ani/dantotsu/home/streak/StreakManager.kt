@@ -99,8 +99,8 @@ object StreakManager {
     fun episodeThreshold(): Float =
         PrefManager.getVal<Int>(PrefName.StreakThreshold).coerceIn(50, 100) / 100f
 
-    /** Multiplier for how fierce the fire looks (Settings > Streak > Fire intensity). */
-    fun intensityBoost(): Float = PrefManager.getVal<Float>(PrefName.StreakIntensity).coerceIn(0.5f, 1.5f)
+    /** Fire intensity is fixed at 100%. */
+    fun intensityBoost(): Float = 1f
 
     // ---- debug --------------------------------------------------------------------------------
 
@@ -218,6 +218,12 @@ object StreakManager {
             Status.NONE -> real.copy(count = 0, status = status, lostStreak = 0, doneToday = false)
             else -> real.copy(
                 count = n, best = maxOf(real.best, n), status = status, lostStreak = 0,
+                doneToday = status == Status.ACTIVE
+            )
+        }
+    }
+}
+tatus = status, lostStreak = 0,
                 doneToday = status == Status.ACTIVE
             )
         }

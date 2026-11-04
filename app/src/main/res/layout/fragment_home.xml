@@ -17,17 +17,20 @@
             android:id="@+id/homeContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:clipChildren="false"
             android:orientation="vertical">
 
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:clipChildren="false">
 
                 <com.flaviofaria.kenburnsview.KenBurnsView
                     android:id="@+id/homeUserBg"
                     android:layout_width="match_parent"
                     android:layout_height="216dp"
                     android:scaleType="centerCrop"
+                    android:visibility="gone"
                     tools:ignore="ContentDescription"
                     tools:src="@tools:sample/backgrounds/scenic" />
 
@@ -50,6 +53,7 @@
                     android:id="@+id/homeTopContainer"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:clipChildren="false"
                     android:orientation="vertical">
 
                     <LinearLayout
@@ -221,6 +225,7 @@
                         android:id="@+id/homeListContainer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:clipChildren="false"
                         android:clipToPadding="false"
                         android:paddingStart="24dp"
                         android:paddingEnd="24dp">

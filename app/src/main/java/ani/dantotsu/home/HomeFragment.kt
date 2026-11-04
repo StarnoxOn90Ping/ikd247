@@ -23,7 +23,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import ani.dantotsu.R
 import ani.dantotsu.Refresh
-import ani.dantotsu.blurImage
 import ani.dantotsu.bottomBarOrNull
 import ani.dantotsu.connections.anilist.Anilist
 import ani.dantotsu.connections.anilist.AnilistHomeViewModel
@@ -100,12 +99,10 @@ class HomeFragment : Fragment() {
                         && PrefManager.getVal<Boolean>(PrefName.ShowNotificationRedDot) == true
                 currentBinding.homeNotificationCount.text = Anilist.unreadNotificationCount.toString()
 
-                val bannerAnimations: Boolean = PrefManager.getVal(PrefName.BannerAnimations)
-                val bannerUrl = Anilist.bg
-                blurImage(
-                    if (bannerAnimations) currentBinding.homeUserBg else currentBinding.homeUserBgNoKen,
-                    bannerUrl
-                )
+                // The banner is always shown still and sharp (no blur, no Ken Burns movement).
+                currentBinding.homeUserBg.visibility = View.GONE
+                currentBinding.homeUserBgNoKen.visibility = View.VISIBLE
+                loadClearBanner(currentBinding.homeUserBgNoKen, Anilist.bg)
                 currentBinding.homeUserDataProgressBar.visibility = View.GONE
 
                 val listUserId = Anilist.userid ?: 0
@@ -652,7 +649,7 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
             binding.homeNotificationCount.isVisible = Anilist.unreadNotificationCount > 0
                     && PrefManager.getVal<Boolean>(PrefName.ShowNotificationRedDot) == true
             binding.homeNotificationCount.text = Anilist.unreadNotificationCount.toString()
-            headerController?.refresh()
+            headerController?.onReturn()
             // Coming back from a media page / the player: pick up progress made in the meantime.
             if (Anilist.initialized) {
                 viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
@@ -660,6 +657,10 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
                 }
             }
         }
+        super.onResume()
+    }
+}
+ }
         super.onResume()
     }
 }
