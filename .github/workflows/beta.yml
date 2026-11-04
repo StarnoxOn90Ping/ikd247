@@ -107,13 +107,13 @@ jobs:
       if: ${{ env.SKIP_BUILD != 'true' }}
       run: |
         if [ "${{ github.repository }}" == "rebelonion/Dantotsu" ]; then
-          ./gradlew assembleGoogleAlpha \
+          ./gradlew assembleGoogleRelease \
             -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/key.keystore \
             -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
             -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
             -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }};
         else
-          ./gradlew assembleGoogleAlpha;
+          ./gradlew assembleGoogleRelease;
         fi
 
     - name: Generate APK checksum
