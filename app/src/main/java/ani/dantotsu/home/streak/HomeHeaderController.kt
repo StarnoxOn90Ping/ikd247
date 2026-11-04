@@ -5,6 +5,7 @@ import android.graphics.LinearGradient
 import android.graphics.Rect
 import android.graphics.Matrix
 import android.graphics.Shader
+import android.os.SystemClock
 import android.view.Gravity
 import android.view.HapticFeedbackConstants
 import android.view.View
@@ -20,6 +21,7 @@ import ani.dantotsu.R
 import ani.dantotsu.databinding.FragmentHomeBinding
 import ani.dantotsu.settings.saving.PrefManager
 import ani.dantotsu.settings.saving.PrefName
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
 import kotlin.random.Random
 
@@ -29,9 +31,12 @@ import kotlin.random.Random
  *   [big fire]  [number on fire]  [short funny line]            [search] [pfp]
  *
  * It also sets the Anime / Manga list buttons on fire once the streak reaches stage
- * [StreakManager.BUTTON_FIRE_STAGE] (7 days): flames growing out of the top edge of each card.
- * They are added from code,
- * so the list buttons' own layout stays exactly as it was.
+ * [StreakManager.BUTTON_FIRE_STAGE]: flames growing out of the top edge of each card, following
+ * its rounded corners. They are added from code, so the list buttons' own layout stays exactly
+ * as it was.
+ *
+ * The fire stays invisible while the buttons slide in. Once both are in place it ignites (see
+ * [CardFireView]): the whole button burns for a moment, then only the flames on top are left.
  *
  * Everything here reads local data only, so it works the same in Pre-cached (offline) mode.
  */
@@ -54,9 +59,15 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
     private var released = false
     private var resumedOnce = false
 
-    private var animeAura: FireView? = null
-    private var mangaAura: FireView? = null
+    private var animeAura: CardFireView? = null
+    private var mangaAura: CardFireView? = null
     private var headroomHooked = false
+
+    private var burningNow = false
+    private var ignitionDone = false
+    private var ignitionPending = false
+    private var inPlaceSince = 0L
+    private val ignitionCheck = Runnable { checkIgnition() }
 
     // ---- setup --------------------------------------------------------------------------------
 
@@ -90,6 +101,7 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
 
     fun release() {
         released = true
+        b.homeListContainer.removeCallbacks(ignitionCheck)
         waveAnim?.cancel(); waveAnim = null
         glowAnim?.cancel(); glowAnim = null
         countAnim?.cancel(); countAnim = null
@@ -293,10 +305,12 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
         val burning = stage >= StreakManager.BUTTON_FIRE_STAGE &&
                 PrefManager.getVal<Boolean>(PrefName.StreakButtonFire) &&
                 PrefManager.getVal<Boolean>(PrefName.StreakShow)
+        burningNow = burning
         if (burning) {
             animeAura = animeAura ?: addAura(b.homeAnimeList)
             mangaAura = mangaAura ?: addAura(b.homeMangaList)
             hookHeadroom()
+            if (!ignitionDone) scheduleIgnition()
         }
         val dimmed = if (snap.status == StreakManager.Status.ACTIVE) 0f else 0.35f
 
@@ -320,11 +334,11 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
      * card's bounds (so a card can keep clipping its own content to its rounded corners) and it
      * draws outside them. It sits above the card, and touches pass straight through it.
      */
-    private fun addAura(card: View): FireView {
+    private fun addAura(card: View): CardFireView {
         val parent = card.parent as ConstraintLayout
-        val fire = FireView(ctx).apply {
-            setMode(FireView.Mode.AURA)
-            setFollow(card)
+        val fire = CardFireView(ctx).apply {
+            // the fire follows the card's real rounded corners
+            setCornerRadius((card as? MaterialCardView)?.radius ?: (16f * d))
         }
         parent.addView(
             fire,
@@ -336,6 +350,43 @@ class HomeHeaderController(private val b: FragmentHomeBinding) {
             }
         )
         return fire
+    }
+
+    /**
+     * The fire waits (invisible) until the buttons have finished sliding in, and then ignites on
+     * both buttons together. This watches the two cards every frame: they must be visible, laid
+     * out and not animating any more, and stay that way for a moment.
+     */
+    private fun scheduleIgnition() {
+        if (ignitionPending || ignitionDone || released) return
+        ignitionPending = true
+        inPlaceSince = 0L
+        b.homeListContainer.postOnAnimation(ignitionCheck)
+    }
+
+    private fun checkIgnition() {
+        if (released) return
+        if (ignitionDone || !burningNow) {
+            ignitionPending = false
+            return
+        }
+        val inPlace = listOf(b.homeAnimeList, b.homeMangaList).all { c ->
+            c.visibility == View.VISIBLE && c.isLaidOut && c.width > 0 &&
+                    (c.animation?.hasEnded() ?: true)
+        } && b.root.isShown
+        if (inPlace) {
+            val now = SystemClock.uptimeMillis()
+            if (inPlaceSince == 0L) inPlaceSince = now
+            if (now - inPlaceSince >= 350L) {
+                ignitionDone = true
+                ignitionPending = false
+                listOfNotNull(animeAura, mangaAura).forEach { it.ignite() }
+                return
+            }
+        } else {
+            inPlaceSince = 0L
+        }
+        b.homeListContainer.postOnAnimation(ignitionCheck)
     }
 
     /**
