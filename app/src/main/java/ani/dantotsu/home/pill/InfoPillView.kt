@@ -53,6 +53,9 @@ class InfoPillView(context: Context) : FrameLayout(context) {
     enum class Action { CALENDAR, DICE }
     var onSwipe: ((forward: Boolean) -> Unit)? = null
 
+    /** Called (posted) when the bar got its width, so the controller can re-fit the text. */
+    var onResized: (() -> Unit)? = null
+
     private val d = resources.displayMetrics.density
     private val corner = CORNER_DP * d
 
@@ -86,6 +89,16 @@ class InfoPillView(context: Context) : FrameLayout(context) {
     // ---- text ---------------------------------------------------------------------------------
 
     private val textHost = FrameLayout(context)
+
+    // The text is centred on the *bar*: both sides reserve the same room (the dots on the right,
+    // the round button on the left). Only when a text is too long for that does it fall back to
+    // the old, wider-but-lopsided area. The paddings are animated, so nothing ever jumps.
+    private var reserveTarget = 0f
+    private var wideMode = false
+    private var padL = 0f
+    private var padR = 0f
+    private var padAnim: ValueAnimator? = null
+    private var currentText: CharSequence = ""
     private var shown = makeText()
     private var hidden = makeText()
 
@@ -134,7 +147,7 @@ class InfoPillView(context: Context) : FrameLayout(context) {
             outlineAmbientShadowColor = base
         }
 
-        textHost.setPadding((14 * d).toInt(), 0, (4 * d).toInt(), 0)
+        applyPadding(EDGE_DP * d, EDGE_DP * d)
         textHost.addView(shown)
         textHost.addView(hidden)
         hidden.alpha = 0f
@@ -238,8 +251,7 @@ class InfoPillView(context: Context) : FrameLayout(context) {
         action = a
         if (a != null) actionDrawn = a
         val target = if (a != null) 1f else 0f
-        (textHost.layoutParams as LayoutParams).marginStart = if (a != null) (26 * d).toInt() else 0
-        textHost.requestLayout()
+        refitPadding(allowNarrow = true)
         actionAnim?.cancel()
         if (!isLaidOut) {
             actionShow = target
@@ -292,9 +304,8 @@ class InfoPillView(context: Context) : FrameLayout(context) {
     fun setPages(count: Int, active: Int, animate: Boolean) {
         if (count != dotCount) {
             dotCount = count
-            dotsReserve = if (count > 1) ((count * 8 + 10 + 18) * d).toInt() else 0
-            (textHost.layoutParams as LayoutParams).marginEnd = dotsReserve
-            textHost.requestLayout()
+            dotsReserve = if (count > 1) ((count * 8 + 16) * d).toInt() else 0
+            refitPadding(allowNarrow = true)
         }
         dotAnim?.cancel()
         if (animate && isLaidOut && abs(dotActive - active) > 0.01f) {
@@ -317,6 +328,8 @@ class InfoPillView(context: Context) : FrameLayout(context) {
     /** Text without any transition (live countdown, data refresh). */
     fun updateText(text: CharSequence) {
         if (shown.text.toString() != text.toString()) shown.text = text
+        currentText = text
+        refitPadding(allowNarrow = false) // a ticking countdown must not make the text hop around
     }
 
     /** Text with the slide / fade transition. [forward] decides which way it travels. */
@@ -329,10 +342,13 @@ class InfoPillView(context: Context) : FrameLayout(context) {
         hidden.alpha = 0f
         hidden.translationY = 0f
 
+        currentText = text
         if (!animate || !isLaidOut) {
             shown.text = text
+            refitPadding(allowNarrow = true)
             return
         }
+        refitPadding(allowNarrow = true)
         val dist = (if (forward) 1f else -1f) * 12f * d
         val outgoing = shown
         val incoming = hidden
@@ -348,8 +364,54 @@ class InfoPillView(context: Context) : FrameLayout(context) {
             .setInterpolator(AccelerateInterpolator(1.2f)).start()
     }
 
+    private fun leftWide(): Float = (if (action != null) ACTION_RESERVE_DP * d else 0f) + EDGE_DP * d
+    private fun rightWide(): Float = dotsReserve + 4f * d
+
+    /**
+     * Room for the text in the widest layout. Computed from the bar's own width and the current
+     * button / dots state, so it is right immediately, even before the next layout pass.
+     */
     private fun textWidthPx(): Int =
-        (textHost.width - textHost.paddingLeft - textHost.paddingRight).coerceAtLeast(0)
+        (width - leftWide() - rightWide() - 1f * d).toInt().coerceAtLeast(0)
+
+    private fun applyPadding(l: Float, r: Float) {
+        padL = l
+        padR = r
+        textHost.setPadding(l.toInt(), 0, r.toInt(), 0)
+    }
+
+    /**
+     * Picks the paddings for the current text: equal on both sides (text exactly in the middle of
+     * the bar) when it fits, otherwise the wide fallback. [allowNarrow] false = only ever widen.
+     */
+    private fun refitPadding(allowNarrow: Boolean) {
+        reserveTarget = maxOf(dotsReserve.toFloat(), if (action != null) ACTION_RESERVE_DP * d else 0f)
+        val sym = reserveTarget + EDGE_DP * d
+        if (width > 0) {
+            val need = shown.paint.measureText(currentText.toString())
+            val fits = need <= width - 2f * sym
+            wideMode = if (fits) (if (allowNarrow) false else wideMode) else true
+        }
+        val tl = if (wideMode) leftWide() else sym
+        val tr = if (wideMode) rightWide() else sym
+        padAnim?.cancel()
+        if (abs(tl - padL) < 0.5f && abs(tr - padR) < 0.5f) return
+        if (!isLaidOut) {
+            applyPadding(tl, tr)
+            return
+        }
+        val fl = padL
+        val fr = padR
+        padAnim = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 220
+            interpolator = DecelerateInterpolator()
+            addUpdateListener {
+                val t = it.animatedValue as Float
+                applyPadding(fl + (tl - fl) * t, fr + (tr - fr) * t)
+            }
+            start()
+        }
+    }
 
     /**
      * "<title><suffix>" where only the title is shortened (with …) when it does not fit, so the
@@ -389,6 +451,10 @@ class InfoPillView(context: Context) : FrameLayout(context) {
         )
         shimmerPaint.shader = shimmerShader
         invalidateOutline()
+        if (w != oldw && w > 0) {
+            refitPadding(allowNarrow = true)
+            post { onResized?.invoke() }
+        }
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -469,6 +535,7 @@ class InfoPillView(context: Context) : FrameLayout(context) {
         dotAnim?.cancel()
         pressAnim?.cancel()
         actionAnim?.cancel()
+        padAnim?.cancel()
         shown.animate().cancel()
         hidden.animate().cancel()
         super.onDetachedFromWindow()
@@ -482,5 +549,11 @@ class InfoPillView(context: Context) : FrameLayout(context) {
     companion object {
         /** Corner radius. The Anime / Manga list buttons use 16dp on a 72dp-tall card. */
         const val CORNER_DP = 8f
+
+        /** Breathing room between the text area and each end of the bar. */
+        private const val EDGE_DP = 10f
+
+        /** Room the round action button takes on the left. */
+        private const val ACTION_RESERVE_DP = 26f
     }
 }

@@ -1,10 +1,12 @@
 package ani.dantotsu.home.pill
 
 import android.content.Intent
+import android.view.Gravity
 import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
@@ -52,6 +54,15 @@ class InfoPillController(
     private val ctx = b.root.context
     private val d = ctx.resources.displayMetrics.density
     private val pill = InfoPillView(ctx)
+    private val cat = SleepyCatView(ctx)
+
+    // Holds the pill and the cat. It is the view that sits in the Home layout (so all the spacing
+    // maths below works on it); it does not clip, so the cat can lie on the pill's top edge in the
+    // gap above it without changing that gap.
+    private val host = FrameLayout(ctx).apply {
+        clipChildren = false
+        clipToPadding = false
+    }
 
     // ---- cards --------------------------------------------------------------------------------
 
@@ -91,9 +102,18 @@ class InfoPillController(
     fun start() {
         val parent = b.homeTopContainer
         val at = parent.indexOfChild(b.homeListContainer) + 1
-        pill.visibility = View.GONE
+        host.visibility = View.GONE
+        host.addView(pill, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        host.addView(
+            cat,
+            FrameLayout.LayoutParams(dp(CAT_W_DP), dp(CAT_H_DP), Gravity.TOP or Gravity.END).apply {
+                // the cat's feet end 2dp below the top of the pill (it lies on the edge)
+                topMargin = -(dp(CAT_H_DP) - dp(2))
+                marginEnd = dp(10)
+            }
+        )
         parent.addView(
-            pill, at,
+            host, at,
             LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(PILL_HEIGHT_DP)).apply {
                 // lines up with the outer edges of the two list buttons (24dp padding + 8dp margin)
                 marginStart = dp(32)
@@ -102,9 +122,10 @@ class InfoPillController(
                 bottomMargin = dp(16)
             }
         )
-        pill.onTap = { next() }
+        pill.onTap = { cat.nudge(); next() }
         pill.onAction = { runAction() }
-        pill.onSwipe = { forward -> if (forward) next() else previous() }
+        pill.onSwipe = { forward -> cat.nudge(); if (forward) next() else previous() }
+        pill.onResized = { if (!released) rebuild() }
         // keep the gap under the list buttons equal to the gap between the two buttons (16dp)
         b.homeListContainer.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> pill.post { alignGap() } }
 
@@ -125,6 +146,7 @@ class InfoPillController(
         pill.onTap = null
         pill.onAction = null
         pill.onSwipe = null
+        pill.onResized = null
     }
 
     /** Home came back to the front (from a media page, the player, the calendar...). */
@@ -265,27 +287,27 @@ class InfoPillController(
         syncAction()
         val text = render(card)
         pill.setReadableText(text)
-        if (cardChanged) pill.showText(text, animate = shownOnce && pill.isVisible) else pill.updateText(text)
+        if (cardChanged) pill.showText(text, animate = shownOnce && host.isVisible) else pill.updateText(text)
     }
 
     /** Visible only when there is something to show and the list buttons are already on screen. */
     private fun applyVisibility() {
         val shouldShow = cards.isNotEmpty() && b.homeAnimeList.isVisible
-        if (shouldShow == pill.isVisible) return
+        if (shouldShow == host.isVisible) return
         if (shouldShow) {
             val card = cards.getOrNull(index)
             if (card != null) pill.showText(render(card), animate = false)
-            pill.visibility = View.VISIBLE
+            host.visibility = View.VISIBLE
             setBannerExtra(bannerNeeded())
             if (!shownOnce) {
                 shownOnce = true
-                pill.alpha = 0f
-                pill.translationY = 8f * d
-                pill.animate().alpha(1f).translationY(0f).setStartDelay(260).setDuration(380)
+                host.alpha = 0f
+                host.translationY = 8f * d
+                host.animate().alpha(1f).translationY(0f).setStartDelay(260).setDuration(380)
                     .setInterpolator(DecelerateInterpolator()).start()
             }
         } else {
-            pill.visibility = View.GONE
+            host.visibility = View.GONE
             setBannerExtra(0)
         }
     }
@@ -297,15 +319,15 @@ class InfoPillController(
         if (list.height <= 0) return
         val lowest = maxOf(b.homeAnimeList.bottom, b.homeMangaList.bottom)
         val wanted = dp(GAP_DP) - (list.height - lowest) // the container already has some room below
-        val lp = pill.layoutParams as LinearLayout.LayoutParams
+        val lp = host.layoutParams as LinearLayout.LayoutParams
         if (lp.topMargin == wanted) return
         lp.topMargin = wanted
-        pill.layoutParams = lp
-        if (pill.isVisible) setBannerExtra(bannerNeeded())
+        host.layoutParams = lp
+        if (host.isVisible) setBannerExtra(bannerNeeded())
     }
 
     private fun bannerNeeded(): Int {
-        val lp = pill.layoutParams as LinearLayout.LayoutParams
+        val lp = host.layoutParams as LinearLayout.LayoutParams
         return lp.height + lp.topMargin + lp.bottomMargin
     }
 
@@ -383,7 +405,7 @@ class InfoPillController(
         ticks++
         val card = cards.getOrNull(index)
 
-        if (!pill.isVisible) {
+        if (!host.isVisible) {
             // waiting for the list buttons to appear (cheap), or for data (slower)
             if (cards.isNotEmpty()) applyVisibility() else if (ticks % 5 == 0) rebuild()
             return
@@ -456,6 +478,8 @@ class InfoPillController(
 
     private companion object {
         const val PILL_HEIGHT_DP = 24
+        const val CAT_W_DP = 56
+        const val CAT_H_DP = 32
         const val GAP_DP = 16
         const val SOON_SECONDS = 3 * 3600L
         const val AIRING_REFRESH_MS = 30 * 60_000L
