@@ -19,8 +19,27 @@ import java.time.LocalDateTime
  */
 object StreakManager {
 
-    /** Streak at which the Anime / Manga list buttons catch fire. */
-    const val BUTTON_FIRE_STREAK = 30
+    /**
+     * Fire stages. The stage only depends on the streak number:
+     *
+     *  0 -> 0 days      a bed of logs with cold coals, no fire
+     *  1 -> 1-2 days    a small fire
+     *  2 -> 3-6 days    a bigger fire
+     *  3 -> 7-13 days   bigger still, and the Anime / Manga list buttons catch fire
+     *  4 -> 14-29 days  more intensity on the icon and on the list buttons
+     *  5 -> 30+ days    final stage, nothing changes after this
+     */
+    val STAGE_STARTS = intArrayOf(0, 1, 3, 7, 14, 30)
+    const val MAX_STAGE = 5
+
+    /** First stage where the Anime / Manga list buttons burn. */
+    const val BUTTON_FIRE_STAGE = 3
+
+    fun stageOf(streak: Int): Int {
+        var stage = 0
+        for (i in STAGE_STARTS.indices) if (streak >= STAGE_STARTS[i]) stage = i
+        return stage
+    }
 
     data class Record(
         var streak: Int = 0,
@@ -65,10 +84,30 @@ object StreakManager {
 
     // ---- time ---------------------------------------------------------------------------------
 
-    fun today(): Long = LocalDateTime.now().minusHours(4).toLocalDate().toEpochDay()
+    fun today(): Long = LocalDateTime.now().minusHours(dayStartHour().toLong()).toLocalDate().toEpochDay()
 
     /** Monday-based week index of an epoch day (epoch day 4 = Monday 5 Jan 1970). */
     private fun weekOf(day: Long): Long = Math.floorDiv(day - 4L, 7L)
+
+    // ---- settings (Settings > Streak) ---------------------------------------------------------
+
+    fun dayStartHour(): Int = PrefManager.getVal<Int>(PrefName.StreakDayStart).coerceIn(0, 8)
+
+    fun graceEnabled(): Boolean = PrefManager.getVal(PrefName.StreakGraceDay)
+
+    /** 0.5..1.0: how much of an episode has to be watched for it to count. */
+    fun episodeThreshold(): Float =
+        PrefManager.getVal<Int>(PrefName.StreakThreshold).coerceIn(50, 100) / 100f
+
+    /** Multiplier for how fierce the fire looks (Settings > Streak > Fire intensity). */
+    fun intensityBoost(): Float = PrefManager.getVal<Float>(PrefName.StreakIntensity).coerceIn(0.5f, 1.5f)
+
+    // ---- debug --------------------------------------------------------------------------------
+
+    fun debugEnabled(): Boolean = PrefManager.getVal(PrefName.StreakDebug)
+
+    /** Index into [DEBUG_STATUSES]: 0 = real status. */
+    val DEBUG_STATUSES = listOf(null, Status.ACTIVE, Status.AT_RISK, Status.GRACE, Status.LOST)
 
     // ---- storage ------------------------------------------------------------------------------
 
@@ -128,7 +167,15 @@ object StreakManager {
         return true
     }
 
-    private fun graceAvailable(r: Record, missedDay: Long) = r.graceWeek != weekOf(missedDay)
+    private fun graceAvailable(r: Record, missedDay: Long) =
+        graceEnabled() && r.graceWeek != weekOf(missedDay)
+
+    /** Wipes the real streak (used by the Reset button). */
+    @Synchronized
+    fun reset() {
+        PrefManager.setVal(PrefName.StreakData, "")
+        doneDay = -1L
+    }
 
     // ---- reading ------------------------------------------------------------------------------
 
@@ -157,17 +204,22 @@ object StreakManager {
                 else -> Dot.EMPTY
             }
         }
-        return Snapshot(count, r.best, status, lost, status == Status.ACTIVE, week)
+        val real = Snapshot(count, r.best, status, lost, status == Status.ACTIVE, week)
+        return if (debugEnabled()) debugSnapshot(real) else real
     }
 
-    /** 0..1: how hard the fire burns. */
-    fun fireLevel(streak: Int): Float = when {
-        streak <= 0 -> 0f
-        streak < 3 -> 0.2f
-        streak < 7 -> 0.35f
-        streak < 14 -> 0.5f
-        streak < 30 -> 0.7f
-        streak < 60 -> 0.85f
-        else -> 1f
+    /** The Home header shows the debug number / status instead of the real ones. Real data is untouched. */
+    private fun debugSnapshot(real: Snapshot): Snapshot {
+        val n = PrefManager.getVal<Int>(PrefName.StreakDebugCount).coerceAtLeast(0)
+        val forced = DEBUG_STATUSES.getOrNull(PrefManager.getVal<Int>(PrefName.StreakDebugStatus))
+        val status = forced ?: if (n > 0) Status.ACTIVE else Status.NONE
+        return when (status) {
+            Status.LOST -> real.copy(count = 0, status = status, lostStreak = maxOf(n, 3), doneToday = false)
+            Status.NONE -> real.copy(count = 0, status = status, lostStreak = 0, doneToday = false)
+            else -> real.copy(
+                count = n, best = maxOf(real.best, n), status = status, lostStreak = 0,
+                doneToday = status == Status.ACTIVE
+            )
+        }
     }
 }

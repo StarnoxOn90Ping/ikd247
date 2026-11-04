@@ -129,6 +129,16 @@ class SettingsActivity : AppCompatActivity() {
                     ),
                     Settings(
                         type = 1,
+                        name = getString(R.string.streak_settings),
+                        desc = getString(R.string.streak_settings_desc),
+                        icon = R.drawable.ic_streak_fire_24,
+                        onClick = {
+                            startActivity(Intent(context, StreakSettingsActivity::class.java))
+                        },
+                        isActivity = true
+                    ),
+                    Settings(
+                        type = 1,
                         name = getString(R.string.label_data_storage),
                         desc = getString(R.string.label_data_storage_desc),
                         icon = R.drawable.ic_round_folder_24,

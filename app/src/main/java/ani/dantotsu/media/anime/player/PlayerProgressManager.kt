@@ -123,10 +123,11 @@ class PlayerProgressManager(
                 (duration > 0f && player.currentPosition.toFloat() / duration > PrefManager.getVal<Float>(PrefName.WatchPercentage))
         val episode0 = currentEpisodeIndex == 0 && PrefManager.getVal<Boolean>(PrefName.ChapterZeroPlayer)
 
-        // Streak: an episode counts once it is 80% watched (independent of the Anilist threshold)
+        // Streak: an episode counts once it is watched far enough (Settings > Streak, 80% by default;
+        // independent of the Anilist threshold)
         if (!incognito && (forceComplete ||
                     player.playbackState == Player.STATE_ENDED ||
-                    (duration > 0f && player.currentPosition.toFloat() / duration >= 0.8f))
+                    (duration > 0f && player.currentPosition.toFloat() / duration >= ani.dantotsu.home.streak.StreakManager.episodeThreshold()))
         ) {
             ani.dantotsu.home.streak.StreakManager.recordActivity()
         }

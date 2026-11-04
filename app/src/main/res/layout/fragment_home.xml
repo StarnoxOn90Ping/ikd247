@@ -77,15 +77,19 @@
                             android:visibility="gone"
                             tools:visibility="visible">
 
+                            <!-- Everything in this row is centred on the same horizontal line as the
+                                 search button and the avatar. The icon art is drawn centred in its box. -->
                             <ani.dantotsu.home.streak.FireView
                                 android:id="@+id/homeStreakFire"
                                 android:layout_width="52dp"
-                                android:layout_height="58dp" />
+                                android:layout_height="60dp"
+                                android:layout_gravity="center_vertical" />
 
                             <FrameLayout
                                 android:id="@+id/homeStreakNumberBox"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_gravity="center_vertical"
                                 android:layout_marginStart="2dp"
                                 android:clipChildren="false"
                                 android:clipToPadding="false">
@@ -101,6 +105,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:fontFamily="@font/poppins_bold"
+                                    android:gravity="center"
                                     android:includeFontPadding="false"
                                     android:minWidth="22dp"
                                     android:padding="6dp"
@@ -108,22 +113,31 @@
                                     tools:text="12" />
                             </FrameLayout>
 
-                            <TextView
-                                android:id="@+id/homeStreakLine"
+                            <FrameLayout
+                                android:id="@+id/homeStreakLineBox"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_gravity="center_vertical"
                                 android:layout_marginStart="12dp"
                                 android:layout_marginEnd="12dp"
-                                android:layout_weight="1"
-                                android:alpha="0.85"
-                                android:fontFamily="@font/poppins"
-                                android:gravity="start|center_vertical"
-                                android:lineSpacingMultiplier="1.05"
-                                android:maxLines="3"
-                                app:autoSizeMaxTextSize="12sp"
-                                app:autoSizeMinTextSize="8sp"
-                                app:autoSizeTextType="uniform"
-                                tools:text="Flickering. One episode saves it." />
+                                android:layout_weight="1">
+
+                                <TextView
+                                    android:id="@+id/homeStreakLine"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_gravity="center_vertical"
+                                    android:alpha="0.85"
+                                    android:fontFamily="@font/poppins"
+                                    android:gravity="start|center_vertical"
+                                    android:includeFontPadding="false"
+                                    android:lineSpacingMultiplier="1.05"
+                                    android:maxLines="3"
+                                    app:autoSizeMaxTextSize="12sp"
+                                    app:autoSizeMinTextSize="8sp"
+                                    app:autoSizeTextType="uniform"
+                                    tools:text="Flickering. One episode saves it." />
+                            </FrameLayout>
 
                         </LinearLayout>
 

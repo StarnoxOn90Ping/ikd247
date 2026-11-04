@@ -18,6 +18,7 @@ import ani.dantotsu.settings.SettingsExtensionsActivity
 import ani.dantotsu.settings.SettingsMangaActivity
 import ani.dantotsu.settings.SettingsNotificationActivity
 import ani.dantotsu.settings.SettingsThemeActivity
+import ani.dantotsu.settings.StreakSettingsActivity
 import ani.dantotsu.settings.TorrentSettingsActivity
 import ani.dantotsu.settings.UserInterfaceSettingsActivity
 
@@ -25,6 +26,26 @@ object SettingsRegistry {
 
     fun getAllSettings(context: Context): List<SearchableSetting> {
         val list = mutableListOf<SearchableSetting>()
+
+        // Streak
+        listOf(
+            R.string.streak_settings to R.string.streak_settings_desc,
+            R.string.streak_button_fire to R.string.streak_settings_desc,
+            R.string.streak_debug to R.string.streak_debug_info,
+            R.string.streak_grace to R.string.streak_stages_text
+        ).forEach { (title, desc) ->
+            list.add(
+                SearchableSetting(
+                    title = context.getString(title),
+                    desc = context.getString(desc).lineSequence().first(),
+                    icon = R.drawable.ic_streak_fire_24,
+                    category = context.getString(R.string.streak_settings),
+                    breadcrumbs = "${context.getString(R.string.settings)} > ${context.getString(R.string.streak_settings)}",
+                    targetActivity = StreakSettingsActivity::class.java,
+                    highlightKey = context.getString(title)
+                )
+            )
+        }
 
         // 1. Theme Settings
         list.add(

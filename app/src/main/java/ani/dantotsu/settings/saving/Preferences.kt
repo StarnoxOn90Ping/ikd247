@@ -13,6 +13,22 @@ enum class PrefName(val data: Pref) {
     SharedUserID(Pref(Location.General, Boolean::class, true)),
     // Streak data as JSON. Lives in Location.General, which is exportable, so backups include it.
     StreakData(Pref(Location.General, String::class, "")),
+    // Streak settings (Settings > Streak)
+    StreakShow(Pref(Location.General, Boolean::class, true)),
+    StreakFireAnimated(Pref(Location.General, Boolean::class, true)),
+    StreakButtonFire(Pref(Location.General, Boolean::class, true)),
+    StreakNumberFlames(Pref(Location.General, Boolean::class, true)),
+    StreakSparks(Pref(Location.General, Boolean::class, true)),
+    StreakLines(Pref(Location.General, Boolean::class, true)),
+    StreakHaptics(Pref(Location.General, Boolean::class, true)),
+    StreakIntensity(Pref(Location.General, Float::class, 1f)),
+    StreakGraceDay(Pref(Location.General, Boolean::class, true)),
+    StreakDayStart(Pref(Location.General, Int::class, 4)),
+    StreakThreshold(Pref(Location.General, Int::class, 80)),
+    // Debug tools: never exported, they only change what the Home header shows.
+    StreakDebug(Pref(Location.Irrelevant, Boolean::class, false)),
+    StreakDebugCount(Pref(Location.Irrelevant, Int::class, 0)),
+    StreakDebugStatus(Pref(Location.Irrelevant, Int::class, 0)),
     OfflineView(Pref(Location.General, Int::class, 0)),
     DownloadManager(Pref(Location.General, Int::class, 0)),
     MaxParallelDownloads(Pref(Location.General, Int::class, 0)),

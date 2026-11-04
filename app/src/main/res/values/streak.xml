@@ -19,7 +19,7 @@
     </string-array>
 
     <string-array name="streak_lines_early" translatable="false">
-        <item>Three in a row. Dangerous.</item>
+        <item>A few in a row. Dangerous.</item>
         <item>Becoming a habit. Uh oh.</item>
         <item>Look at you, consistent.</item>
         <item>The flame grows. Keep going.</item>
@@ -27,7 +27,7 @@
 
     <string-array name="streak_lines_week" translatable="false">
         <item>A whole week. Touch grass? Nah.</item>
-        <item>Seven days. Watchlist is nervous.</item>
+        <item>Seven days. The buttons caught fire.</item>
         <item>You\'re literally on fire.</item>
     </string-array>
 
@@ -39,7 +39,7 @@
 
     <string-array name="streak_lines_month" translatable="false">
         <item>30 days. Watchlist is shaking.</item>
-        <item>The buttons are on fire. You did that.</item>
+        <item>Maximum fire reached. You did that.</item>
         <item>A month of flames. Respect.</item>
     </string-array>
 
@@ -70,5 +70,44 @@
         <item>Fresh start. The cat forgives you.</item>
         <item>Happens to the best. Relight it.</item>
         <item>The flame went out. Try again.</item>
+    </string-array>
+
+    <!-- Settings > Streak -->
+    <string name="streak_settings" translatable="false">Streak</string>
+    <string name="streak_settings_desc" translatable="false">Fire, rules and debug tools for your watch / read streak</string>
+    <string name="streak_sec_display" translatable="false">Look</string>
+    <string name="streak_sec_rules" translatable="false">Rules</string>
+    <string name="streak_sec_stages" translatable="false">Fire stages</string>
+    <string name="streak_sec_debug" translatable="false">Debug</string>
+    <string name="streak_show" translatable="false">Show streak on Home</string>
+    <string name="streak_animated" translatable="false">Animate the fire</string>
+    <string name="streak_button_fire" translatable="false">Fire on Anime / Manga buttons</string>
+    <string name="streak_number_flames" translatable="false">Flames behind the number</string>
+    <string name="streak_sparks" translatable="false">Sparks and embers</string>
+    <string name="streak_lines" translatable="false">Show the little message</string>
+    <string name="streak_haptics" translatable="false">Vibrate when tapping the streak</string>
+    <string name="streak_intensity_label" translatable="false">Fire intensity: %1$d%%</string>
+    <string name="streak_intensity_note" translatable="false">Scales how big and bright every fire looks. Stages still work the same.</string>
+    <string name="streak_grace" translatable="false">Grace day</string>
+    <string name="streak_day_start_label" translatable="false">A new day starts at %1$02d:00</string>
+    <string name="streak_threshold_label" translatable="false">Episode counts at %1$d%% watched</string>
+    <string name="streak_reset" translatable="false">Reset streak</string>
+    <string name="streak_reset_title" translatable="false">Reset your streak?</string>
+    <string name="streak_reset_message" translatable="false">This wipes your streak, best streak and the week dots. It cannot be undone.</string>
+    <string name="streak_reset_done" translatable="false">Streak reset</string>
+    <string name="streak_stages_text" translatable="false">0 days: logs and cold coals, no fire\n1 day: a small fire\n3 days: a bigger fire\n7 days: bigger again, and the Anime / Manga buttons catch fire\n14 days: more intensity on the icon and the buttons\n30 days: final stage, nothing changes after this\n\nOne missed day per week is forgiven by the grace day. Days run from the hour set above, so late-night sessions still count for the day before.</string>
+    <string name="streak_debug" translatable="false">Debug mode</string>
+    <string name="streak_debug_info" translatable="false">Changes only what the Home header shows. Your real streak is not touched and keeps counting in the background. Turn debug off to see it again.</string>
+    <string name="streak_debug_edit" translatable="false">Edit streak number (now %1$d)</string>
+    <string name="streak_debug_edit_title" translatable="false">Streak number</string>
+    <string name="streak_debug_status" translatable="false">Status: %1$s</string>
+    <string name="streak_debug_status_title" translatable="false">Pretend the streak is&#8230;</string>
+    <string name="streak_debug_quick" translatable="false">Jump to</string>
+    <string-array name="streak_debug_statuses" translatable="false">
+        <item>Real (automatic)</item>
+        <item>Active (done today)</item>
+        <item>At risk (nothing yet today)</item>
+        <item>Grace day pending</item>
+        <item>Lost</item>
     </string-array>
 </resources>
