@@ -37,7 +37,6 @@ import ani.dantotsu.databinding.ItemTitleChipgroupBinding
 import ani.dantotsu.databinding.ItemTitleRecyclerBinding
 import ani.dantotsu.databinding.ItemTitleTextBinding
 import ani.dantotsu.databinding.ItemTitleTrailerBinding
-import ani.dantotsu.displayTimer
 import ani.dantotsu.loadImage
 import ani.dantotsu.navBarHeight
 import ani.dantotsu.setBaseline
@@ -340,7 +339,6 @@ class MediaInfoFragment : Fragment() {
                             .setDuration(400).start()
                     }
                 }
-                displayTimer(media, binding.mediaInfoContainer)
                 val parent = _binding?.mediaInfoContainer!!
                 for (i in parent.childCount - 1 downTo 0) {
                     val child = parent.getChildAt(i)

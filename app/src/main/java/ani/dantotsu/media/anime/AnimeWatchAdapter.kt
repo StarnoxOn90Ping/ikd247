@@ -25,7 +25,6 @@ import ani.dantotsu.databinding.CustomDialogLayoutBinding
 import ani.dantotsu.databinding.DialogLayoutBinding
 import ani.dantotsu.databinding.ItemChipBinding
 import ani.dantotsu.databinding.ItemMediaSourceBinding
-import ani.dantotsu.displayTimer
 import ani.dantotsu.isOnline
 import ani.dantotsu.loadImage
 import ani.dantotsu.media.Media
@@ -734,8 +733,5 @@ class AnimeWatchAdapter(
 
     inner class ViewHolder(val binding: ItemMediaSourceBinding) :
         RecyclerView.ViewHolder(binding.root) {
-        init {
-            displayTimer(media, binding.animeSourceContainer)
-        }
     }
 }

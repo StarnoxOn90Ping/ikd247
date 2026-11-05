@@ -184,6 +184,175 @@
                     app:strokeColor="@color/bg_opp"
                     tools:ignore="SmallSp,TextContrastCheck" />
 
+                <!-- Stats bar: score, popularity, favourites, duration (+ airing line) -->
+                <LinearLayout
+                    android:id="@+id/mediaStatsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="32dp"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginEnd="32dp"
+                    android:background="@drawable/bg_media_stats_card"
+                    android:orientation="vertical"
+                    android:paddingStart="8dp"
+                    android:paddingTop="14dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:id="@+id/mediaStatScoreColumn"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/mediaStatScore"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/poppins_bold"
+                                android:singleLine="true"
+                                android:textColor="?attr/colorOnBackground"
+                                android:textSize="20sp"
+                                tools:text="8.2" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:fontFamily="@font/poppins_bold"
+                                android:singleLine="true"
+                                android:text="@string/stats_score"
+                                android:textColor="?attr/colorOnBackground"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/mediaStatPopularityColumn"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/mediaStatPopularity"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/poppins_bold"
+                                android:singleLine="true"
+                                android:textColor="?attr/colorOnBackground"
+                                android:textSize="20sp"
+                                tools:text="8.2" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:fontFamily="@font/poppins_bold"
+                                android:singleLine="true"
+                                android:text="@string/popularity"
+                                android:textColor="?attr/colorOnBackground"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/mediaStatFavoritesColumn"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/mediaStatFavorites"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/poppins_bold"
+                                android:singleLine="true"
+                                android:textColor="?attr/colorOnBackground"
+                                android:textSize="20sp"
+                                tools:text="8.2" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:fontFamily="@font/poppins_bold"
+                                android:singleLine="true"
+                                android:text="@string/favourites"
+                                android:textColor="?attr/colorOnBackground"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/mediaStatDurationColumn"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/mediaStatDuration"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/poppins_bold"
+                                android:singleLine="true"
+                                android:textColor="?attr/colorOnBackground"
+                                android:textSize="20sp"
+                                tools:text="8.2" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.6"
+                                android:fontFamily="@font/poppins_bold"
+                                android:singleLine="true"
+                                android:text="@string/stats_duration"
+                                android:textColor="?attr/colorOnBackground"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/mediaAiringRow"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone"
+                        tools:visibility="visible">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_marginEnd="8dp"
+                            android:src="@drawable/ic_airing_sensors"
+                            app:tint="?attr/colorPrimary"
+                            tools:ignore="ContentDescription" />
+
+                        <TextView
+                            android:id="@+id/mediaAiringText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/poppins_bold"
+                            android:singleLine="true"
+                            android:textColor="?attr/colorOnBackground"
+                            android:textSize="14sp"
+                            tools:text="Episode 5 airs in 3d 1h" />
+                    </LinearLayout>
+                </LinearLayout>
+
             </LinearLayout>
 
             </LinearLayout>

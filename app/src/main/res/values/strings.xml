@@ -1516,4 +1516,7 @@ Non quae tempore quo provident laudantium qui illo dolor vel quia dolor et exerc
     <string name="cal_error_text">Check your connection and try again.</string>
     <string name="cal_retry">Try again</string>
     <string name="list_owner">%1$s\'s</string>
+    <string name="stats_score">Score</string>
+    <string name="stats_duration">Duration</string>
+    <string name="stats_airing_in">Episode %1$d airs in %2$s</string>
 </resources>

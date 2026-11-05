@@ -452,6 +452,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             if (it != null) {
                 val oldId = media.id
                 media = it
+                bindMediaStatsBar(binding, media)
 
                 // mapping button for LOCAL media
                 if (media.format?.startsWith("LOCAL") == true) {
