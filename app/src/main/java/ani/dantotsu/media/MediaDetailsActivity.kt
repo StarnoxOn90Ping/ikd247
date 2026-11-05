@@ -385,39 +385,23 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             }
         }
 
-        @SuppressLint("ResourceType")
-        fun total() {
-            val text = SpannableStringBuilder().apply {
-
-                val white =
-                    this@MediaDetailsActivity.getThemeColor(com.google.android.material.R.attr.colorOnBackground)
-                if (media.userStatus != null) {
-                    append(if (media.anime != null) getString(R.string.watched_num) else getString(R.string.read_num))
-                    val colorSecondary =
-                        getThemeColor(com.google.android.material.R.attr.colorSecondary)
-                    bold { color(colorSecondary) { append("${media.userProgress}") } }
-                    append(
-                        if (media.anime != null) getString(R.string.episodes_out_of) else getString(
-                            R.string.chapters_out_of
-                        )
-                    )
-                } else {
-                    append(
-                        if (media.anime != null) getString(R.string.episodes_total_of) else getString(
-                            R.string.chapters_total_of
-                        )
-                    )
-                }
-                if (media.anime != null) {
-                    if (media.anime!!.nextAiringEpisode != null) {
-                        bold { color(white) { append("${media.anime!!.nextAiringEpisode}") } }
-                        append(" / ")
-                    }
-                    bold { color(white) { append("${media.anime!!.totalEpisodes ?: "??"}") } }
-                } else
-                    bold { color(white) { append("${media.manga!!.totalChapters ?: "??"}") } }
+        // "WATCHING • 10/13": the count only makes sense while the entry is in progress
+        fun statusLabel(userStatus: String): CharSequence {
+            val showCount = when (media.userStatus) {
+                "CURRENT", "REPEATING", "PAUSED", "DROPPED" -> true
+                else -> false
             }
-            binding.mediaTotal.text = text
+            if (!showCount) return userStatus
+            val secondary = getThemeColor(com.google.android.material.R.attr.colorSecondary)
+            val onBackground =
+                getThemeColor(com.google.android.material.R.attr.colorOnBackground)
+            val total = (if (media.anime != null) media.anime!!.totalEpisodes
+            else media.manga?.totalChapters)?.toString() ?: "??"
+            return SpannableStringBuilder().apply {
+                append(userStatus)
+                color(ColorUtils.setAlphaComponent(secondary, 140)) { append("  •  ") }
+                bold { color(onBackground) { append("${media.userProgress ?: 0}/$total") } }
+            }
         }
 
         fun progress() {
@@ -430,12 +414,10 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
                 if (media.userStatus != null) statusStrings[statuses.indexOf(media.userStatus).coerceAtLeast(0)] else statusStrings[0]
 
             if (media.userStatus != null) {
-                binding.mediaTotal.visibility = View.VISIBLE
-                binding.mediaAddToList.text = userStatus
+                binding.mediaAddToList.text = statusLabel(userStatus)
             } else {
                 binding.mediaAddToList.setText(R.string.add_list)
             }
-            total()
             binding.mediaAddToList.setOnClickListener {
                 if (Anilist.userid != null) {
                     if (supportFragmentManager.findFragmentByTag("dialog") == null)
@@ -838,8 +820,6 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             isCollapsed = true
             ObjectAnimator.ofFloat(binding.mediaTitle, "translationX", 0f).setDuration(duration)
                 .start()
-            ObjectAnimator.ofFloat(binding.mediaAccessContainer, "translationX", screenWidth)
-                .setDuration(duration).start()
             ObjectAnimator.ofFloat(binding.mediaCover, "translationX", screenWidth)
                 .setDuration(duration).start()
             ObjectAnimator.ofFloat(binding.mediaCollapseContainer, "translationX", screenWidth)
@@ -849,8 +829,6 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         if (percentage <= percent && isCollapsed) {
             isCollapsed = false
             ObjectAnimator.ofFloat(binding.mediaTitle, "translationX", -screenWidth)
-                .setDuration(duration).start()
-            ObjectAnimator.ofFloat(binding.mediaAccessContainer, "translationX", 0f)
                 .setDuration(duration).start()
             ObjectAnimator.ofFloat(binding.mediaCover, "translationX", 0f).setDuration(duration)
                 .start()
