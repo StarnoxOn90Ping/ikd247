@@ -10,6 +10,10 @@ import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.speech.tts.TextToSpeech
 import android.view.View
+import com.google.android.material.color.MaterialColors
+import android.view.animation.OvershootInterpolator
+import android.speech.tts.UtteranceProgressListener
+import android.animation.ValueAnimator
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.widget.FrameLayout
@@ -68,6 +72,48 @@ class MediaInfoFragment : Fragment() {
     private val binding get() = _binding!!
     private var timer: CountDownTimer? = null
     private var tts: TextToSpeech? = null
+    private var ttsPulse: ObjectAnimator? = null
+    private var descLayoutListener: View.OnLayoutChangeListener? = null
+
+    private fun speakSynopsis(engine: TextToSpeech, text: String) {
+        engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                _binding?.mediaInfoTts?.post { setTtsActive(true) }
+            }
+
+            override fun onDone(utteranceId: String?) {
+                _binding?.mediaInfoTts?.post { setTtsActive(false) }
+            }
+
+            @Deprecated("Deprecated in Java")
+            override fun onError(utteranceId: String?) {
+                _binding?.mediaInfoTts?.post { setTtsActive(false) }
+            }
+        })
+        setTtsActive(true)
+        engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "synopsis_tts")
+    }
+
+    // theme-coloured, softly pulsing icon while the synopsis is being read
+    private fun setTtsActive(active: Boolean) {
+        val button = _binding?.mediaInfoTts ?: return
+        ttsPulse?.cancel()
+        ttsPulse = null
+        if (active) {
+            button.setColorFilter(
+                MaterialColors.getColor(button, com.google.android.material.R.attr.colorPrimary)
+            )
+            ttsPulse = ObjectAnimator.ofFloat(button, "alpha", 1f, 0.4f).apply {
+                duration = 650
+                repeatCount = ValueAnimator.INFINITE
+                repeatMode = ValueAnimator.REVERSE
+                start()
+            }
+        } else {
+            button.clearColorFilter()
+            button.alpha = 0.7f
+        }
+    }
     private var loaded = false
     private var type = "ANIME"
     private val genreModel: GenresViewModel by activityViewModels()
@@ -86,6 +132,8 @@ class MediaInfoFragment : Fragment() {
     override fun onDestroyView() {
         timer?.cancel()
         timer = null
+        ttsPulse?.cancel()
+        ttsPulse = null
         tts?.stop()
         tts?.shutdown()
         tts = null
@@ -344,12 +392,16 @@ class MediaInfoFragment : Fragment() {
                 val collapsedLines = 5
                 binding.mediaInfoReadMore.text = getString(R.string.read_more)
                 binding.mediaInfoDescription.maxLines = collapsedLines
-                binding.mediaInfoDescription.post {
-                    val b = _binding ?: return@post
-                    b.mediaInfoReadMore.visibility =
-                        if (b.mediaInfoDescription.lineCount > collapsedLines) View.VISIBLE
-                        else View.GONE
+                descLayoutListener?.let { binding.mediaInfoDescription.removeOnLayoutChangeListener(it) }
+                descLayoutListener = View.OnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
+                    val tv = v as TextView
+                    val layout = tv.layout ?: return@OnLayoutChangeListener
+                    if (tv.maxLines != collapsedLines) return@OnLayoutChangeListener
+                    val cut = layout.lineCount >= collapsedLines &&
+                            layout.getEllipsisCount(collapsedLines - 1) > 0
+                    _binding?.mediaInfoReadMore?.visibility = if (cut) View.VISIBLE else View.GONE
                 }
+                binding.mediaInfoDescription.addOnLayoutChangeListener(descLayoutListener)
                 val toggleSynopsis = View.OnClickListener {
                     val expand = binding.mediaInfoDescription.maxLines == collapsedLines
                     ObjectAnimator.ofInt(
@@ -363,19 +415,27 @@ class MediaInfoFragment : Fragment() {
                 binding.mediaInfoDescription.setOnClickListener(toggleSynopsis)
                 binding.mediaInfoReadMore.setOnClickListener(toggleSynopsis)
 
-                // read the synopsis out loud
-                binding.mediaInfoTts.setOnClickListener {
+                // read the synopsis out loud (button squishes on tap and pulses while speaking)
+                binding.mediaInfoTts.setOnClickListener { button ->
+                    button.animate().cancel()
+                    button.animate().scaleX(0.78f).scaleY(0.78f).setDuration(90).withEndAction {
+                        button.animate().scaleX(1f).scaleY(1f)
+                            .setInterpolator(OvershootInterpolator(2.2f)).setDuration(260).start()
+                    }.start()
+
                     val text = infoDesc.toString()
                     val engine = tts
                     if (engine != null && engine.isSpeaking) {
                         engine.stop()
+                        setTtsActive(false)
                     } else if (engine != null) {
-                        engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "synopsis_tts")
+                        speakSynopsis(engine, text)
                     } else {
                         tts = TextToSpeech(requireContext().applicationContext) { status ->
-                            if (status == TextToSpeech.SUCCESS) {
-                                tts?.language = Locale.getDefault()
-                                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "synopsis_tts")
+                            val created = tts
+                            if (status == TextToSpeech.SUCCESS && created != null) {
+                                created.language = Locale.getDefault()
+                                speakSynopsis(created, text)
                             } else {
                                 snackString("TTS is not available")
                             }
