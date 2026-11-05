@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.LayoutInflater
+import android.speech.tts.TextToSpeech
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
@@ -25,6 +26,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import ani.dantotsu.R
+import ani.dantotsu.snackString
 import ani.dantotsu.connections.anilist.Anilist
 import ani.dantotsu.connections.anilist.GenresViewModel
 import ani.dantotsu.copyToClipboard
@@ -58,12 +60,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.Serializable
 import java.net.URLEncoder
+import java.util.Locale
 
 
 class MediaInfoFragment : Fragment() {
     private var _binding: FragmentMediaInfoBinding? = null
     private val binding get() = _binding!!
     private var timer: CountDownTimer? = null
+    private var tts: TextToSpeech? = null
     private var loaded = false
     private var type = "ANIME"
     private val genreModel: GenresViewModel by activityViewModels()
@@ -82,6 +86,9 @@ class MediaInfoFragment : Fragment() {
     override fun onDestroyView() {
         timer?.cancel()
         timer = null
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
         super.onDestroyView()
         _binding = null
     }
@@ -258,7 +265,10 @@ class MediaInfoFragment : Fragment() {
                             )
                             bind.itemTitle.text = getString(R.string.producers)
                             bind.root.tag = "dynamic_view"
-                            binding.mediaInfoContainer.addView(bind.root, 1)
+                            binding.mediaInfoContainer.addView(
+                                bind.root,
+                                binding.mediaInfoContainer.indexOfChild(binding.mediaInfoDetailsTable) + 1
+                            )
 
                             validProducers.forEach { producer ->
                                 val chip = ItemChipBinding.inflate(
@@ -327,16 +337,49 @@ class MediaInfoFragment : Fragment() {
                     HtmlCompat.FROM_HTML_MODE_LEGACY
                 )
                 val infoDesc =
-                    tripleTab + if (desc.toString() != "null") desc else getString(R.string.no_description_available)
+                    if (desc.toString() != "null") desc else getString(R.string.no_description_available)
                 binding.mediaInfoDescription.text = infoDesc
 
-                binding.mediaInfoDescription.setOnClickListener {
-                    if (binding.mediaInfoDescription.maxLines == 5) {
-                        ObjectAnimator.ofInt(binding.mediaInfoDescription, "maxLines", 100)
-                            .setDuration(950).start()
+                // "Read more / Read less" link, only when the synopsis is actually cut off
+                val collapsedLines = 5
+                binding.mediaInfoReadMore.text = getString(R.string.read_more)
+                binding.mediaInfoDescription.maxLines = collapsedLines
+                binding.mediaInfoDescription.post {
+                    val b = _binding ?: return@post
+                    b.mediaInfoReadMore.visibility =
+                        if (b.mediaInfoDescription.lineCount > collapsedLines) View.VISIBLE
+                        else View.GONE
+                }
+                val toggleSynopsis = View.OnClickListener {
+                    val expand = binding.mediaInfoDescription.maxLines == collapsedLines
+                    ObjectAnimator.ofInt(
+                        binding.mediaInfoDescription,
+                        "maxLines",
+                        if (expand) 100 else collapsedLines
+                    ).setDuration(if (expand) 700 else 400).start()
+                    binding.mediaInfoReadMore.text =
+                        getString(if (expand) R.string.read_less else R.string.read_more)
+                }
+                binding.mediaInfoDescription.setOnClickListener(toggleSynopsis)
+                binding.mediaInfoReadMore.setOnClickListener(toggleSynopsis)
+
+                // read the synopsis out loud
+                binding.mediaInfoTts.setOnClickListener {
+                    val text = infoDesc.toString()
+                    val engine = tts
+                    if (engine != null && engine.isSpeaking) {
+                        engine.stop()
+                    } else if (engine != null) {
+                        engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "synopsis_tts")
                     } else {
-                        ObjectAnimator.ofInt(binding.mediaInfoDescription, "maxLines", 5)
-                            .setDuration(400).start()
+                        tts = TextToSpeech(requireContext().applicationContext) { status ->
+                            if (status == TextToSpeech.SUCCESS) {
+                                tts?.language = Locale.getDefault()
+                                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "synopsis_tts")
+                            } else {
+                                snackString("TTS is not available")
+                            }
+                        }
                     }
                 }
                 val parent = _binding?.mediaInfoContainer!!

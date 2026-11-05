@@ -1519,4 +1519,6 @@ Non quae tempore quo provident laudantium qui illo dolor vel quia dolor et exerc
     <string name="stats_score">Score</string>
     <string name="stats_duration">Duration</string>
     <string name="stats_airing_in">Episode %1$d airs in %2$s</string>
+    <string name="read_more">Read more</string>
+    <string name="read_less">Read less</string>
 </resources>
