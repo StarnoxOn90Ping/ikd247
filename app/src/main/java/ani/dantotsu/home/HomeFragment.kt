@@ -4,6 +4,7 @@ import android.animation.ObjectAnimator
 import android.content.Intent
 import android.graphics.drawable.Animatable
 import android.os.Build
+import android.os.SystemClock
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
@@ -19,6 +20,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import ani.dantotsu.R
@@ -27,6 +29,8 @@ import ani.dantotsu.bottomBarOrNull
 import ani.dantotsu.connections.anilist.Anilist
 import ani.dantotsu.connections.anilist.AnilistHomeViewModel
 import ani.dantotsu.connections.anilist.getUserId
+import ani.dantotsu.connections.anilist.mediaSignature
+import ani.dantotsu.connections.anilist.userStatusSignature
 import ani.dantotsu.currContext
 import ani.dantotsu.databinding.FragmentHomeBinding
 import ani.dantotsu.home.pill.InfoPillController
@@ -65,6 +69,17 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
     private var headerController: HomeHeaderController? = null
     private var pillController: InfoPillController? = null
+    private var lastStatsFetch = 0L
+
+    // The header totals are fetched on every refresh and again in onResume, which fires right
+    // after the first refresh at launch. Skip the second one if it follows closely.
+    private suspend fun fetchStats(force: Boolean) {
+        val now = SystemClock.elapsedRealtime()
+        if (!force && now - lastStatsFetch < STATS_MIN_GAP_MS) return
+        lastStatsFetch = now
+        tryWithSuspend { Anilist.query.refreshUserStats() }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -94,11 +109,19 @@ class HomeFragment : Fragment() {
         Logger.log("HomeFragment")
         headerController = HomeHeaderController(binding).also { it.start() }
         pillController = InfoPillController(binding, viewLifecycleOwner, model).also { it.start() }
+        // load() runs more than once at launch (directly, then after the user data is ready).
+        // Only the first run plays the intro animations; later runs just refresh what changed.
+        var introPlayed = false
+        var shownAvatar: String? = null
+        var shownBanner: String? = null
         fun load() {
             Logger.log("Loading HomeFragment")
             if (activity != null && _binding != null) viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
                 val currentBinding = _binding ?: return@launch
-                currentBinding.homeUserAvatar.loadImage(Anilist.avatar)
+                if (shownAvatar == null || shownAvatar != Anilist.avatar) {
+                    shownAvatar = Anilist.avatar
+                    currentBinding.homeUserAvatar.loadImage(Anilist.avatar)
+                }
 
                 currentBinding.homeNotificationCount.isVisible = Anilist.unreadNotificationCount > 0
                         && PrefManager.getVal<Boolean>(PrefName.ShowNotificationRedDot) == true
@@ -107,7 +130,10 @@ class HomeFragment : Fragment() {
                 // The banner is always shown still and sharp (no blur, no Ken Burns movement).
                 currentBinding.homeUserBg.visibility = View.GONE
                 currentBinding.homeUserBgNoKen.visibility = View.VISIBLE
-                loadClearBanner(currentBinding.homeUserBgNoKen, Anilist.bg)
+                if (shownBanner == null || shownBanner != Anilist.bg) {
+                    shownBanner = Anilist.bg
+                    loadClearBanner(currentBinding.homeUserBgNoKen, Anilist.bg)
+                }
                 currentBinding.homeUserDataProgressBar.visibility = View.GONE
 
                 val listUserId = Anilist.userid ?: 0
@@ -129,14 +155,17 @@ class HomeFragment : Fragment() {
                     )
                 }
 
-                binding.homeUserAvatarContainer.startAnimation(setSlideUp())
                 binding.homeUserDataContainer.visibility = View.VISIBLE
-                binding.homeUserDataContainer.layoutAnimation =
-                    LayoutAnimationController(setSlideUp(), 0.25f)
                 binding.homeAnimeList.visibility = View.VISIBLE
                 binding.homeMangaList.visibility = View.VISIBLE
-                binding.homeListContainer.layoutAnimation =
-                    LayoutAnimationController(setSlideIn(), 0.25f)
+                if (!introPlayed) {
+                    introPlayed = true
+                    binding.homeUserAvatarContainer.startAnimation(setSlideUp())
+                    binding.homeUserDataContainer.layoutAnimation =
+                        LayoutAnimationController(setSlideUp(), 0.25f)
+                    binding.homeListContainer.layoutAnimation =
+                        LayoutAnimationController(setSlideIn(), 0.25f)
+                }
             }
             else {
                 snackString(currContext()?.getString(R.string.please_reload))
@@ -270,25 +299,48 @@ class HomeFragment : Fragment() {
                 false
             )
 
+            // what each shown item looked like when it was bound
+            var shownSigs: List<String> = emptyList()
+
             mode.observe(viewLifecycleOwner) {
                 if (it != null) {
                     if (it.isNotEmpty()) {
                         empty.visibility = View.GONE
+                        recyclerView.visibility = View.VISIBLE
                         val currentAdapter = recyclerView.adapter as? MediaAdaptor
-                        if (currentAdapter != null && currentAdapter.type == 0 && currentAdapter.mediaList === it && recyclerView.tag == "loaded") {
-                            currentAdapter.notifyDataSetChanged()
+                        val shown = currentAdapter?.mediaList
+                        val freshSigs = it.map { m -> mediaSignature(m) }
+                        if (currentAdapter != null && shown != null && recyclerView.tag == "loaded") {
+                            // Real data is already on screen: change only what differs, so the
+                            // row neither rebuilds nor replays its entrance animation.
+                            val oldSigs = shownSigs
+                            val oldIds = shown.map { m -> m.id }
+                            val fresh = ArrayList(it)
+                            val diff = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+                                override fun getOldListSize() = oldIds.size
+                                override fun getNewListSize() = fresh.size
+                                override fun areItemsTheSame(o: Int, n: Int) =
+                                    oldIds[o] == fresh[n].id
+
+                                override fun areContentsTheSame(o: Int, n: Int) =
+                                    oldSigs.getOrNull(o) == freshSigs[n]
+                            })
+                            shown.clear()
+                            shown.addAll(fresh)
+                            diff.dispatchUpdatesTo(currentAdapter)
                         } else {
                             recyclerView.tag = "loaded"
-                            recyclerView.adapter = MediaAdaptor(0, it, requireActivity())
+                            // the adapter owns its list, so later updates can diff against it
+                            recyclerView.adapter = MediaAdaptor(0, ArrayList(it), requireActivity())
                             recyclerView.layoutManager = LinearLayoutManager(
                                 requireContext(),
                                 LinearLayoutManager.HORIZONTAL,
                                 false
                             )
-                            recyclerView.visibility = View.VISIBLE
                             recyclerView.layoutAnimation =
                                 LayoutAnimationController(setSlideIn(), 0.25f)
                         }
+                        shownSigs = freshSigs
                         more.setOnClickListener { i ->
                             MediaListViewActivity.passedMedia = it
                             val intent = Intent(i.context, MediaListViewActivity::class.java)
@@ -437,12 +489,14 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
             false
         )
         var latestStatusUsers: ArrayList<User> = arrayListOf()
+        var shownStatusSig: String? = null
         model.getUserStatus().observe(viewLifecycleOwner) { users ->
             when {
                 users == null -> {
                     val show = PrefManager.getVal<List<Boolean>>(PrefName.HomeLayout)
                         .getOrElse(7) { true }
-                    if (show) {
+                    // while stories are already showing (pull to refresh) keep them on screen
+                    if (show && latestStatusUsers.isEmpty()) {
                         binding.homeUserStatusContainer.visibility = View.VISIBLE
                         binding.homeUserStatusProgressBar.visibility = View.VISIBLE
                         binding.homeUserStatusRecyclerView.visibility = View.GONE
@@ -452,13 +506,21 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
                     latestStatusUsers = users
                     binding.homeUserStatusProgressBar.visibility = View.GONE
                     binding.homeUserStatusContainer.visibility = View.VISIBLE
-                    binding.homeUserStatusRecyclerView.adapter = UserStatusAdapter(users)
+                    val sig = userStatusSignature(users)
+                    if (sig != shownStatusSig || binding.homeUserStatusRecyclerView.adapter == null) {
+                        val first = shownStatusSig == null
+                        shownStatusSig = sig
+                        binding.homeUserStatusRecyclerView.adapter = UserStatusAdapter(users)
+                        if (first) {
+                            binding.homeUserStatusRecyclerView.layoutAnimation =
+                                LayoutAnimationController(setSlideIn(), 0.25f)
+                        }
+                    }
                     binding.homeUserStatusRecyclerView.visibility = View.VISIBLE
-                    binding.homeUserStatusRecyclerView.layoutAnimation =
-                        LayoutAnimationController(setSlideIn(), 0.25f)
                 }
                 else -> {
                     latestStatusUsers = arrayListOf()
+                    shownStatusSig = null
                     binding.homeUserStatusProgressBar.visibility = View.GONE
                     binding.homeUserStatusRecyclerView.visibility = View.GONE
                     binding.homeUserStatusContainer.visibility = View.GONE
@@ -516,15 +578,19 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
             }
         }
 
-        binding.homeUserAvatarContainer.startAnimation(setSlideUp())
-
+        binding.homeDantotsuIcon.setSafeOnClickListener {
+            (binding.homeDantotsuIcon.drawable as? Animatable)?.start()
+        }
         model.empty.observe(viewLifecycleOwner)
         {
-            binding.homeDantotsuContainer.visibility = if (it == true) View.VISIBLE else View.GONE
-            (binding.homeDantotsuIcon.drawable as Animatable).start()
-            binding.homeDantotsuContainer.startAnimation(setSlideUp())
-            binding.homeDantotsuIcon.setSafeOnClickListener {
-                (binding.homeDantotsuIcon.drawable as Animatable).start()
+            // posted after every refresh: only react when the empty state actually flips
+            val show = it == true
+            if (binding.homeDantotsuContainer.isVisible != show) {
+                binding.homeDantotsuContainer.visibility = if (show) View.VISIBLE else View.GONE
+                if (show) {
+                    (binding.homeDantotsuIcon.drawable as? Animatable)?.start()
+                    binding.homeDantotsuContainer.startAnimation(setSlideUp())
+                }
             }
         }
 
@@ -554,6 +620,7 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
         )
 
         var running = false
+        var appliedLayoutKey: String? = null
         val live = Refresh.activity.getOrPut(1) { MutableLiveData(true) }
 
         run {
@@ -581,7 +648,7 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
                     withContext(Dispatchers.IO) {
                         // The header totals used to be fetched only once at login, so they
                         // went stale until the next re-login. Re-fetch on every refresh.
-                        if (Anilist.initialized) tryWithSuspend { Anilist.query.refreshUserStats() }
+                        if (Anilist.initialized) fetchStats(force = _binding?.homeRefresh?.isRefreshing == true)
                         Anilist.userid =
                             PrefManager.getNullableVal<String>(PrefName.AnilistUserId, null)
                                 ?.toIntOrNull()
@@ -617,14 +684,20 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
                             }
                         }
 
-                        var insertIndex = binding.homeContainer.indexOfChild(binding.homeHiddenItemsContainer) + 1
+                        // re-ordering removes and re-adds every section (a full relayout), so only
+                        // do it when the order really changed since the last time
+                        val layoutKey = homeLayoutOrder.joinToString(",")
+                        if (layoutKey != appliedLayoutKey) {
+                            appliedLayoutKey = layoutKey
+                            var insertIndex = binding.homeContainer.indexOfChild(binding.homeHiddenItemsContainer) + 1
 
-                        homeLayoutOrder.forEach { i ->
-                            val container = containers.getOrNull(i)
-                            if (container != null) {
-                                binding.homeContainer.removeView(container)
-                                binding.homeContainer.addView(container, insertIndex)
-                                insertIndex++
+                            homeLayoutOrder.forEach { i ->
+                                val container = containers.getOrNull(i)
+                                if (container != null) {
+                                    binding.homeContainer.removeView(container)
+                                    binding.homeContainer.addView(container, insertIndex)
+                                    insertIndex++
+                                }
                             }
                         }
                     }
@@ -659,10 +732,14 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
             // Coming back from a media page / the player: pick up progress made in the meantime.
             if (Anilist.initialized) {
                 viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                    tryWithSuspend { Anilist.query.refreshUserStats() }
+                    fetchStats(force = false)
                 }
             }
         }
         super.onResume()
+    }
+
+    private companion object {
+        const val STATS_MIN_GAP_MS = 8000L
     }
 }

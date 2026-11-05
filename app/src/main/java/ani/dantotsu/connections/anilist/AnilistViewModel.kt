@@ -26,6 +26,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/** What the home rows actually show for one item. Equal signatures = nothing visible changed. */
+fun mediaSignature(m: Media): String = buildString {
+    append(m.id).append('|').append(m.cover).append('|').append(m.userPreferredName).append('|')
+    append(m.userProgress).append('|').append(m.userProgressVolumes).append('|')
+    append(m.userStatus).append('|').append(m.userScore).append('|').append(m.userUpdatedAt).append('|')
+    append(m.meanScore).append('|').append(m.status).append('|').append(m.format).append('|')
+    append(m.isFav).append('|').append(m.timeUntilAiring).append('|')
+    append(m.anime?.totalEpisodes).append('|').append(m.anime?.nextAiringEpisode).append('|')
+    append(m.anime?.nextAiringEpisodeTime).append('|').append(m.manga?.totalChapters)
+}
+
+fun mediaListSignature(list: List<Media>): String = list.joinToString("\n") { mediaSignature(it) }
+
+fun userStatusSignature(list: List<User>): String = list.joinToString("\n") {
+    "${it.id}|${it.name}|${it.pfp}|${it.status}|${it.progress}|${it.nextAiringEpisode}|${it.activity.size}"
+}
+
 suspend fun getUserId(context: Context? = null, block: () -> Unit) {
     if ((!Anilist.initialized || Anilist.avatar == null) && PrefManager.getVal<String>(PrefName.AnilistToken) != "") {
         if (!Anilist.query.getUserData()) {
@@ -40,7 +57,26 @@ class AnilistHomeViewModel : ViewModel() {
         MutableLiveData<ArrayList<String?>>(arrayListOf())
 
     fun getListImages(): LiveData<ArrayList<String?>> = listImages
-    suspend fun setListImages() = listImages.postValue(Anilist.query.getBannerImages())
+    suspend fun setListImages() {
+        val images = Anilist.query.getBannerImages()
+        // same banners as already shown: nothing to redraw
+        if (images != listImages.value) listImages.postValue(images)
+    }
+
+    // Last signature posted per home row. The cached page and the fresh page usually hold the
+    // same data; posting it again made every row throw its adapter away and animate in again.
+    private val postedSigs = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    private fun postIfChanged(
+        key: String,
+        live: MutableLiveData<ArrayList<Media>>,
+        list: ArrayList<Media>
+    ) {
+        val sig = mediaListSignature(list)
+        if (live.value != null && postedSigs[key] == sig) return
+        postedSigs[key] = sig
+        live.postValue(list)
+    }
 
     private val animeContinue: MutableLiveData<ArrayList<Media>> =
         MutableLiveData<ArrayList<Media>>(null)
@@ -103,6 +139,7 @@ class AnilistHomeViewModel : ViewModel() {
             }
             if (addedMedia.isNotEmpty()) {
                 currentList.addAll(addedMedia)
+                postedSigs["recommendations"] = mediaListSignature(currentList)
                 recommendation.postValue(currentList)
             }
             addedMedia
@@ -124,7 +161,10 @@ class AnilistHomeViewModel : ViewModel() {
 
     fun getUserStatus(): LiveData<ArrayList<User>?> = userStatus
     suspend fun initUserStatus(forceRefresh: Boolean = false) {
-        if (forceRefresh || userStatus.value == null) {
+        // Showing data and not forced: a fresh result identical to it is simply dropped.
+        val keepIfSame = !forceRefresh && userStatus.value != null
+        val before = userStatus.value?.let { userStatusSignature(it) }
+        if (!keepIfSame) {
             userStatus.postValue(null)
         }
         val res = try {
@@ -132,7 +172,9 @@ class AnilistHomeViewModel : ViewModel() {
         } catch (_: Exception) {
             null
         }
-        userStatus.postValue(res ?: arrayListOf())
+        val result = res ?: arrayListOf()
+        if (keepIfSame && before == userStatusSignature(result)) return
+        userStatus.postValue(result)
     }
 
     private val hidden: MutableLiveData<ArrayList<Media>> =
@@ -179,15 +221,15 @@ class AnilistHomeViewModel : ViewModel() {
                 library.flatMap { it.orEmpty() }.map { it.id }.filter { it != 0 }
             )
         }
-        res["currentAnime"]?.let { animeContinue.postValue(it) }
-        res["favoriteAnime"]?.let { animeFav.postValue(it) }
-        res["currentAnimePlanned"]?.let { animePlanned.postValue(it) }
-        res["currentManga"]?.let { mangaContinue.postValue(it) }
-        res["favoriteManga"]?.let { mangaFav.postValue(it) }
-        res["currentMangaPlanned"]?.let { mangaPlanned.postValue(it) }
-        res["recommendations"]?.let { recommendation.postValue(it) }
-        res["missingSequels"]?.let { missingSequels.postValue(it) }
-        res["hidden"]?.let { hidden.postValue(it) }
+        res["currentAnime"]?.let { postIfChanged("currentAnime", animeContinue, it) }
+        res["favoriteAnime"]?.let { postIfChanged("favoriteAnime", animeFav, it) }
+        res["currentAnimePlanned"]?.let { postIfChanged("currentAnimePlanned", animePlanned, it) }
+        res["currentManga"]?.let { postIfChanged("currentManga", mangaContinue, it) }
+        res["favoriteManga"]?.let { postIfChanged("favoriteManga", mangaFav, it) }
+        res["currentMangaPlanned"]?.let { postIfChanged("currentMangaPlanned", mangaPlanned, it) }
+        res["recommendations"]?.let { postIfChanged("recommendations", recommendation, it) }
+        res["missingSequels"]?.let { postIfChanged("missingSequels", missingSequels, it) }
+        res["hidden"]?.let { postIfChanged("hidden", hidden, it) }
     }
 
 
