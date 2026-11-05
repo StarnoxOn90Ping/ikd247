@@ -218,7 +218,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         val density = resources.displayMetrics.density
         val coverTop = ((statusBarHeight + 58 * density) * 1.5f).toInt()
         binding.mediaCollapseContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin = coverTop }
-        binding.mediaBannerHolder.updateLayoutParams { height = coverTop + (56 * density).toInt() }
+        binding.mediaBannerHolder.updateLayoutParams { height = coverTop + (72 * density).toInt() }
         setupBannerFade()
         binding.mediaClose.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
         binding.mediaHome.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
@@ -731,8 +731,10 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             GradientDrawable.Orientation.TOP_BOTTOM,
             intArrayOf(
                 ColorUtils.setAlphaComponent(bg, 0),
-                ColorUtils.setAlphaComponent(bg, 110),
-                ColorUtils.setAlphaComponent(bg, 235),
+                ColorUtils.setAlphaComponent(bg, 18),
+                ColorUtils.setAlphaComponent(bg, 70),
+                ColorUtils.setAlphaComponent(bg, 150),
+                ColorUtils.setAlphaComponent(bg, 225),
                 bg
             )
         )
