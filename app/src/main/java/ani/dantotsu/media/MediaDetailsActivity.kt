@@ -2,6 +2,7 @@ package ani.dantotsu.media
 
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
+import android.graphics.drawable.Drawable
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
@@ -10,7 +11,6 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -22,6 +22,9 @@ import androidx.core.text.color
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updateMargins
+import androidx.core.view.updatePadding
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
@@ -56,8 +59,15 @@ import ani.dantotsu.snackString
 import ani.dantotsu.statusBarHeight
 import ani.dantotsu.themes.ThemeManager
 import ani.dantotsu.util.LauncherWrapper
-import com.flaviofaria.kenburnsview.RandomTransitionGenerator
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.load.model.GlideUrl
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
 import com.google.android.material.appbar.AppBarLayout
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -199,8 +209,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             // Optionally hide nav bar when keyboard is visible
             navBar.visibility = if (keyboardVisible) View.GONE else View.VISIBLE
         }
-        binding.mediaBanner.updateLayoutParams { height += statusBarHeight }
-        binding.mediaBannerNoKen.updateLayoutParams { height += statusBarHeight }
+        binding.mediaBannerHolder.updatePadding(top = binding.mediaBannerHolder.paddingTop + statusBarHeight)
         binding.mediaClose.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
         binding.mediaHome.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
         binding.incognito.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
@@ -224,17 +233,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             onBackPressedDispatcher.onBackPressed()
         }
 
-        val bannerAnimations: Boolean = PrefManager.getVal(PrefName.BannerAnimations)
-        if (bannerAnimations) {
-            val adi = AccelerateDecelerateInterpolator()
-            val generator = RandomTransitionGenerator(
-                (10000 + 15000 * ((PrefManager.getVal(PrefName.AnimationSpeed) as Float))).toLong(),
-                adi
-            )
-            binding.mediaBanner.setTransitionGenerator(generator)
-        }
-        val banner =
-            if (bannerAnimations) binding.mediaBanner else binding.mediaBannerNoKen
+        val banner = binding.mediaBanner
         val viewPager = binding.mediaViewPager
         viewPager.offscreenPageLimit = 2
         viewPager.isUserInputEnabled = false
@@ -252,7 +251,15 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
                 this, media.id, ani.dantotsu.others.CustomMediaImages.Kind.BANNER
             )
             binding.mediaCoverImage.loadImage(customCover ?: media.cover)
-            blurImage(banner, customBanner ?: media.banner ?: customCover ?: media.cover)
+            val realBanner = customBanner ?: media.banner
+            if (!realBanner.isNullOrEmpty()) {
+                // Real banner: shown whole, sharp and unanimated
+                showSharpBanner(realBanner)
+            } else {
+                // No banner at all: fall back to the (blurred) cover so the strip is never empty
+                setBannerRatio(defaultBannerW, defaultBannerH)
+                blurImage(banner, customCover ?: media.cover)
+            }
         }
         applyMediaImages?.invoke()
         binding.mediaCoverImage.setOnLongClickListener {
@@ -261,15 +268,6 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         }
 
         val gestureDetector = GestureDetector(this, object : GesturesListener() {
-            override fun onDoubleClick(event: MotionEvent) {
-                if (!(PrefManager.getVal(PrefName.BannerAnimations) as Boolean))
-                    snackString(getString(R.string.enable_banner_animations))
-                else {
-                    binding.mediaBanner.restart()
-                    binding.mediaBanner.performClick()
-                }
-            }
-
             override fun onLongClick(event: MotionEvent) {
                 showImageViewer(ani.dantotsu.others.CustomMediaImages.Kind.BANNER)
                 banner.performClick()
@@ -712,6 +710,59 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
     private var isCollapsed = false
     private val percent = 45
     private var mMaxScrollSize = 0
+
+    // AniList's standard banner is 1900x400
+    private val defaultBannerW = 1900
+    private val defaultBannerH = 400
+
+    /** Sizes the banner card to the image's own aspect ratio so nothing gets cropped or zoomed. */
+    private fun setBannerRatio(w: Int, h: Int) {
+        if (!::binding.isInitialized || w <= 0 || h <= 0) return
+        val ratio = (w.toFloat() / h).coerceIn(1.8f, 5.2f)
+        val card = binding.mediaBannerCard
+        val lp = card.layoutParams as? ConstraintLayout.LayoutParams ?: return
+        val dimension = "H,$ratio:1"
+        if (lp.dimensionRatio != dimension) {
+            lp.dimensionRatio = dimension
+            card.layoutParams = lp
+            mMaxScrollSize = 0 // header height changed; recalculate the collapse range
+        }
+    }
+
+    private fun showSharpBanner(url: String) {
+        val source: Any = when {
+            url.startsWith("content://") -> url.toUri()
+            File(url).exists() -> File(url)
+            else -> ani.dantotsu.others.CustomMediaImages.overrideFor(url)
+                ?: ani.dantotsu.others.PinnedImages.fileFor(url)
+                ?: GlideUrl(url)
+        }
+        setBannerRatio(defaultBannerW, defaultBannerH)
+        binding.mediaBanner.scaleType = ImageView.ScaleType.CENTER_CROP
+        Glide.with(this)
+            .load(source)
+            .transition(withCrossFade(300))
+            .listener(object : RequestListener<Drawable> {
+                override fun onResourceReady(
+                    resource: Drawable,
+                    model: Any,
+                    target: Target<Drawable>,
+                    dataSource: DataSource,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    setBannerRatio(resource.intrinsicWidth, resource.intrinsicHeight)
+                    return false
+                }
+
+                override fun onLoadFailed(
+                    e: GlideException?,
+                    model: Any?,
+                    target: Target<Drawable>,
+                    isFirstResource: Boolean
+                ): Boolean = false
+            })
+            .into(binding.mediaBanner)
+    }
     private var screenWidth: Float = 0f
 
     override fun onOffsetChanged(appBar: AppBarLayout, i: Int) {
@@ -732,7 +783,6 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
                 .setDuration(duration).start()
             ObjectAnimator.ofFloat(binding.mediaCollapseContainer, "translationX", screenWidth)
                 .setDuration(duration).start()
-            binding.mediaBanner.pause()
         }
         if (percentage <= percent && isCollapsed) {
             isCollapsed = false
@@ -744,7 +794,6 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
                 .start()
             ObjectAnimator.ofFloat(binding.mediaCollapseContainer, "translationX", 0f)
                 .setDuration(duration).start()
-            if (PrefManager.getVal(PrefName.BannerAnimations)) binding.mediaBanner.resume()
         }
         if (percentage == 1 && model.scrolledToTop.value != false) model.scrolledToTop.postValue(
             false
