@@ -396,11 +396,11 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             val onBackground =
                 getThemeColor(com.google.android.material.R.attr.colorOnBackground)
             val total = (if (media.anime != null) media.anime!!.totalEpisodes
-            else media.manga?.totalChapters)?.toString() ?: "??"
+            else media.manga?.totalChapters)?.toString() ?: "~"
             return SpannableStringBuilder().apply {
                 append(userStatus)
                 color(ColorUtils.setAlphaComponent(secondary, 140)) { append("  •  ") }
-                bold { color(onBackground) { append("${media.userProgress ?: 0}/$total") } }
+                bold { color(onBackground) { append("${media.userProgress ?: 0} / $total") } }
             }
         }
 
