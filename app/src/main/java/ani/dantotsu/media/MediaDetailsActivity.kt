@@ -722,6 +722,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
     private var mMaxScrollSize = 0
 
     private var bannerPan: ObjectAnimator? = null
+    private var screenWidth: Float = 0f
 
     /** Page-background fade at the bottom of the banner so it melts into the content (no blur involved). */
     private fun setupBannerFade() {
