@@ -3,6 +3,10 @@ package ani.dantotsu.media
 import android.animation.ObjectAnimator
 import android.annotation.SuppressLint
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
+import android.view.Gravity
+import android.view.animation.AccelerateDecelerateInterpolator
+import android.widget.FrameLayout
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
@@ -22,8 +26,8 @@ import androidx.core.text.color
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.core.view.updateMargins
-import androidx.core.view.updatePadding
-import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.view.doOnLayout
+import androidx.core.graphics.ColorUtils
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -76,6 +80,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import nl.joery.animatedbottombar.AnimatedBottomBar
 import kotlin.math.abs
+import kotlin.math.max
 import kotlin.time.Duration.Companion.milliseconds
 
 
@@ -209,7 +214,12 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             // Optionally hide nav bar when keyboard is visible
             navBar.visibility = if (keyboardVisible) View.GONE else View.VISIBLE
         }
-        binding.mediaBannerHolder.updatePadding(top = binding.mediaBannerHolder.paddingTop + statusBarHeight)
+        // Header geometry: cover/title sit 1.5x as far from the top as before, banner is a full backdrop behind them
+        val density = resources.displayMetrics.density
+        val coverTop = ((statusBarHeight + 58 * density) * 1.5f).toInt()
+        binding.mediaCollapseContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin = coverTop }
+        binding.mediaBannerHolder.updateLayoutParams { height = coverTop + (56 * density).toInt() }
+        setupBannerFade()
         binding.mediaClose.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
         binding.mediaHome.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
         binding.incognito.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
@@ -257,7 +267,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
                 showSharpBanner(realBanner)
             } else {
                 // No banner at all: fall back to the (blurred) cover so the strip is never empty
-                setBannerRatio(defaultBannerW, defaultBannerH)
+                showStaticBanner()
                 blurImage(banner, customCover ?: media.cover)
             }
         }
@@ -711,21 +721,70 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
     private val percent = 45
     private var mMaxScrollSize = 0
 
-    // AniList's standard banner is 1900x400
-    private val defaultBannerW = 1900
-    private val defaultBannerH = 400
+    private var bannerPan: ObjectAnimator? = null
 
-    /** Sizes the banner card to the image's own aspect ratio so nothing gets cropped or zoomed. */
-    private fun setBannerRatio(w: Int, h: Int) {
-        if (!::binding.isInitialized || w <= 0 || h <= 0) return
-        val ratio = (w.toFloat() / h).coerceIn(1.8f, 5.2f)
-        val card = binding.mediaBannerCard
-        val lp = card.layoutParams as? ConstraintLayout.LayoutParams ?: return
-        val dimension = "H,$ratio:1"
-        if (lp.dimensionRatio != dimension) {
-            lp.dimensionRatio = dimension
-            card.layoutParams = lp
-            mMaxScrollSize = 0 // header height changed; recalculate the collapse range
+    /** Page-background fade at the bottom of the banner so it melts into the content (no blur involved). */
+    private fun setupBannerFade() {
+        val bg = getThemeColor(android.R.attr.colorBackground)
+        binding.mediaBannerFade.background = GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(
+                ColorUtils.setAlphaComponent(bg, 0),
+                ColorUtils.setAlphaComponent(bg, 110),
+                ColorUtils.setAlphaComponent(bg, 235),
+                bg
+            )
+        )
+    }
+
+    /** Fallback (no banner): the image just fills the backdrop, no panning. */
+    private fun showStaticBanner() {
+        bannerPan?.cancel()
+        bannerPan = null
+        binding.mediaBanner.translationX = 0f
+        binding.mediaBanner.scaleType = ImageView.ScaleType.CENTER_CROP
+        binding.mediaBanner.updateLayoutParams<FrameLayout.LayoutParams> {
+            width = ViewGroup.LayoutParams.MATCH_PARENT
+        }
+    }
+
+    /**
+     * Scales the banner to the backdrop's height (so it is never zoomed beyond what's needed to fill it),
+     * then slowly glides it left <-> right across the extra width.
+     */
+    private fun layoutBannerPan(imageW: Int, imageH: Int) {
+        if (!::binding.isInitialized || imageW <= 0 || imageH <= 0) return
+        binding.mediaBannerHolder.doOnLayout { holder ->
+            val viewW = holder.width.toFloat()
+            val viewH = holder.height.toFloat()
+            if (viewW <= 0f || viewH <= 0f) return@doOnLayout
+            val scale = max(viewH / imageH, viewW / imageW)
+            val scaledW = (imageW * scale).toInt()
+            val banner = binding.mediaBanner
+            banner.scaleType = ImageView.ScaleType.CENTER_CROP
+            banner.updateLayoutParams<FrameLayout.LayoutParams> {
+                width = scaledW
+                height = viewH.toInt()
+                gravity = Gravity.START
+            }
+            bannerPan?.cancel()
+            bannerPan = null
+            banner.translationX = 0f
+            val range = (scaledW - viewW).coerceAtLeast(0f)
+            if (range < 1f) return@doOnLayout
+            if (!(PrefManager.getVal(PrefName.BannerAnimations) as Boolean)) {
+                banner.translationX = -range / 2f
+                return@doOnLayout
+            }
+            val speed = PrefManager.getVal(PrefName.AnimationSpeed) as Float
+            bannerPan = ObjectAnimator.ofFloat(banner, "translationX", 0f, -range).apply {
+                duration = (10000 + 15000 * speed).toLong()
+                interpolator = AccelerateDecelerateInterpolator()
+                repeatCount = ObjectAnimator.INFINITE
+                repeatMode = ObjectAnimator.REVERSE
+                start()
+                if (isCollapsed) pause()
+            }
         }
     }
 
@@ -737,11 +796,11 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
                 ?: ani.dantotsu.others.PinnedImages.fileFor(url)
                 ?: GlideUrl(url)
         }
-        setBannerRatio(defaultBannerW, defaultBannerH)
-        binding.mediaBanner.scaleType = ImageView.ScaleType.CENTER_CROP
+        showStaticBanner()
         Glide.with(this)
             .load(source)
-            .transition(withCrossFade(300))
+            .override(Target.SIZE_ORIGINAL) // full resolution: it is shown wider than the screen, so it must stay crisp
+            .transition(withCrossFade(400))
             .listener(object : RequestListener<Drawable> {
                 override fun onResourceReady(
                     resource: Drawable,
@@ -750,7 +809,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
                     dataSource: DataSource,
                     isFirstResource: Boolean
                 ): Boolean {
-                    setBannerRatio(resource.intrinsicWidth, resource.intrinsicHeight)
+                    layoutBannerPan(resource.intrinsicWidth, resource.intrinsicHeight)
                     return false
                 }
 
@@ -763,7 +822,6 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             })
             .into(binding.mediaBanner)
     }
-    private var screenWidth: Float = 0f
 
     override fun onOffsetChanged(appBar: AppBarLayout, i: Int) {
         if (!::binding.isInitialized) return
@@ -783,6 +841,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
                 .setDuration(duration).start()
             ObjectAnimator.ofFloat(binding.mediaCollapseContainer, "translationX", screenWidth)
                 .setDuration(duration).start()
+            bannerPan?.pause()
         }
         if (percentage <= percent && isCollapsed) {
             isCollapsed = false
@@ -794,6 +853,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
                 .start()
             ObjectAnimator.ofFloat(binding.mediaCollapseContainer, "translationX", 0f)
                 .setDuration(duration).start()
+            bannerPan?.resume()
         }
         if (percentage == 1 && model.scrolledToTop.value != false) model.scrolledToTop.postValue(
             false
@@ -890,6 +950,8 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
 
     override fun onDestroy() {
         super.onDestroy()
+        bannerPan?.cancel()
+        bannerPan = null
         Refresh.activity.remove(this.hashCode())
         mediaSingleton = null
         MediaSingleton.bitmap = null
