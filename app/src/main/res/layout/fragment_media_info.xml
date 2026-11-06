@@ -48,7 +48,7 @@
                     android:paddingStart="32dp"
                     android:paddingTop="20dp"
                     android:paddingEnd="32dp"
-                    android:paddingBottom="8dp">
+                    android:paddingBottom="4dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -61,6 +61,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:includeFontPadding="false"
                             android:fontFamily="@font/poppins_bold"
                             android:text="@string/description"
                             android:textColor="?attr/colorPrimary"
@@ -68,10 +69,11 @@
 
                         <ImageView
                             android:id="@+id/mediaInfoTts"
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:layout_marginEnd="-6dp"
                             android:alpha="0.7"
-                            android:padding="8dp"
+                            android:padding="6dp"
                             android:src="@drawable/ic_record_voice_over"
                             app:tint="?attr/colorOnBackground"
                             tools:ignore="ContentDescription" />
@@ -81,7 +83,7 @@
                         android:id="@+id/mediaInfoDescription"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="4dp"
                         android:ellipsize="end"
                         android:maxLines="5"
                         android:text="@string/description"
@@ -110,15 +112,16 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:paddingStart="32dp"
-                    android:paddingTop="16dp"
+                    android:paddingTop="14dp"
                     android:paddingEnd="20dp"
                     android:paddingBottom="0dp">
 
                     <TextView
                         android:id="@+id/mediaInfoDetailsTitle"
+                        android:includeFontPadding="false"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="14dp"
+                        android:layout_marginBottom="8dp"
                         android:fontFamily="@font/poppins_bold"
                         android:text="@string/details"
                         android:textColor="?attr/colorPrimary"
@@ -133,7 +136,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_columnWeight="1"
-                        android:layout_marginBottom="18dp"
+                        android:layout_marginBottom="10dp"
                         android:layout_marginEnd="12dp"
                         android:orientation="vertical">
 
@@ -143,17 +146,19 @@
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
                             android:text="@string/total_eps"
-                            android:textSize="14sp" />
+                            android:includeFontPadding="false"
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/mediaInfoTotal"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="1dp"
                             android:fontFamily="@font/poppins_bold"
                             android:maxLines="2"
                             android:ellipsize="end"
-                            android:textSize="18sp"
+                            android:includeFontPadding="false"
+                            android:textSize="15sp"
                             tools:text="4 | ~" />
                     </LinearLayout>
 
@@ -161,7 +166,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_columnWeight="1"
-                        android:layout_marginBottom="18dp"
+                        android:layout_marginBottom="10dp"
                         android:layout_marginEnd="12dp"
                         android:orientation="vertical">
 
@@ -170,17 +175,19 @@
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
                             android:text="@string/format"
-                            android:textSize="14sp" />
+                            android:includeFontPadding="false"
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/mediaInfoFormat"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="1dp"
                             android:fontFamily="@font/poppins_bold"
                             android:maxLines="2"
                             android:ellipsize="end"
-                            android:textSize="18sp"
+                            android:includeFontPadding="false"
+                            android:textSize="15sp"
                             tools:text="Tv" />
                     </LinearLayout>
 
@@ -188,7 +195,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_columnWeight="1"
-                        android:layout_marginBottom="18dp"
+                        android:layout_marginBottom="10dp"
                         android:layout_marginEnd="12dp"
                         android:orientation="vertical">
 
@@ -197,17 +204,19 @@
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
                             android:text="@string/source"
-                            android:textSize="14sp" />
+                            android:includeFontPadding="false"
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/mediaInfoSource"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="1dp"
                             android:fontFamily="@font/poppins_bold"
                             android:maxLines="2"
                             android:ellipsize="end"
-                            android:textSize="18sp"
+                            android:includeFontPadding="false"
+                            android:textSize="15sp"
                             tools:text="Other" />
                     </LinearLayout>
 
@@ -216,7 +225,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_columnWeight="1"
-                        android:layout_marginBottom="18dp"
+                        android:layout_marginBottom="10dp"
                         android:layout_marginEnd="12dp"
                         android:orientation="vertical"
                         android:visibility="gone">
@@ -226,17 +235,19 @@
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
                             android:text="@string/main_studio"
-                            android:textSize="14sp" />
+                            android:includeFontPadding="false"
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/mediaInfoStudio"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="1dp"
                             android:fontFamily="@font/poppins_bold"
                             android:maxLines="2"
                             android:ellipsize="end"
-                            android:textSize="18sp"
+                            android:includeFontPadding="false"
+                            android:textSize="15sp"
                             tools:text="Toei Animation" />
                     </LinearLayout>
 
@@ -245,7 +256,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_columnWeight="1"
-                        android:layout_marginBottom="18dp"
+                        android:layout_marginBottom="10dp"
                         android:layout_marginEnd="12dp"
                         android:orientation="vertical"
                         android:visibility="gone">
@@ -255,17 +266,19 @@
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
                             android:text="@string/author"
-                            android:textSize="14sp" />
+                            android:includeFontPadding="false"
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/mediaInfoAuthor"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="1dp"
                             android:fontFamily="@font/poppins_bold"
                             android:maxLines="2"
                             android:ellipsize="end"
-                            android:textSize="18sp"
+                            android:includeFontPadding="false"
+                            android:textSize="15sp"
                             tools:text="Akira Toriyama" />
                     </LinearLayout>
 
@@ -274,7 +287,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_columnWeight="1"
-                        android:layout_marginBottom="18dp"
+                        android:layout_marginBottom="10dp"
                         android:layout_marginEnd="12dp"
                         android:orientation="vertical"
                         android:visibility="gone">
@@ -284,17 +297,19 @@
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
                             android:text="@string/season"
-                            android:textSize="14sp" />
+                            android:includeFontPadding="false"
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/mediaInfoSeason"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="1dp"
                             android:fontFamily="@font/poppins_bold"
                             android:maxLines="2"
                             android:ellipsize="end"
-                            android:textSize="18sp"
+                            android:includeFontPadding="false"
+                            android:textSize="15sp"
                             tools:text="Fall 2026" />
                     </LinearLayout>
 
@@ -302,7 +317,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_columnWeight="1"
-                        android:layout_marginBottom="18dp"
+                        android:layout_marginBottom="10dp"
                         android:layout_marginEnd="12dp"
                         android:orientation="vertical">
 
@@ -311,17 +326,19 @@
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
                             android:text="@string/country"
-                            android:textSize="14sp" />
+                            android:includeFontPadding="false"
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/mediaInfoCountry"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="1dp"
                             android:fontFamily="@font/poppins_bold"
                             android:maxLines="2"
                             android:ellipsize="end"
-                            android:textSize="18sp"
+                            android:includeFontPadding="false"
+                            android:textSize="15sp"
                             tools:text="JP" />
                     </LinearLayout>
 
@@ -329,7 +346,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_columnWeight="1"
-                        android:layout_marginBottom="18dp"
+                        android:layout_marginBottom="10dp"
                         android:layout_marginEnd="12dp"
                         android:orientation="vertical">
 
@@ -338,17 +355,19 @@
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
                             android:text="@string/aired"
-                            android:textSize="14sp" />
+                            android:includeFontPadding="false"
+                            android:textSize="12sp" />
 
                         <TextView
                             android:id="@+id/mediaInfoStart"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="1dp"
                             android:fontFamily="@font/poppins_bold"
                             android:maxLines="2"
                             android:ellipsize="end"
-                            android:textSize="18sp"
+                            android:includeFontPadding="false"
+                            android:textSize="15sp"
                             tools:text="11 October 2026" />
                     </LinearLayout>
 

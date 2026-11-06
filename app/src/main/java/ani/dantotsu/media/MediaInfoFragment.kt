@@ -12,7 +12,6 @@ import android.speech.tts.TextToSpeech
 import android.view.View
 import android.text.StaticLayout
 import android.text.Layout
-import androidx.core.view.doOnLayout
 import com.google.android.material.color.MaterialColors
 import android.view.animation.OvershootInterpolator
 import android.speech.tts.UtteranceProgressListener
@@ -76,6 +75,7 @@ class MediaInfoFragment : Fragment() {
     private var timer: CountDownTimer? = null
     private var tts: TextToSpeech? = null
     private var ttsPulse: ObjectAnimator? = null
+    private var descLayoutListener: View.OnLayoutChangeListener? = null
 
     private fun speakSynopsis(engine: TextToSpeech, text: String) {
         engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
@@ -349,18 +349,39 @@ class MediaInfoFragment : Fragment() {
                 binding.mediaInfoReadMore.text = getString(R.string.read_more)
                 binding.mediaInfoDescription.maxLines = collapsedLines
                 binding.mediaInfoReadMore.visibility = View.GONE
-                binding.mediaInfoDescription.doOnLayout { v ->
-                    val tv = v as TextView
+                // Show "Read more" whenever the full text needs more than the collapsed lines.
+                // Re-checked on every size change, so it also works if the tab was laid out at width 0 first.
+                fun updateReadMore() {
+                    val b = _binding ?: return
+                    val tv = b.mediaInfoDescription
                     val w = tv.width - tv.paddingLeft - tv.paddingRight
-                    if (w <= 0) return@doOnLayout
-                    @Suppress("DEPRECATION")
-                    val full = StaticLayout(
-                        infoDesc, tv.paint, w, Layout.Alignment.ALIGN_NORMAL,
-                        tv.lineSpacingMultiplier, tv.lineSpacingExtra, tv.includeFontPadding
-                    )
-                    _binding?.mediaInfoReadMore?.visibility =
-                        if (full.lineCount > collapsedLines) View.VISIBLE else View.GONE
+                    if (w <= 0) return
+                    val full = if (Build.VERSION.SDK_INT >= 23) {
+                        StaticLayout.Builder.obtain(infoDesc, 0, infoDesc.length, tv.paint, w)
+                            .setLineSpacing(tv.lineSpacingExtra, tv.lineSpacingMultiplier)
+                            .setIncludePad(tv.includeFontPadding)
+                            .setBreakStrategy(tv.breakStrategy)
+                            .setHyphenationFrequency(tv.hyphenationFrequency)
+                            .build()
+                    } else {
+                        @Suppress("DEPRECATION")
+                        StaticLayout(
+                            infoDesc, tv.paint, w, Layout.Alignment.ALIGN_NORMAL,
+                            tv.lineSpacingMultiplier, tv.lineSpacingExtra, tv.includeFontPadding
+                        )
+                    }
+                    val ellipsized = tv.layout?.let {
+                        it.lineCount >= collapsedLines && it.getEllipsisCount(collapsedLines - 1) > 0
+                    } ?: false
+                    b.mediaInfoReadMore.visibility =
+                        if (full.lineCount > collapsedLines || ellipsized) View.VISIBLE else View.GONE
                 }
+                descLayoutListener?.let { binding.mediaInfoDescription.removeOnLayoutChangeListener(it) }
+                descLayoutListener = View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                    updateReadMore()
+                }
+                binding.mediaInfoDescription.addOnLayoutChangeListener(descLayoutListener)
+                binding.mediaInfoDescription.post { updateReadMore() }
                 val toggleSynopsis = View.OnClickListener {
                     val expand = binding.mediaInfoDescription.maxLines == collapsedLines
                     ObjectAnimator.ofInt(
