@@ -75,6 +75,21 @@ class MediaInfoFragment : Fragment() {
     private var timer: CountDownTimer? = null
     private var tts: TextToSpeech? = null
     private var ttsPulse: ObjectAnimator? = null
+
+    // same look as the Synopsis / Details / Names headings
+    private fun styleSectionHeading(tv: TextView) {
+        val d = resources.displayMetrics.density
+        tv.textSize = 20f
+        tv.setTextColor(MaterialColors.getColor(tv, androidx.appcompat.R.attr.colorPrimary))
+        tv.includeFontPadding = false
+        tv.translationX = -2f * d
+        tv.translationY = 3f * d
+        (tv.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
+            it.topMargin = (18 * d).toInt()
+            it.bottomMargin = (10 * d).toInt()
+            tv.layoutParams = it
+        }
+    }
     private var descLayoutListener: View.OnLayoutChangeListener? = null
 
     private fun speakSynopsis(engine: TextToSpeech, text: String) {
@@ -235,6 +250,28 @@ class MediaInfoFragment : Fragment() {
                 binding.mediaInfoProgressBar.visibility = View.GONE
                 binding.mediaInfoContainer.visibility = View.VISIBLE
                 binding.mediaInfoCountry.text = media.countryOfOrigin ?: "~"
+
+                // Names section
+                fun bindName(container: View, valueView: TextView, value: String?) {
+                    if (value.isNullOrBlank()) {
+                        container.visibility = View.GONE
+                    } else {
+                        container.visibility = View.VISIBLE
+                        valueView.text = value
+                        valueView.setOnLongClickListener { copyToClipboard(value); true }
+                    }
+                }
+                bindName(binding.mediaInfoNameContainer, binding.mediaInfoName, media.name)
+                bindName(
+                    binding.mediaInfoNameRomajiContainer,
+                    binding.mediaInfoNameRomaji,
+                    media.nameRomaji
+                )
+                bindName(
+                    binding.mediaInfoNamePreferredContainer,
+                    binding.mediaInfoNamePreferred,
+                    media.userPreferredName.takeIf { it != media.name && it != media.nameRomaji }
+                )
                 binding.mediaInfoFormat.text = media.format
                 binding.mediaInfoSource.text = media.source
                 binding.mediaInfoStart.text = media.startDate?.toString() ?: "~"
@@ -271,7 +308,7 @@ class MediaInfoFragment : Fragment() {
                             bind.root.tag = "dynamic_view"
                             binding.mediaInfoContainer.addView(
                                 bind.root,
-                                binding.mediaInfoContainer.indexOfChild(binding.mediaInfoDetailsTable) + 1
+                                binding.mediaInfoContainer.indexOfChild(binding.mediaInfoNamesSection) + 1
                             )
 
                             validProducers.forEach { producer ->
@@ -449,6 +486,7 @@ class MediaInfoFragment : Fragment() {
                         parent,
                         false
                     )
+                    styleSectionHeading(bind.itemTitle)
                     bind.root.tag = "dynamic_view"
                     for (position in media.synonyms.indices) {
                         val chip = ItemChipBinding.inflate(
@@ -461,43 +499,6 @@ class MediaInfoFragment : Fragment() {
                         bind.itemChipGroup.addView(chip)
                     }
                     parent.addView(bind.root)
-                }
-                if (!media.users.isNullOrEmpty()) {
-                    val users: ArrayList<User> = media.users ?: arrayListOf()
-                    val currentUserId = Anilist.userid
-                    if (Anilist.token != null && currentUserId != null && media.userStatus != null) {
-                        users.add(
-                            0,
-                            User(
-                                id = currentUserId,
-                                name = getString(R.string.you),
-                                pfp = Anilist.avatar,
-                                banner = "",
-                                status = media.userStatus,
-                                score = media.userScore.toFloat(),
-                                progress = media.userProgress,
-                                totalEpisodes = media.anime?.totalEpisodes
-                                    ?: media.manga?.totalChapters,
-                                nextAiringEpisode = media.anime?.nextAiringEpisode
-                            )
-                        )
-                    }
-                    ItemTitleRecyclerBinding.inflate(
-                        LayoutInflater.from(context),
-                        parent,
-                        false
-                    ).apply {
-                        itemTitle.visibility = View.GONE
-                        itemRecycler.adapter =
-                            MediaSocialAdapter(users, type, requireActivity())
-                        itemRecycler.layoutManager = LinearLayoutManager(
-                            requireContext(),
-                            LinearLayoutManager.HORIZONTAL,
-                            false
-                        )
-                        root.tag = "dynamic_view"
-                        parent.addView(root)
-                    }
                 }
                 if (media.trailer != null) {
                     @Suppress("DEPRECATION")
@@ -543,6 +544,7 @@ class MediaInfoFragment : Fragment() {
                         parent,
                         false
                     )
+                    styleSectionHeading(bind.mediaInfoTrailerText)
                     bind.mediaInfoTrailer.apply {
                         visibility = View.VISIBLE
                         settings.javaScriptEnabled = true
@@ -639,7 +641,8 @@ class MediaInfoFragment : Fragment() {
                                     .thumbnail {
                                         width: 100%;
                                         height: 100%;
-                                        object-fit: contain;
+                                        object-fit: cover;
+                                        transform-origin: center center;
                                     }
                                     .play-button {
                                         position: absolute;
@@ -667,12 +670,61 @@ class MediaInfoFragment : Fragment() {
                             </head>
                             <body>
                                 <div class="thumbnail-container" onclick="Android.loadVideo()">
-                                    <img class="thumbnail" src="https://img.youtube.com/vi/$trailerId/maxresdefault.jpg"
-                                         onerror="this.src='https://img.youtube.com/vi/$trailerId/hqdefault.jpg'" alt="Trailer">
+                                    <img id="thumb" class="thumbnail" alt="Trailer">
                                     <div class="play-button">
                                         <div class="play-icon"></div>
                                     </div>
                                 </div>
+                                <script>
+                                    var img = document.getElementById('thumb');
+                                    var base = 'https://img.youtube.com/vi/$trailerId/';
+                                    // try the big thumbnail first, readable (cors) before plain
+                                    var tries = [
+                                        [base + 'maxresdefault.jpg', true],
+                                        [base + 'hqdefault.jpg', true],
+                                        [base + 'maxresdefault.jpg', false],
+                                        [base + 'hqdefault.jpg', false]
+                                    ];
+                                    var idx = 0;
+                                    function load() {
+                                        var t = tries[idx];
+                                        if (t[1]) { img.crossOrigin = 'anonymous'; }
+                                        else { img.removeAttribute('crossorigin'); }
+                                        img.src = t[0];
+                                    }
+                                    img.onerror = function () {
+                                        if (idx < tries.length - 1) { idx++; load(); }
+                                    };
+                                    img.onload = function () {
+                                        try {
+                                            var w = 64;
+                                            var h = Math.max(2, Math.round(w * img.naturalHeight / img.naturalWidth));
+                                            var cv = document.createElement('canvas');
+                                            cv.width = w; cv.height = h;
+                                            var cx = cv.getContext('2d');
+                                            cx.drawImage(img, 0, 0, w, h);
+                                            var d = cx.getImageData(0, 0, w, h).data;
+                                            function dark(r) {
+                                                var s = 0;
+                                                for (var i = 0; i < w; i++) {
+                                                    var k = (r * w + i) * 4;
+                                                    s += d[k] + d[k + 1] + d[k + 2];
+                                                }
+                                                return s / (w * 3) < 20;
+                                            }
+                                            var top = 0;
+                                            while (top < h / 2 && dark(top)) top++;
+                                            var bot = 0;
+                                            while (bot < h / 2 && dark(h - 1 - bot)) bot++;
+                                            var bar = Math.min(top, bot) / h;
+                                            if (bar > 0.02) {
+                                                var s = Math.min(1 / (1 - 2 * bar), 1.8);
+                                                img.style.transform = 'scale(' + s.toFixed(3) + ')';
+                                            }
+                                        } catch (e) { /* image not readable: object-fit cover still fills the frame */ }
+                                    };
+                                    load();
+                                </script>
                             </body>
                             </html>
                         """.trimIndent()
@@ -680,6 +732,43 @@ class MediaInfoFragment : Fragment() {
                     }
                     bind.root.tag = "dynamic_view"
                     parent.addView(bind.root)
+                }
+                if (!media.users.isNullOrEmpty()) {
+                    val users: ArrayList<User> = media.users ?: arrayListOf()
+                    val currentUserId = Anilist.userid
+                    if (Anilist.token != null && currentUserId != null && media.userStatus != null) {
+                        users.add(
+                            0,
+                            User(
+                                id = currentUserId,
+                                name = getString(R.string.you),
+                                pfp = Anilist.avatar,
+                                banner = "",
+                                status = media.userStatus,
+                                score = media.userScore.toFloat(),
+                                progress = media.userProgress,
+                                totalEpisodes = media.anime?.totalEpisodes
+                                    ?: media.manga?.totalChapters,
+                                nextAiringEpisode = media.anime?.nextAiringEpisode
+                            )
+                        )
+                    }
+                    ItemTitleRecyclerBinding.inflate(
+                        LayoutInflater.from(context),
+                        parent,
+                        false
+                    ).apply {
+                        itemTitle.visibility = View.GONE
+                        itemRecycler.adapter =
+                            MediaSocialAdapter(users, type, requireActivity())
+                        itemRecycler.layoutManager = LinearLayoutManager(
+                            requireContext(),
+                            LinearLayoutManager.HORIZONTAL,
+                            false
+                        )
+                        root.tag = "dynamic_view"
+                        parent.addView(root)
+                    }
                 }
 
                 if (media.anime != null && (media.anime.op.isNotEmpty() || media.anime.ed.isNotEmpty())) {

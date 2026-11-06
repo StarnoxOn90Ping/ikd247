@@ -1525,4 +1525,6 @@ Non quae tempore quo provident laudantium qui illo dolor vel quia dolor et exerc
     <string name="aired">Aired</string>
     <string name="details_episodes">Episodes</string>
     <string name="details_chapters">Chapters</string>
+    <string name="names">Names</string>
+    <string name="name_preferred">Preferred</string>
 </resources>

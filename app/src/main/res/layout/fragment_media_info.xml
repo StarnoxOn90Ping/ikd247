@@ -58,6 +58,8 @@
 
                         <TextView
                             android:id="@+id/mediaInfoDescriptionText"
+                            android:translationX="-2dp"
+                            android:translationY="3dp"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
@@ -69,8 +71,8 @@
 
                         <ImageView
                             android:id="@+id/mediaInfoTts"
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
                             android:layout_marginEnd="-6dp"
                             android:alpha="0.7"
                             android:padding="6dp"
@@ -118,6 +120,8 @@
 
                     <TextView
                         android:id="@+id/mediaInfoDetailsTitle"
+                        android:translationX="-2dp"
+                        android:translationY="3dp"
                         android:includeFontPadding="false"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -373,6 +377,116 @@
 
                     </GridLayout>
                 </LinearLayout>
+
+                <!-- Names: English / romaji / preferred -->
+                <LinearLayout
+                    android:id="@+id/mediaInfoNamesSection"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="32dp"
+                    android:paddingTop="10dp"
+                    android:paddingEnd="32dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:fontFamily="@font/poppins_bold"
+                        android:includeFontPadding="false"
+                        android:text="@string/names"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="20sp"
+                        android:translationX="-2dp"
+                        android:translationY="3dp" />
+
+            <LinearLayout
+                android:id="@+id/mediaInfoNameContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.58"
+                    android:includeFontPadding="false"
+                    android:text="@string/name"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/mediaInfoName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:breakStrategy="balanced"
+                    android:fontFamily="@font/poppins_bold"
+                    android:includeFontPadding="false"
+                    android:textSize="15sp"
+                    tools:targetApi="m"
+                    tools:text="Dragon Ball Daima" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/mediaInfoNameRomajiContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.58"
+                    android:includeFontPadding="false"
+                    android:text="@string/name_romaji"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/mediaInfoNameRomaji"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:breakStrategy="balanced"
+                    android:fontFamily="@font/poppins_bold"
+                    android:includeFontPadding="false"
+                    android:textSize="15sp"
+                    tools:targetApi="m"
+                    tools:text="Dragon Ball Daima" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/mediaInfoNamePreferredContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.58"
+                    android:includeFontPadding="false"
+                    android:text="@string/name_preferred"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/mediaInfoNamePreferred"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="1dp"
+                    android:breakStrategy="balanced"
+                    android:fontFamily="@font/poppins_bold"
+                    android:includeFontPadding="false"
+                    android:textSize="15sp"
+                    tools:targetApi="m"
+                    tools:text="Dragon Ball Daima" />
+            </LinearLayout>
+
+                </LinearLayout>
+
                 <TextView
                     android:id="@+id/mediaNextChapterPredictionText"
                     android:layout_width="match_parent"
