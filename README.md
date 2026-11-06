@@ -14,9 +14,9 @@
 
 # Kiwami: AniList Tracking Client
 
-**Kiwami (極み; kee-WAH-mee)** means *"the extreme"*, *"the pinnacle"*: the point beyond which a thing cannot be taken further. It comes from the verb 極める (*kiwameru*), to see something through to its very end, the word used for mastering a craft. You'll also hear it in phrases like 贅沢の極み, "the height of luxury".
+**Kiwami (極み; kee-WAH-mee)** means *"the extreme"*, *"the pinnacle"*: the point beyond which a thing cannot be taken further. It comes from the verb 極める (*kiwameru*), to see something through to its very end, the word used for mastering a craft.
 
-It's built on [Dantotsu](https://git.rebelonion.dev/rebelonion/Dantotsu) (断トツ, "the best of the best"). Dantotsu is already far ahead of the pack. Kiwami is what's left when you keep going: the same app, with attention paid to the places you see every day.
+It is an Anilist tracking client for android, built on [Dantotsu](https://git.rebelonion.dev/rebelonion/Dantotsu) (断トツ).
 
 > [!NOTE]
 > Kiwami is an independent fork and is not affiliated with or endorsed by Dantotsu or its developers. It is also not affiliated with or endorsed by AniList.
@@ -46,8 +46,7 @@ It's built on [Dantotsu](https://git.rebelonion.dev/rebelonion/Dantotsu) (断ト
 
 Kiwami lives in the small things. Some you'll notice the moment you open it. Others take a little longer.
 
-- A flame that remembers you
-- A home that keeps you quietly in the loop
+- A home that keeps you in the loop
 - Time, laid out beautifully
 - Artwork, shown the way it was meant to be seen
 - Your library, made a little more your own
@@ -57,12 +56,12 @@ Kiwami lives in the small things. Some you'll notice the moment you open it. Oth
 
 ## Install
 
-<!-- TODO: update after your first release -->
-Download the latest APK from [Releases](https://github.com/YOUR_USERNAME/Kiwami/releases/latest).
+<!-- TODO: update after my first release -->
+Download the latest APK from [Releases](https://github.com/StarnoxOn90Ping/Kiwami/releases/latest).
 
 ## Contributing
 
-Bug reports, ideas and pull requests are welcome. Open an [issue](https://github.com/YOUR_USERNAME/Kiwami/issues) to start a conversation.
+Bug reports, ideas and pull requests are welcome. Open an [issue](https://github.com/StarnoxOn90Ping/Kiwami/issues) to start a conversation.
 
 ## Credits
 
