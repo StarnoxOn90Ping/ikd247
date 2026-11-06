@@ -42,14 +42,15 @@ It is an Anilist tracking client for android, built on [Dantotsu](https://git.re
 
 ---
 
-## The Details
+## The Idea
 
-Kiwami lives in the small things. Some you'll notice the moment you open it. Others take a little longer.
+An app you open every day should be calm, and it should feel looked after. Kiwami doesn't add things for the sake of adding them. It works on the places you actually touch: how the home screen feels, how a page opens, what you see when you glance at your phone for two seconds.
+Most of it you'll notice only after a while.
 
 - A home that keeps you in the loop
-- Time, laid out beautifully
 - Artwork, shown the way it was meant to be seen
 - Your library, made a little more your own
+- Achievements as a bonus
 - And more, waiting to be noticed...
 
 ---
