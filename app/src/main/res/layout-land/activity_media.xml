@@ -222,7 +222,8 @@
                                         android:fontFamily="@font/poppins_bold"
                                         android:singleLine="true"
                                         android:textColor="?attr/colorOnBackground"
-                                        android:textSize="20sp"
+                                        android:textSize="18sp"
+                                        android:translationY="2dp"
                                         tools:text="8.2" />
 
                                     <TextView
@@ -252,7 +253,8 @@
                                         android:fontFamily="@font/poppins_bold"
                                         android:singleLine="true"
                                         android:textColor="?attr/colorOnBackground"
-                                        android:textSize="20sp"
+                                        android:textSize="18sp"
+                                        android:translationY="2dp"
                                         tools:text="8.2" />
 
                                     <TextView
@@ -282,7 +284,8 @@
                                         android:fontFamily="@font/poppins_bold"
                                         android:singleLine="true"
                                         android:textColor="?attr/colorOnBackground"
-                                        android:textSize="20sp"
+                                        android:textSize="18sp"
+                                        android:translationY="2dp"
                                         tools:text="8.2" />
 
                                     <TextView
@@ -312,7 +315,8 @@
                                         android:fontFamily="@font/poppins_bold"
                                         android:singleLine="true"
                                         android:textColor="?attr/colorOnBackground"
-                                        android:textSize="20sp"
+                                        android:textSize="18sp"
+                                        android:translationY="2dp"
                                         tools:text="8.2" />
 
                                     <TextView

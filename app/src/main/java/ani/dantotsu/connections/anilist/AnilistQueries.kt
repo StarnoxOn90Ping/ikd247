@@ -24,6 +24,7 @@ import ani.dantotsu.media.Character
 import ani.dantotsu.media.Media
 import ani.dantotsu.media.Studio
 import ani.dantotsu.profile.User
+import ani.dantotsu.util.Logger
 import ani.dantotsu.settings.saving.PrefManager
 import ani.dantotsu.settings.saving.PrefName
 import ani.dantotsu.snackString
@@ -537,39 +538,42 @@ class AnilistQueries {
                     ani.dantotsu.others.ThemeSongs.load(media)
                 }
             }
-            // People you follow who have this title on their list. Fetched on its own, fresh every
-            // time, so the "people watching" row never depends on the (possibly cached) details.
-            val followers = async {
-                if (media.id == 0 || Anilist.token == null) return@async
-                val res = executeQuery<Query.Page>(
-                    """{Page(page:1){mediaList(isFollowing:true,sort:[STATUS],mediaId:${media.id}){id status score(format:POINT_100) progress progressVolumes user{id name avatar{large medium}}}}}""",
-                    force = true
-                )
-                val list = res?.data?.page?.mediaList
-                if (list.isNullOrEmpty()) return@async
-                anilist.await()
-                val total = media.anime?.totalEpisodes ?: media.manga?.totalChapters
-                val mapped = list.mapNotNull {
-                    it.user?.let { u ->
-                        if (u.id != Anilist.userid) {
-                            User(
-                                u.id,
-                                u.name ?: "Unknown",
-                                u.avatar?.large,
-                                "",
-                                it.status?.toString(),
-                                it.score,
-                                it.progress,
-                                total,
-                            )
-                        } else null
-                    }
-                }
-                if (mapped.isNotEmpty()) media.users = ArrayList(mapped)
-            }
-            awaitAll(anilist, mal, followers)
+            awaitAll(anilist, mal)
         }
         return media
+    }
+
+    /**
+     * People you follow who have this title on their list (fresh from AniList every call).
+     */
+    suspend fun getMediaFollowers(media: Media): ArrayList<User> {
+        if (media.id == 0 || Anilist.token == null) return arrayListOf()
+        val res = executeQuery<Query.Page>(
+            """{Page(page:1){mediaList(isFollowing:true,sort:[STATUS],mediaId:${media.id}){id status score(format:POINT_100) progress progressVolumes user{id name avatar{large medium}}}}}""",
+            force = true
+        )
+        val list = res?.data?.page?.mediaList
+        if (list == null) {
+            Logger.log("Followers: no data for media ${media.id}: ${Anilist.lastError}")
+            return arrayListOf()
+        }
+        val total = media.anime?.totalEpisodes ?: media.manga?.totalChapters
+        return list.mapNotNull {
+            it.user?.let { u ->
+                if (u.id != Anilist.userid) {
+                    User(
+                        u.id,
+                        u.name ?: "Unknown",
+                        u.avatar?.large,
+                        "",
+                        it.status?.toString(),
+                        it.score,
+                        it.progress,
+                        total,
+                    )
+                } else null
+            }
+        }.toCollection(arrayListOf())
     }
 
     fun userMediaDetails(media: Media): Media {

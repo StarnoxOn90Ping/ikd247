@@ -513,8 +513,19 @@ class MediaInfoFragment : Fragment() {
                     }
                     parent.addView(bind.root)
                 }
-                if (!media.users.isNullOrEmpty()) {
-                    val users: ArrayList<User> = media.users ?: arrayListOf()
+                // "People watching" row: a slot at this position that is filled right away from the
+                // loaded details and again with a fresh followers lookup (so caching can't hide it).
+                val usersSlot = FrameLayout(requireContext()).apply {
+                    tag = "dynamic_view"
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+                }
+                parent.addView(usersSlot)
+                fun showUsers(found: List<User>) {
+                    if (found.isEmpty() || _binding == null) return
+                    val users = ArrayList(found)
                     val currentUserId = Anilist.userid
                     if (Anilist.token != null && currentUserId != null && media.userStatus != null) {
                         users.add(
@@ -533,9 +544,10 @@ class MediaInfoFragment : Fragment() {
                             )
                         )
                     }
+                    usersSlot.removeAllViews()
                     ItemTitleRecyclerBinding.inflate(
                         LayoutInflater.from(context),
-                        parent,
+                        usersSlot,
                         false
                     ).apply {
                         itemTitle.visibility = View.GONE
@@ -546,8 +558,15 @@ class MediaInfoFragment : Fragment() {
                             LinearLayoutManager.HORIZONTAL,
                             false
                         )
-                        root.tag = "dynamic_view"
-                        parent.addView(root)
+                        usersSlot.addView(root)
+                    }
+                }
+                media.users?.let { showUsers(it) }
+                if (Anilist.token != null && media.id != 0) {
+                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        val fresh = runCatching { Anilist.query.getMediaFollowers(media) }
+                            .getOrDefault(arrayListOf())
+                        withContext(Dispatchers.Main) { showUsers(fresh) }
                     }
                 }
 

@@ -1,6 +1,8 @@
 package ani.dantotsu.media
 
+import android.util.TypedValue
 import android.view.View
+import androidx.core.view.doOnLayout
 import ani.dantotsu.R
 import ani.dantotsu.databinding.ActivityMediaBinding
 import java.util.Locale
@@ -44,6 +46,8 @@ fun bindMediaStatsBar(binding: ActivityMediaBinding, media: Media) {
         binding.mediaStatDurationColumn.visibility = View.GONE
     }
 
+    equalizeStatValues(binding)
+
     // airing line (anime with a scheduled next episode)
     val row = binding.mediaAiringRow
     val nextEp = media.anime?.nextAiringEpisode
@@ -69,4 +73,29 @@ fun bindMediaStatsBar(binding: ActivityMediaBinding, media: Media) {
     row.removeCallbacks(row.getTag(R.id.mediaAiringRow) as? Runnable)
     row.setTag(R.id.mediaAiringRow, airTick)
     airTick.run()
+}
+
+/** All four values share one text size: the biggest one at which the longest value still fits. */
+private fun equalizeStatValues(binding: ActivityMediaBinding) {
+    val card = binding.mediaStatsCard
+    val values = listOf(
+        binding.mediaStatScore,
+        binding.mediaStatPopularity,
+        binding.mediaStatFavorites,
+        binding.mediaStatDuration
+    ).filter { (it.parent as View).visibility == View.VISIBLE }
+    fun fit() {
+        val available = card.width - card.paddingLeft - card.paddingRight
+        if (available <= 0 || values.isEmpty()) return
+        val density = card.resources.displayMetrics.density
+        val columnWidth = available / values.size - 6 * density
+        var size = 18f
+        while (size > 11f) {
+            values.forEach { it.setTextSize(TypedValue.COMPLEX_UNIT_SP, size) }
+            if (values.all { it.paint.measureText(it.text.toString()) <= columnWidth }) break
+            size -= 0.5f
+        }
+    }
+    card.doOnLayout { fit() }
+    card.post { fit() }
 }
