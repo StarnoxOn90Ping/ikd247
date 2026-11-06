@@ -400,7 +400,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             return SpannableStringBuilder().apply {
                 append(userStatus)
                 color(ColorUtils.setAlphaComponent(secondary, 140)) { append("  •  ") }
-                bold { color(onBackground) { append("${media.userProgress ?: 0} / $total") } }
+                bold { color(onBackground) { append("${media.userProgress ?: 0} | $total") } }
             }
         }
 

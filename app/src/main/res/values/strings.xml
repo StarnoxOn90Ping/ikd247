@@ -1521,4 +1521,8 @@ Non quae tempore quo provident laudantium qui illo dolor vel quia dolor et exerc
     <string name="stats_airing_in">Episode %1$d airs in %2$s</string>
     <string name="read_more">Read more</string>
     <string name="read_less">Read less</string>
+    <string name="country">Country</string>
+    <string name="aired">Aired</string>
+    <string name="details_episodes">Episodes</string>
+    <string name="details_chapters">Chapters</string>
 </resources>

@@ -10,6 +10,9 @@ import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.speech.tts.TextToSpeech
 import android.view.View
+import android.text.StaticLayout
+import android.text.Layout
+import androidx.core.view.doOnLayout
 import com.google.android.material.color.MaterialColors
 import android.view.animation.OvershootInterpolator
 import android.speech.tts.UtteranceProgressListener
@@ -73,7 +76,6 @@ class MediaInfoFragment : Fragment() {
     private var timer: CountDownTimer? = null
     private var tts: TextToSpeech? = null
     private var ttsPulse: ObjectAnimator? = null
-    private var descLayoutListener: View.OnLayoutChangeListener? = null
 
     private fun speakSynopsis(engine: TextToSpeech, text: String) {
         engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
@@ -118,7 +120,6 @@ class MediaInfoFragment : Fragment() {
     private var type = "ANIME"
     private val genreModel: GenresViewModel by activityViewModels()
 
-    private val tripleTab = "\t\t\t"
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -233,56 +234,11 @@ class MediaInfoFragment : Fragment() {
 
                 binding.mediaInfoProgressBar.visibility = View.GONE
                 binding.mediaInfoContainer.visibility = View.VISIBLE
-                val infoName = tripleTab + (media.name ?: media.nameRomaji)
-                binding.mediaInfoName.text = infoName
-                binding.mediaInfoName.setOnLongClickListener {
-                    copyToClipboard(media.name ?: media.nameRomaji)
-                    true
-                }
-                if (media.name != null) binding.mediaInfoNameRomajiContainer.visibility =
-                    View.VISIBLE
-                val infoNameRomaji = tripleTab + media.nameRomaji
-                binding.mediaInfoNameRomaji.text = infoNameRomaji
-                binding.mediaInfoNameRomaji.setOnLongClickListener {
-                    copyToClipboard(media.nameRomaji)
-                    true
-                }
-                binding.mediaInfoMeanScore.text =
-                    media.meanScore?.let { (it / 10.0).toString() } ?: "??"
-                binding.mediaInfoStatus.text = media.status
+                binding.mediaInfoCountry.text = media.countryOfOrigin ?: "~"
                 binding.mediaInfoFormat.text = media.format
                 binding.mediaInfoSource.text = media.source
-                binding.mediaInfoStart.text = media.startDate?.toString() ?: "??"
-                binding.mediaInfoEnd.text = media.endDate?.toString() ?: "??"
-                binding.mediaInfoPopularity.text = media.popularity.toString()
-                binding.mediaInfoFavorites.text = media.favourites.toString()
+                binding.mediaInfoStart.text = media.startDate?.toString() ?: "~"
                 if (media.anime != null) {
-                    val episodeDuration = media.anime.episodeDuration
-
-                    binding.mediaInfoDuration.text = when {
-                        episodeDuration != null -> {
-                            val hours = episodeDuration / 60
-                            val minutes = episodeDuration % 60
-
-                            val formattedDuration = buildString {
-                                if (hours > 0) {
-                                    append("$hours hour")
-                                    if (hours > 1) append("s")
-                                }
-
-                                if (minutes > 0) {
-                                    if (hours > 0) append(", ")
-                                    append("$minutes min")
-                                    if (minutes > 1) append("s")
-                                }
-                            }
-
-                            formattedDuration
-                        }
-
-                        else -> "??"
-                    }
-                    binding.mediaInfoDurationContainer.visibility = View.VISIBLE
                     binding.mediaInfoSeasonContainer.visibility = View.VISIBLE
                     val seasonInfo =
                         "${(media.anime.season ?: "??")} ${(media.anime.seasonYear ?: "??")}"
@@ -353,7 +309,7 @@ class MediaInfoFragment : Fragment() {
                             )
                         }
                     }
-                    binding.mediaInfoTotalTitle.setText(R.string.total_eps)
+                    binding.mediaInfoTotalTitle.setText(R.string.details_episodes)
                     val infoTotal = if (media.anime.nextAiringEpisode != null)
                         "${media.anime.nextAiringEpisode} | ${media.anime.totalEpisodes ?: "~"}"
                     else
@@ -362,7 +318,7 @@ class MediaInfoFragment : Fragment() {
 
                 } else if (media.manga != null) {
                     type = "MANGA"
-                    binding.mediaInfoTotalTitle.setText(R.string.total_chaps)
+                    binding.mediaInfoTotalTitle.setText(R.string.details_chapters)
                     binding.mediaInfoTotal.text = (media.manga.totalChapters ?: "~").toString()
                     if (media.manga.author != null) {
                         binding.mediaInfoAuthorContainer.visibility = View.VISIBLE
@@ -392,16 +348,19 @@ class MediaInfoFragment : Fragment() {
                 val collapsedLines = 5
                 binding.mediaInfoReadMore.text = getString(R.string.read_more)
                 binding.mediaInfoDescription.maxLines = collapsedLines
-                descLayoutListener?.let { binding.mediaInfoDescription.removeOnLayoutChangeListener(it) }
-                descLayoutListener = View.OnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
+                binding.mediaInfoReadMore.visibility = View.GONE
+                binding.mediaInfoDescription.doOnLayout { v ->
                     val tv = v as TextView
-                    val layout = tv.layout ?: return@OnLayoutChangeListener
-                    if (tv.maxLines != collapsedLines) return@OnLayoutChangeListener
-                    val cut = layout.lineCount >= collapsedLines &&
-                            layout.getEllipsisCount(collapsedLines - 1) > 0
-                    _binding?.mediaInfoReadMore?.visibility = if (cut) View.VISIBLE else View.GONE
+                    val w = tv.width - tv.paddingLeft - tv.paddingRight
+                    if (w <= 0) return@doOnLayout
+                    @Suppress("DEPRECATION")
+                    val full = StaticLayout(
+                        infoDesc, tv.paint, w, Layout.Alignment.ALIGN_NORMAL,
+                        tv.lineSpacingMultiplier, tv.lineSpacingExtra, tv.includeFontPadding
+                    )
+                    _binding?.mediaInfoReadMore?.visibility =
+                        if (full.lineCount > collapsedLines) View.VISIBLE else View.GONE
                 }
-                binding.mediaInfoDescription.addOnLayoutChangeListener(descLayoutListener)
                 val toggleSynopsis = View.OnClickListener {
                     val expand = binding.mediaInfoDescription.maxLines == collapsedLines
                     ObjectAnimator.ofInt(

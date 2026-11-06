@@ -91,81 +91,51 @@
                         android:id="@+id/mediaInfoReadMore"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="2dp"
                         android:background="?attr/selectableItemBackground"
                         android:fontFamily="@font/poppins_bold"
-                        android:paddingTop="4dp"
+                        android:includeFontPadding="false"
+                        android:paddingTop="2dp"
                         android:paddingBottom="4dp"
                         android:text="@string/read_more"
                         android:textColor="?attr/colorPrimary"
-                        android:textSize="16sp"
+                        android:textSize="14sp"
                         android:visibility="gone" />
                 </LinearLayout>
 
-                <TableLayout
+                <!-- Details: two-column grid, label above value -->
+                <LinearLayout
                     android:id="@+id/mediaInfoDetailsTable"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:paddingHorizontal="32dp"
+                    android:paddingStart="32dp"
                     android:paddingTop="16dp"
-                    android:paddingBottom="16dp">
+                    android:paddingEnd="20dp"
+                    android:paddingBottom="0dp">
 
-                    <TableRow
+                    <TextView
+                        android:id="@+id/mediaInfoDetailsTitle"
                         android:layout_width="match_parent"
-                        android:layout_height="24dp"
-                        android:orientation="horizontal">
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="14dp"
+                        android:fontFamily="@font/poppins_bold"
+                        android:text="@string/details"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="20sp" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:alpha="0.58"
-                            android:text="@string/mean_score"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/mediaInfoMeanScore"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/poppins_bold"
-                            android:textAlignment="textEnd"
-                            android:textColor="?attr/colorPrimary" />
-
-                        <TextView
-                            android:id="@+id/textView3"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="@font/poppins_bold"
-                            android:text="@string/score_suffix" />
-
-                    </TableRow>
-
-                    <TableRow
+                    <GridLayout
                         android:layout_width="match_parent"
-                        android:layout_height="24dp"
-                        android:orientation="horizontal">
+                        android:layout_height="wrap_content"
+                        android:columnCount="2">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:alpha="0.58"
-                            android:text="@string/status_title"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/mediaInfoStatus"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/poppins_bold"
-                            android:textAlignment="textEnd" />
-                    </TableRow>
-
-                    <TableRow
-                        android:layout_width="match_parent"
-                        android:layout_height="24dp"
-                        android:orientation="horizontal">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_marginBottom="18dp"
+                        android:layout_marginEnd="12dp"
+                        android:orientation="vertical">
 
                         <TextView
                             android:id="@+id/mediaInfoTotalTitle"
@@ -173,87 +143,82 @@
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
                             android:text="@string/total_eps"
-                            android:textStyle="bold" />
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/mediaInfoTotal"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_marginTop="4dp"
                             android:fontFamily="@font/poppins_bold"
-                            android:textAlignment="textEnd" />
-                    </TableRow>
+                            android:maxLines="2"
+                            android:ellipsize="end"
+                            android:textSize="18sp"
+                            tools:text="4 | ~" />
+                    </LinearLayout>
 
-                    <TableRow
-                        android:id="@+id/mediaInfoDurationContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="24dp"
-                        android:orientation="horizontal"
-                        android:visibility="gone">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:alpha="0.58"
-                            android:text="@string/ep_duration"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/mediaInfoDuration"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/poppins_bold"
-                            android:textAlignment="textEnd" />
-                    </TableRow>
-
-                    <TableRow
-                        android:layout_width="match_parent"
-                        android:layout_height="24dp"
-                        android:orientation="horizontal">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_marginBottom="18dp"
+                        android:layout_marginEnd="12dp"
+                        android:orientation="vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
                             android:text="@string/format"
-                            android:textStyle="bold" />
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/mediaInfoFormat"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_marginTop="4dp"
                             android:fontFamily="@font/poppins_bold"
-                            android:textAlignment="textEnd" />
-                    </TableRow>
+                            android:maxLines="2"
+                            android:ellipsize="end"
+                            android:textSize="18sp"
+                            tools:text="Tv" />
+                    </LinearLayout>
 
-                    <TableRow
-                        android:layout_width="match_parent"
-                        android:layout_height="24dp"
-                        android:orientation="horizontal">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_marginBottom="18dp"
+                        android:layout_marginEnd="12dp"
+                        android:orientation="vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
                             android:text="@string/source"
-                            android:textStyle="bold" />
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/mediaInfoSource"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_marginTop="4dp"
                             android:fontFamily="@font/poppins_bold"
-                            android:textAlignment="textEnd" />
-                    </TableRow>
+                            android:maxLines="2"
+                            android:ellipsize="end"
+                            android:textSize="18sp"
+                            tools:text="Other" />
+                    </LinearLayout>
 
-                    <TableRow
+                    <LinearLayout
                         android:id="@+id/mediaInfoStudioContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="24dp"
-                        android:orientation="horizontal"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_marginBottom="18dp"
+                        android:layout_marginEnd="12dp"
+                        android:orientation="vertical"
                         android:visibility="gone">
 
                         <TextView
@@ -261,23 +226,28 @@
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
                             android:text="@string/main_studio"
-                            android:textStyle="bold" />
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/mediaInfoStudio"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_marginTop="4dp"
                             android:fontFamily="@font/poppins_bold"
-                            android:textAlignment="textEnd"
-                            android:textColor="?attr/colorPrimary" />
-                    </TableRow>
+                            android:maxLines="2"
+                            android:ellipsize="end"
+                            android:textSize="18sp"
+                            tools:text="Toei Animation" />
+                    </LinearLayout>
 
-                    <TableRow
+                    <LinearLayout
                         android:id="@+id/mediaInfoAuthorContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="horizontal"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_marginBottom="18dp"
+                        android:layout_marginEnd="12dp"
+                        android:orientation="vertical"
                         android:visibility="gone">
 
                         <TextView
@@ -285,23 +255,28 @@
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
                             android:text="@string/author"
-                            android:textStyle="bold" />
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/mediaInfoAuthor"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_marginTop="4dp"
                             android:fontFamily="@font/poppins_bold"
-                            android:textAlignment="textEnd"
-                            android:textColor="?attr/colorPrimary" />
-                    </TableRow>
+                            android:maxLines="2"
+                            android:ellipsize="end"
+                            android:textSize="18sp"
+                            tools:text="Akira Toriyama" />
+                    </LinearLayout>
 
-                    <TableRow
+                    <LinearLayout
                         android:id="@+id/mediaInfoSeasonContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="horizontal"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_marginBottom="18dp"
+                        android:layout_marginEnd="12dp"
+                        android:orientation="vertical"
                         android:visibility="gone">
 
                         <TextView
@@ -309,150 +284,76 @@
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
                             android:text="@string/season"
-                            android:textStyle="bold" />
+                            android:textSize="14sp" />
 
                         <TextView
                             android:id="@+id/mediaInfoSeason"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/poppins_bold"
-                            android:textAlignment="textEnd" />
-                    </TableRow>
-
-                    <TableRow
-                        android:layout_width="match_parent"
-                        android:layout_height="24dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:alpha="0.58"
-                            android:text="@string/start_date"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/mediaInfoStart"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/poppins_bold"
-                            android:textAlignment="textEnd" />
-                    </TableRow>
-
-                    <TableRow
-                        android:layout_width="match_parent"
-                        android:layout_height="24dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:alpha="0.58"
-                            android:text="@string/end_date"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/mediaInfoEnd"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/poppins_bold"
-                            android:textAlignment="textEnd" />
-                    </TableRow>
-
-                    <TableRow
-                        android:layout_width="match_parent"
-                        android:layout_height="24dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:alpha="0.58"
-                            android:text="@string/popularity"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/mediaInfoPopularity"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/poppins_bold"
-                            android:textAlignment="textEnd" />
-                    </TableRow>
-
-                    <TableRow
-                        android:layout_width="match_parent"
-                        android:layout_height="24dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:alpha="0.58"
-                            android:text="@string/favourites"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/mediaInfoFavorites"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="@font/poppins_bold"
-                            android:textAlignment="textEnd" />
-                    </TableRow>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="16dp" />
-
-                    <LinearLayout
-                        android:id="@+id/mediaInfoNameRomajiContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:visibility="gone">
-
-                        <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:alpha="0.58"
-                            android:text="@string/name_romaji"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/mediaInfoNameRomaji"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:breakStrategy="balanced"
+                            android:layout_marginTop="4dp"
                             android:fontFamily="@font/poppins_bold"
-                            tools:targetApi="m" />
+                            android:maxLines="2"
+                            android:ellipsize="end"
+                            android:textSize="18sp"
+                            tools:text="Fall 2026" />
                     </LinearLayout>
 
                     <LinearLayout
-                        android:id="@+id/mediaInfoNameContainer"
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_marginBottom="18dp"
+                        android:layout_marginEnd="12dp"
                         android:orientation="vertical">
 
                         <TextView
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:alpha="0.58"
-                            android:text="@string/name"
-                            android:textStyle="bold" />
+                            android:text="@string/country"
+                            android:textSize="14sp" />
 
                         <TextView
-                            android:id="@+id/mediaInfoName"
+                            android:id="@+id/mediaInfoCountry"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:breakStrategy="balanced"
+                            android:layout_marginTop="4dp"
                             android:fontFamily="@font/poppins_bold"
-                            tools:targetApi="m" />
+                            android:maxLines="2"
+                            android:ellipsize="end"
+                            android:textSize="18sp"
+                            tools:text="JP" />
                     </LinearLayout>
-                </TableLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_columnWeight="1"
+                        android:layout_marginBottom="18dp"
+                        android:layout_marginEnd="12dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:alpha="0.58"
+                            android:text="@string/aired"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/mediaInfoStart"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:fontFamily="@font/poppins_bold"
+                            android:maxLines="2"
+                            android:ellipsize="end"
+                            android:textSize="18sp"
+                            tools:text="11 October 2026" />
+                    </LinearLayout>
+
+                    </GridLayout>
+                </LinearLayout>
                 <TextView
                     android:id="@+id/mediaNextChapterPredictionText"
                     android:layout_width="match_parent"
