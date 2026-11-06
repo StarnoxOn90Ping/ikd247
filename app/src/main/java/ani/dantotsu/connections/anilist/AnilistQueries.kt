@@ -533,6 +533,9 @@ class AnilistQueries {
                 if (media.idMAL == null && media.id != 0) {
                     media.idMAL = ani.dantotsu.others.IdMappers.getMalId(media.id)
                 }
+                if (media.idMAL != null && media.anime != null) {
+                    ani.dantotsu.others.ThemeSongs.load(media)
+                }
             }
             awaitAll(anilist, mal)
         }

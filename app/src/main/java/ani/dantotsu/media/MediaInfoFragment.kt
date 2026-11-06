@@ -500,6 +500,44 @@ class MediaInfoFragment : Fragment() {
                     }
                     parent.addView(bind.root)
                 }
+                if (!media.users.isNullOrEmpty()) {
+                    val users: ArrayList<User> = media.users ?: arrayListOf()
+                    val currentUserId = Anilist.userid
+                    if (Anilist.token != null && currentUserId != null && media.userStatus != null) {
+                        users.add(
+                            0,
+                            User(
+                                id = currentUserId,
+                                name = getString(R.string.you),
+                                pfp = Anilist.avatar,
+                                banner = "",
+                                status = media.userStatus,
+                                score = media.userScore.toFloat(),
+                                progress = media.userProgress,
+                                totalEpisodes = media.anime?.totalEpisodes
+                                    ?: media.manga?.totalChapters,
+                                nextAiringEpisode = media.anime?.nextAiringEpisode
+                            )
+                        )
+                    }
+                    ItemTitleRecyclerBinding.inflate(
+                        LayoutInflater.from(context),
+                        parent,
+                        false
+                    ).apply {
+                        itemTitle.visibility = View.GONE
+                        itemRecycler.adapter =
+                            MediaSocialAdapter(users, type, requireActivity())
+                        itemRecycler.layoutManager = LinearLayoutManager(
+                            requireContext(),
+                            LinearLayoutManager.HORIZONTAL,
+                            false
+                        )
+                        root.tag = "dynamic_view"
+                        parent.addView(root)
+                    }
+                }
+
                 if (media.trailer != null) {
                     @Suppress("DEPRECATION")
                     class MyChrome : WebChromeClient() {
@@ -733,44 +771,6 @@ class MediaInfoFragment : Fragment() {
                     bind.root.tag = "dynamic_view"
                     parent.addView(bind.root)
                 }
-                if (!media.users.isNullOrEmpty()) {
-                    val users: ArrayList<User> = media.users ?: arrayListOf()
-                    val currentUserId = Anilist.userid
-                    if (Anilist.token != null && currentUserId != null && media.userStatus != null) {
-                        users.add(
-                            0,
-                            User(
-                                id = currentUserId,
-                                name = getString(R.string.you),
-                                pfp = Anilist.avatar,
-                                banner = "",
-                                status = media.userStatus,
-                                score = media.userScore.toFloat(),
-                                progress = media.userProgress,
-                                totalEpisodes = media.anime?.totalEpisodes
-                                    ?: media.manga?.totalChapters,
-                                nextAiringEpisode = media.anime?.nextAiringEpisode
-                            )
-                        )
-                    }
-                    ItemTitleRecyclerBinding.inflate(
-                        LayoutInflater.from(context),
-                        parent,
-                        false
-                    ).apply {
-                        itemTitle.visibility = View.GONE
-                        itemRecycler.adapter =
-                            MediaSocialAdapter(users, type, requireActivity())
-                        itemRecycler.layoutManager = LinearLayoutManager(
-                            requireContext(),
-                            LinearLayoutManager.HORIZONTAL,
-                            false
-                        )
-                        root.tag = "dynamic_view"
-                        parent.addView(root)
-                    }
-                }
-
                 if (media.anime != null && (media.anime.op.isNotEmpty() || media.anime.ed.isNotEmpty())) {
                     val markWon = Markwon.builder(requireContext())
                         .usePlugin(SoftBreakAddsNewLinePlugin.create()).build()
@@ -815,6 +815,7 @@ class MediaInfoFragment : Fragment() {
                             false
                         )
                         bind.itemTitle.setText(R.string.opening)
+                        styleSectionHeading(bind.itemTitle)
                         makeText(bind.itemText, media.anime.op)
                         bind.root.tag = "dynamic_view"
                         parent.addView(bind.root)
@@ -828,6 +829,7 @@ class MediaInfoFragment : Fragment() {
                             false
                         )
                         bind.itemTitle.setText(R.string.ending)
+                        styleSectionHeading(bind.itemTitle)
                         makeText(bind.itemText, media.anime.ed)
                         bind.root.tag = "dynamic_view"
                         parent.addView(bind.root)
