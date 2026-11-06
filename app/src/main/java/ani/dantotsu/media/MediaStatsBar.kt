@@ -75,7 +75,10 @@ fun bindMediaStatsBar(binding: ActivityMediaBinding, media: Media) {
     airTick.run()
 }
 
-/** All four values share one text size: the biggest one at which the longest value still fits. */
+/**
+ * All values share one text size: the biggest one (up to MAX_SP) at which every value
+ * still fits inside its own column, so "1h 30m" is never cut off.
+ */
 private fun equalizeStatValues(binding: ActivityMediaBinding) {
     val card = binding.mediaStatsCard
     val values = listOf(
@@ -85,17 +88,22 @@ private fun equalizeStatValues(binding: ActivityMediaBinding) {
         binding.mediaStatDuration
     ).filter { (it.parent as View).visibility == View.VISIBLE }
     fun fit() {
-        val available = card.width - card.paddingLeft - card.paddingRight
-        if (available <= 0 || values.isEmpty()) return
-        val density = card.resources.displayMetrics.density
-        val columnWidth = available / values.size - 6 * density
-        var size = 18f
-        while (size > 11f) {
+        if (card.width <= 0 || values.isEmpty()) return
+        val gap = 4 * card.resources.displayMetrics.density
+        var size = MAX_SP
+        while (size > MIN_SP) {
             values.forEach { it.setTextSize(TypedValue.COMPLEX_UNIT_SP, size) }
-            if (values.all { it.paint.measureText(it.text.toString()) <= columnWidth }) break
+            val fits = values.all {
+                val column = (it.parent as View).width
+                column <= 0 || it.paint.measureText(it.text.toString()) <= column - gap
+            }
+            if (fits) break
             size -= 0.5f
         }
     }
     card.doOnLayout { fit() }
     card.post { fit() }
 }
+
+private const val MAX_SP = 22f
+private const val MIN_SP = 12f

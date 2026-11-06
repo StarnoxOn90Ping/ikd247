@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@drawable/ic_launcher_beta_background" />
-    <foreground android:drawable="@drawable/ic_launcher_beta_foreground" />
-    <monochrome android:drawable="@drawable/mono" />
+    <background android:drawable="@color/kiwami_icon_bg" />
+    <foreground android:drawable="@drawable/kiwami_icon_fg" />
+    <monochrome android:drawable="@drawable/kiwami_icon_fg" />
+</adaptive-icon>
+>
 </adaptive-icon>

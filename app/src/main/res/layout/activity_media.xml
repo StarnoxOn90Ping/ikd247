@@ -218,11 +218,10 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:includeFontPadding="false"
-                                android:fontFamily="@font/poppins_bold"
+                                android:fontFamily="@font/manrope_bold"
                                 android:singleLine="true"
                                 android:textColor="?attr/colorOnBackground"
-                                android:textSize="18sp"
-                                        android:translationY="2dp"
+                                android:textSize="22sp"
                                 tools:text="8.2" />
 
                             <TextView
@@ -249,11 +248,10 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:includeFontPadding="false"
-                                android:fontFamily="@font/poppins_bold"
+                                android:fontFamily="@font/manrope_bold"
                                 android:singleLine="true"
                                 android:textColor="?attr/colorOnBackground"
-                                android:textSize="18sp"
-                                        android:translationY="2dp"
+                                android:textSize="22sp"
                                 tools:text="8.2" />
 
                             <TextView
@@ -280,11 +278,10 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:includeFontPadding="false"
-                                android:fontFamily="@font/poppins_bold"
+                                android:fontFamily="@font/manrope_bold"
                                 android:singleLine="true"
                                 android:textColor="?attr/colorOnBackground"
-                                android:textSize="18sp"
-                                        android:translationY="2dp"
+                                android:textSize="22sp"
                                 tools:text="8.2" />
 
                             <TextView
@@ -302,7 +299,7 @@
                             android:id="@+id/mediaStatDurationColumn"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
+                            android:layout_weight="1.4"
                             android:gravity="top|center_horizontal"
                             android:orientation="vertical">
 
@@ -311,11 +308,10 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:includeFontPadding="false"
-                                android:fontFamily="@font/poppins_bold"
+                                android:fontFamily="@font/manrope_bold"
                                 android:singleLine="true"
                                 android:textColor="?attr/colorOnBackground"
-                                android:textSize="18sp"
-                                        android:translationY="2dp"
+                                android:textSize="22sp"
                                 tools:text="8.2" />
 
                             <TextView
@@ -685,6 +681,13 @@
 
     <FrameLayout
         android:id="@+id/fragmentExtensionsContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingTop="16dp"
+        android:visibility="gone" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+    android:id="@+id/fragmentExtensionsContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:paddingTop="16dp"
