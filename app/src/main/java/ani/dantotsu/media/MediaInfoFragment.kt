@@ -76,6 +76,19 @@ class MediaInfoFragment : Fragment() {
     private var tts: TextToSpeech? = null
     private var ttsPulse: ObjectAnimator? = null
 
+    // heading sits right on top of its text (Opening / Ending)
+    private fun tightTextSection(title: TextView, text: TextView) {
+        val d = resources.displayMetrics.density
+        (title.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
+            it.bottomMargin = 0
+            title.layoutParams = it
+        }
+        (text.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
+            it.topMargin = (3 * d).toInt()
+            text.layoutParams = it
+        }
+    }
+
     // same look as the Synopsis / Details / Names headings
     private fun styleSectionHeading(tv: TextView) {
         val d = resources.displayMetrics.density
@@ -816,6 +829,7 @@ class MediaInfoFragment : Fragment() {
                         )
                         bind.itemTitle.setText(R.string.opening)
                         styleSectionHeading(bind.itemTitle)
+                        tightTextSection(bind.itemTitle, bind.itemText)
                         makeText(bind.itemText, media.anime.op)
                         bind.root.tag = "dynamic_view"
                         parent.addView(bind.root)
@@ -830,6 +844,7 @@ class MediaInfoFragment : Fragment() {
                         )
                         bind.itemTitle.setText(R.string.ending)
                         styleSectionHeading(bind.itemTitle)
+                        tightTextSection(bind.itemTitle, bind.itemText)
                         makeText(bind.itemText, media.anime.ed)
                         bind.root.tag = "dynamic_view"
                         parent.addView(bind.root)
