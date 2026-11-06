@@ -1,105 +1,73 @@
+<!--
+  TODO before publishing: this policy describes Kiwami WITHOUT Firebase (Crashlytics/Analytics)
+  and WITHOUT Dantotsu's comments server (api.dantotsu.app). If either is still in your build,
+  add it back to "Information we collect" and "Third parties" before release.
+  Also replace YOUR_USERNAME and the contact details below.
+-->
+
 # Privacy Policy
 
-Last Updated: Dec 30, 2024
+Last updated: November 6, 2026
 
 ## Introduction
-This Privacy Policy describes how we collect, use, and handle your information when you use Dantotsu. We are committed to protecting your privacy and ensuring transparency about our data practices.
 
-## Information We Collect
+This policy explains what Kiwami does with your information. Kiwami is an AniList tracking client for Android. It is an independent fork of [Dantotsu](https://git.rebelonion.dev/rebelonion/Dantotsu) and is not operated by the Dantotsu developers.
 
-### Crash Reports and Analytics
-We use Firebase Crashlytics to collect crash reports and technical information about your device to improve app stability and performance. This may include:
-- Device type and model
-- Operating system version
-- Time and date of crashes
-- Technical crash information
-- App version
-- Your AniList username (for crash reports)
-- Anonymous Country-level geolocation data
+The short version: Kiwami keeps what it needs on your device, talks to the services you choose to connect, and does not sell your data.
 
-Crash reports are associated with your AniList username to allow us to contact you if we need additional information about a specific issue. However, you can choose to anonymize your crash reports through the app settings, which will remove your AniList username from the reports.
+## Information stored on your device
 
-Firebase Analytics collects anonymous usage data, including country-level geolocation information. This helps us understand how Dantotsu is being used across different regions.
+Kiwami stores the following locally, on your device only:
 
-### Third-Party Authentication and Integration
-Dantotsu allows you to authenticate with the following third-party services:
-- AniList
-- MyAnimeList
-- Discord
+- Your AniList authentication token, so you stay signed in
+- App settings and preferences
+- Your streak, along with your watch and reading time for the day
+- Calendar and airing data, cached so they work offline
+- Custom covers and banners you set for titles
+- Downloaded anime, manga and novels, and your download queue
 
-When using Discord Rich Presence (RPC) functionality, the app will share your current watching activity with Discord, including:
-- The series you are watching
-- The current episode number
+None of this is sent to the Kiwami developer. Clearing the app's data, or uninstalling the app, removes it.
 
-This information is only shared while you are actively using Dantotsu and have Discord RPC enabled.
+## Services Kiwami connects to
 
-While we facilitate these connections, we do not store your login credentials. Authentication tokens are stored securely on your device only. Please note that these third-party services may collect additional information according to their own privacy policies, which we encourage you to review:
-- [AniList Privacy Policy Link](https://anilist.co/terms)
-- [Discord Privacy Policy Link](https://discord.com/privacy)
+### AniList
+When you sign in, Kiwami uses the official AniList API to read and update your lists, profile, activity and airing schedule. Your login happens through AniList. Kiwami does not see or store your AniList password. What AniList collects is governed by [AniList's terms and privacy policy](https://anilist.co/terms).
 
-### Comments System
-Our in-house comments API uses your AniList authentication token for verification purposes when you initially open Dantotsu. While this token is used for authentication, it is never stored on our servers. We only store:
-- Your AniList ID (for authentication)
-- Profile picture URL
-- Comments you post
-- Your upvotes on comments
+### Discord (optional)
+If you turn on Discord Rich Presence, Kiwami shares what you are currently watching (the series and episode) with Discord for as long as you are using the app. This is off unless you enable it. See [Discord's privacy policy](https://discord.com/privacy).
 
-We do not track or store:
-- Your AniList authentication token
-- Content you view or watch
-- Browsing history
-- Watch history
-- Personal information beyond what's listed above
+### Update checks
+Kiwami may contact GitHub to check whether a newer release is available.
 
-## How We Use Your Information
+### Extensions
+Kiwami supports extensions made by independent third parties. They are not provided, reviewed or endorsed by Kiwami, and they have their own behaviour and their own data practices. Review any extension you install and the services it connects to.
 
-### Crash Reports and Analytics
-We use crash reports and analytics to:
-- Identify and fix technical issues
-- Improve app stability
-- Enhance user experience
-- Contact users about specific crash issues when necessary
-- Understand app usage patterns across different regions
+## What we do not do
 
-You can control your privacy preferences:
-- Anonymize crash reports through app settings
-- Control app permissions through your device settings
+- We do not run accounts or servers that store your personal information.
+- We do not sell or rent your data.
+- We do not track what you watch or read.
+- We do not include advertising.
 
-### Comments System
-We use comment data to:
-- Display your comments to other users
-- Show upvote counts
-- Associate comments with your profile
+## Permissions
 
-## Data Storage and Security
-- Authentication tokens are stored locally on your device
-- Comment data is stored securely on our servers
-- We implement appropriate security measures to protect your information
+Kiwami asks for permissions such as internet access, notifications, background and foreground services, and package installation. They are used for features like syncing, airing reminders, downloads and managing extensions. You can review or revoke permissions at any time in your device settings.
 
-## Data Sharing
-We do not sell or share your personal information with third parties except:
-- When required by law
-- To provide the core functionality of the app through our integrated services
+## Data deletion
 
-## Your Rights and Data Protection
-Under the General Data Protection Regulation (GDPR) and other data protection laws, you have certain rights regarding your personal data. You can:
-- Access your comment data
-- Request deletion of your comments and associated data
+Because your data lives on your device, you can delete it yourself by clearing the app's storage or uninstalling Kiwami. To remove data held by AniList or Discord, use those services directly.
 
-To exercise these rights or request deletion of your data, you can contact the developer:
-- On AniList: "rebelonion"
-- On Discord: "@rebelonion"
+## Children's privacy
 
-While we don't have an automated process for data deletion, we will process your request manually as soon as possible.
+Kiwami is not directed to children under 13, and we do not knowingly collect information from them.
 
-## Children's Privacy
-Our service is not directed to children under 13. We do not knowingly collect personal information from children under 13.
+## Changes to this policy
 
-## Changes to This Privacy Policy
-We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.
+We may update this policy from time to time. Changes will be posted on this page with a new "Last updated" date.
 
-## Contact Us
-If you have any questions about this Privacy Policy, please contact us via:
-- GitHub: [Dantotsu Issues](https://git.rebelonion.dev/rebelonion/Dantotsu/issues)
-- Discord: "@rebelonion"
-- AniList: "rebelonion"
+## Contact
+
+Questions about this policy:
+
+- GitHub: [Kiwami Issues](https://github.com/YOUR_USERNAME/Kiwami/issues)
+- AniList / Discord: YOUR_HANDLE
