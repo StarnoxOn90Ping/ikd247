@@ -5,11 +5,6 @@ plugins {
     alias(libs.plugins.metro)
 }
 
-if (gradle.startParameter.taskNames.any { it.contains("google", true) }) {
-    apply(plugin = "com.google.gms.google-services")
-    apply(plugin = "com.google.firebase.crashlytics")
-}
-
 val baseVersion = "3.2.2"
 
 fun computeGitCommitHash(): String {
@@ -172,10 +167,6 @@ dependencies {
     implementation(libs.media3.cronet)
     // GMS Cronet provider — google flavor only; absent from F-Droid APK
     add("googleImplementation", libs.play.services.cronet)
-
-    // Firebase
-    add("googleImplementation", platform(libs.firebase.bom))
-    add("googleImplementation", libs.bundles.firebase)
 
     // AndroidX
     implementation(libs.bundles.androidx)

@@ -1,5 +1,5 @@
 package ani.dantotsu.others
 
 const val DisabledReports = false
-//Setting this to false, will allow sending crash reports to Dantotsu's Firebase CrashlyticsInterface
-//if you want a custom build without crash reporting, set this to true
+//Crash reporting (Firebase) has been removed; crashes are only logged locally.
+//This flag is kept so existing references keep compiling and has no effect.
