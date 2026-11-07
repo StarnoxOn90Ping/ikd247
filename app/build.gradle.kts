@@ -43,7 +43,7 @@ android {
     compileSdkMinor = 2
 
     defaultConfig {
-        applicationId = "ani.dantotsu"
+        applicationId = "nox.kiwami"
         minSdk = 26
         targetSdk = 36
 
