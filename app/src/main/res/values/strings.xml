@@ -1527,4 +1527,8 @@ Non quae tempore quo provident laudantium qui illo dolor vel quia dolor et exerc
     <string name="details_chapters">Chapters</string>
     <string name="names">Names</string>
     <string name="name_preferred">Preferred</string>
+    <string name="themes_episodes">Eps %1$s</string>
+    <string name="themes_show_all">Show all</string>
+    <string name="themes_show_less">Show less</string>
+    <string name="themes_cant_play">Couldn\'t play this song</string>
 </resources>

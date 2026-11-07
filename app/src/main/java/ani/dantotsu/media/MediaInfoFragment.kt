@@ -10,6 +10,12 @@ import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.speech.tts.TextToSpeech
 import android.view.View
+import ani.dantotsu.others.ThemeSongs
+import ani.dantotsu.others.ThemeSong
+import ani.dantotsu.databinding.ItemThemeSongBinding
+import androidx.core.graphics.ColorUtils
+import android.widget.LinearLayout
+import android.content.res.ColorStateList
 import android.text.StaticLayout
 import android.text.Layout
 import com.google.android.material.color.MaterialColors
@@ -75,6 +81,13 @@ class MediaInfoFragment : Fragment() {
     private var timer: CountDownTimer? = null
     private var tts: TextToSpeech? = null
     private var ttsPulse: ObjectAnimator? = null
+    private var themePlayer: ThemeSongPlayer? = null
+    private val themeRows = HashMap<ThemeSong, ThemeRowHolder>()
+
+    override fun onPause() {
+        themePlayer?.stop()
+        super.onPause()
+    }
 
     // heading sits right on top of its text (Opening / Ending)
     private fun tightTextSection(title: TextView, text: TextView) {
@@ -159,6 +172,9 @@ class MediaInfoFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        themePlayer?.stop()
+        themePlayer = null
+        themeRows.clear()
         timer?.cancel()
         timer = null
         ttsPulse?.cancel()
@@ -803,70 +819,182 @@ class MediaInfoFragment : Fragment() {
                     bind.root.tag = "dynamic_view"
                     parent.addView(bind.root)
                 }
-                if (media.anime != null && (media.anime.op.isNotEmpty() || media.anime.ed.isNotEmpty())) {
-                    val markWon = Markwon.builder(requireContext())
-                        .usePlugin(SoftBreakAddsNewLinePlugin.create()).build()
+                if (media.anime != null) {
+                    val anime = media.anime
+                    themePlayer?.stop()
+                    themeRows.clear()
+                    val themesSlot = LinearLayout(requireContext()).apply {
+                        orientation = LinearLayout.VERTICAL
+                        tag = "dynamic_view"
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        )
+                    }
+                    parent.addView(themesSlot)
 
-                    fun makeLink(a: String): String {
-                        val first = a.indexOf('"').let { if (it != -1) it else return a } + 1
-                        val end = a.indexOf('"', first).let { if (it != -1) it else return a }
-                        val name = a.subSequence(first, end).toString()
-                        return "${a.subSequence(0, first)}" +
-                                "[$name](https://www.youtube.com/results?search_query=${
-                                    URLEncoder.encode(
-                                        name,
-                                        "utf-8"
-                                    )
-                                })" +
-                                "${a.subSequence(end, a.length)}"
+                    // plain text list (from MAL / Jikan), used when AnimeThemes has nothing
+                    fun showLegacySongs() {
+                        val markWon = Markwon.builder(requireContext())
+                            .usePlugin(SoftBreakAddsNewLinePlugin.create()).build()
+
+                        fun makeLink(a: String): String {
+                            val first = a.indexOf('"').let { if (it != -1) it else return a } + 1
+                            val end = a.indexOf('"', first).let { if (it != -1) it else return a }
+                            val name = a.subSequence(first, end).toString()
+                            return "${a.subSequence(0, first)}" +
+                                    "[$name](https://www.youtube.com/results?search_query=${
+                                        URLEncoder.encode(
+                                            name,
+                                            "utf-8"
+                                        )
+                                    })" +
+                                    "${a.subSequence(end, a.length)}"
+                        }
+
+                        fun makeText(textView: TextView, arr: ArrayList<String>) {
+                            var op = ""
+                            arr.forEach {
+                                op += "\n"
+                                op += makeLink(it)
+                            }
+                            op = op.removePrefix("\n")
+                            textView.setOnClickListener {
+                                if (textView.maxLines == 4) {
+                                    ObjectAnimator.ofInt(textView, "maxLines", 100)
+                                        .setDuration(950).start()
+                                } else {
+                                    ObjectAnimator.ofInt(textView, "maxLines", 4)
+                                        .setDuration(400).start()
+                                }
+                            }
+                            markWon.setMarkdown(textView, op)
+                        }
+
+                        if (anime.op.isNotEmpty()) {
+                            val bind = ItemTitleTextBinding.inflate(
+                                LayoutInflater.from(context),
+                                themesSlot,
+                                false
+                            )
+                            bind.itemTitle.setText(R.string.opening)
+                            styleSectionHeading(bind.itemTitle)
+                            tightTextSection(bind.itemTitle, bind.itemText)
+                            makeText(bind.itemText, anime.op)
+                            bind.root.tag = "dynamic_view"
+                            themesSlot.addView(bind.root)
+                        }
+
+
+                        if (anime.ed.isNotEmpty()) {
+                            val bind = ItemTitleTextBinding.inflate(
+                                LayoutInflater.from(context),
+                                themesSlot,
+                                false
+                            )
+                            bind.itemTitle.setText(R.string.ending)
+                            styleSectionHeading(bind.itemTitle)
+                            tightTextSection(bind.itemTitle, bind.itemText)
+                            makeText(bind.itemText, anime.ed)
+                            bind.root.tag = "dynamic_view"
+                            themesSlot.addView(bind.root)
+                        }
                     }
 
-                    fun makeText(textView: TextView, arr: ArrayList<String>) {
-                        var op = ""
-                        arr.forEach {
-                            op += "\n"
-                            op += makeLink(it)
-                        }
-                        op = op.removePrefix("\n")
-                        textView.setOnClickListener {
-                            if (textView.maxLines == 4) {
-                                ObjectAnimator.ofInt(textView, "maxLines", 100)
-                                    .setDuration(950).start()
-                            } else {
-                                ObjectAnimator.ofInt(textView, "maxLines", 4)
-                                    .setDuration(400).start()
+                    // playable list (AnimeThemes): tap a row to play / pause it right here
+                    fun showPlayableThemes(songs: List<ThemeSong>) {
+                        themesSlot.removeAllViews()
+                        val inflater = LayoutInflater.from(context)
+                        val d = resources.displayMetrics.density
+                        val primary = MaterialColors.getColor(
+                            themesSlot,
+                            androidx.appcompat.R.attr.colorPrimary
+                        )
+                        val tint = ColorStateList.valueOf(ColorUtils.setAlphaComponent(primary, 0x2A))
+                        val player = themePlayer ?: ThemeSongPlayer(
+                            onChange = { song, state, progress ->
+                                themeRows.forEach { (s, row) ->
+                                    if (s == song) row.render(state, progress)
+                                    else row.render(ThemeSongPlayer.State.IDLE, 0f)
+                                }
+                            },
+                            onFail = { snackString(getString(R.string.themes_cant_play)) }
+                        ).also { themePlayer = it }
+
+                        fun addGroup(titleRes: Int, group: List<ThemeSong>) {
+                            if (group.isEmpty()) return
+                            val head = ItemTitleTextBinding.inflate(inflater, themesSlot, false)
+                            head.itemTitle.setText(titleRes)
+                            styleSectionHeading(head.itemTitle)
+                            (head.itemTitle.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
+                                it.bottomMargin = (2 * d).toInt()
+                                head.itemTitle.layoutParams = it
+                            }
+                            head.itemText.visibility = View.GONE
+                            themesSlot.addView(head.root)
+
+                            val list = LinearLayout(requireContext()).apply {
+                                orientation = LinearLayout.VERTICAL
+                            }
+                            themesSlot.addView(list)
+
+                            fun fill(all: Boolean) {
+                                list.removeAllViews()
+                                (if (all) group else group.take(4)).forEach { song ->
+                                    val rb = ItemThemeSongBinding.inflate(inflater, list, false)
+                                    rb.themeBadge.text = song.slug.ifEmpty { song.type }
+                                    rb.themeBadge.backgroundTintList = tint
+                                    rb.themePlay.backgroundTintList = tint
+                                    rb.themeTitle.text = song.title.ifEmpty { song.slug }
+                                    val meta = listOfNotNull(
+                                        song.artists.joinToString(", ").takeIf { it.isNotBlank() },
+                                        song.episodes?.let { getString(R.string.themes_episodes, it) }
+                                    ).joinToString(" · ")
+                                    rb.themeMeta.text = meta
+                                    rb.themeMeta.visibility =
+                                        if (meta.isBlank()) View.GONE else View.VISIBLE
+                                    themeRows[song] = ThemeRowHolder(rb)
+                                    rb.root.setOnClickListener { player.toggle(song) }
+                                    list.addView(rb.root)
+                                }
+                            }
+                            fill(false)
+
+                            if (group.size > 4) {
+                                var expanded = false
+                                val more = TextView(requireContext()).apply {
+                                    text = getString(R.string.themes_show_all)
+                                    setTextColor(primary)
+                                    textSize = 14f
+                                    typeface = androidx.core.content.res.ResourcesCompat
+                                        .getFont(requireContext(), R.font.poppins_bold)
+                                    setPadding((32 * d).toInt(), (6 * d).toInt(), (32 * d).toInt(), (6 * d).toInt())
+                                    setOnClickListener {
+                                        expanded = !expanded
+                                        text = getString(
+                                            if (expanded) R.string.themes_show_less
+                                            else R.string.themes_show_all
+                                        )
+                                        fill(expanded)
+                                    }
+                                }
+                                themesSlot.addView(more)
                             }
                         }
-                        markWon.setMarkdown(textView, op)
+
+                        addGroup(R.string.opening, songs.filter { it.isOpening })
+                        addGroup(R.string.ending, songs.filter { !it.isOpening })
                     }
 
-                    if (media.anime.op.isNotEmpty()) {
-                        val bind = ItemTitleTextBinding.inflate(
-                            LayoutInflater.from(context),
-                            parent,
-                            false
-                        )
-                        bind.itemTitle.setText(R.string.opening)
-                        styleSectionHeading(bind.itemTitle)
-                        tightTextSection(bind.itemTitle, bind.itemText)
-                        makeText(bind.itemText, media.anime.op)
-                        bind.root.tag = "dynamic_view"
-                        parent.addView(bind.root)
-                    }
-
-
-                    if (media.anime.ed.isNotEmpty()) {
-                        val bind = ItemTitleTextBinding.inflate(
-                            LayoutInflater.from(context),
-                            parent,
-                            false
-                        )
-                        bind.itemTitle.setText(R.string.ending)
-                        styleSectionHeading(bind.itemTitle)
-                        tightTextSection(bind.itemTitle, bind.itemText)
-                        makeText(bind.itemText, media.anime.ed)
-                        bind.root.tag = "dynamic_view"
-                        parent.addView(bind.root)
+                    if (anime.op.isNotEmpty() || anime.ed.isNotEmpty()) showLegacySongs()
+                    if (media.id != 0) {
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                            val songs = runCatching { ThemeSongs.loadAnimeThemes(media.id) }
+                                .getOrDefault(emptyList())
+                            withContext(Dispatchers.Main) {
+                                if (songs.isNotEmpty() && _binding != null) showPlayableThemes(songs)
+                            }
+                        }
                     }
                 }
 
@@ -1305,5 +1433,53 @@ class MediaInfoFragment : Fragment() {
     override fun onDestroy() {
         timer?.cancel()
         super.onDestroy()
+    }
+}
+
+/** UI state of one playable song row. */
+private class ThemeRowHolder(private val b: ItemThemeSongBinding) {
+    private var showingPause = false
+
+    fun render(state: ThemeSongPlayer.State, progress: Float) {
+        val p = b.themeProgress
+        when (state) {
+            ThemeSongPlayer.State.IDLE -> {
+                p.visibility = View.GONE
+                setIcon(false)
+            }
+
+            ThemeSongPlayer.State.LOADING -> {
+                setIndeterminate(true)
+                p.visibility = View.VISIBLE
+                setIcon(false)
+            }
+
+            ThemeSongPlayer.State.PLAYING, ThemeSongPlayer.State.PAUSED -> {
+                setIndeterminate(false)
+                p.setProgressCompat((progress * 1000).toInt(), false)
+                p.visibility = View.VISIBLE
+                setIcon(state == ThemeSongPlayer.State.PLAYING)
+            }
+        }
+    }
+
+    private fun setIndeterminate(on: Boolean) {
+        val p = b.themeProgress
+        if (p.isIndeterminate == on) return
+        p.visibility = View.INVISIBLE
+        p.isIndeterminate = on
+        p.visibility = View.VISIBLE
+    }
+
+    private fun setIcon(pause: Boolean) {
+        if (pause == showingPause) return
+        showingPause = pause
+        val icon = b.themePlay
+        icon.animate().cancel()
+        icon.animate().scaleX(0.6f).scaleY(0.6f).setDuration(80).withEndAction {
+            icon.setImageResource(if (pause) R.drawable.ic_theme_pause else R.drawable.ic_theme_play)
+            icon.animate().scaleX(1f).scaleY(1f)
+                .setInterpolator(OvershootInterpolator(2f)).setDuration(180).start()
+        }.start()
     }
 }

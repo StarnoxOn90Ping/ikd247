@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="32dp"
+    android:paddingTop="6dp"
+    android:paddingEnd="24dp"
+    android:paddingBottom="6dp">
+
+    <TextView
+        android:id="@+id/themeBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_theme_badge"
+        android:fontFamily="@font/poppins_bold"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:minWidth="44dp"
+        android:paddingStart="8dp"
+        android:paddingTop="5dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="5dp"
+        android:singleLine="true"
+        android:textColor="?attr/colorPrimary"
+        android:textSize="12sp"
+        tools:text="OP1" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="8dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/themeTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:fontFamily="@font/poppins_bold"
+            android:includeFontPadding="false"
+            android:maxLines="2"
+            android:textSize="15sp"
+            tools:text="Kimi no Shiranai Monogatari" />
+
+        <TextView
+            android:id="@+id/themeMeta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:alpha="0.6"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:textSize="12sp"
+            tools:text="supercell · Eps 1-15" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="44dp"
+        android:layout_height="44dp">
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/themeProgress"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_gravity="center"
+            android:max="1000"
+            android:visibility="gone"
+            app:indicatorSize="40dp"
+            app:trackColor="@android:color/transparent"
+            app:trackThickness="3dp" />
+
+        <ImageView
+            android:id="@+id/themePlay"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:background="@drawable/bg_theme_play"
+            android:padding="7dp"
+            android:src="@drawable/ic_theme_play"
+            app:tint="?attr/colorPrimary"
+            tools:ignore="ContentDescription" />
+    </FrameLayout>
+</LinearLayout>

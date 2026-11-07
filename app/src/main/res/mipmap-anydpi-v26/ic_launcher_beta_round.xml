@@ -4,5 +4,3 @@
     <foreground android:drawable="@drawable/kiwami_icon_fg" />
     <monochrome android:drawable="@drawable/kiwami_icon_fg" />
 </adaptive-icon>
->
-</adaptive-icon>
