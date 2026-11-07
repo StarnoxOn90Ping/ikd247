@@ -1531,4 +1531,6 @@ Non quae tempore quo provident laudantium qui illo dolor vel quia dolor et exerc
     <string name="themes_show_all">Show all</string>
     <string name="themes_show_less">Show less</string>
     <string name="themes_cant_play">Couldn\'t play this song</string>
+    <string name="themes_open_browser">Open in browser</string>
+    <string name="themes_video_not_found">Couldn\'t find this song\'s video</string>
 </resources>

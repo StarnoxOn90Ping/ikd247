@@ -124,6 +124,22 @@ object ThemeSongs {
 
     private val themesCache = HashMap<Int, List<ThemeSong>>()
 
+    /** Picks the AnimeThemes entry that belongs to a line of the plain-text list (by title, then by number). */
+    fun match(songs: List<ThemeSong>, type: String, index: Int, title: String): ThemeSong? {
+        val group = songs.filter { it.type.equals(type, ignoreCase = true) }
+        if (group.isEmpty()) return null
+        fun norm(s: String) = s.lowercase().filter { it.isLetterOrDigit() }
+        val t = norm(title)
+        if (t.isNotEmpty()) {
+            group.firstOrNull {
+                val n = norm(it.title)
+                n.isNotEmpty() && (n == t || n.contains(t) || t.contains(n))
+            }?.let { return it }
+        }
+        group.firstOrNull { (order(it.slug).takeIf { n -> n > 0 } ?: 1) == index }?.let { return it }
+        return group.getOrNull(index - 1)
+    }
+
     private fun order(slug: String) = Regex("\\d+").find(slug)?.value?.toIntOrNull() ?: 0
 
     /** Openings and endings with playable links, looked up by AniList id on AnimeThemes. */

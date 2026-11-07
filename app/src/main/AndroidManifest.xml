@@ -304,6 +304,11 @@
             android:parentActivityName=".MainActivity"
             android:theme="@style/Theme.Dantotsu.NeverCutout"
             android:windowSoftInputMode="adjustResize|stateHidden" />
+        <activity
+            android:name=".media.ThemeVideoActivity"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation"
+            android:exported="false"
+            android:theme="@style/Theme.Dantotsu.NeverCutout" />
         <activity android:name=".media.CharacterDetailsActivity" />
         <activity android:name=".others.CrashActivity"
             android:excludeFromRecents="true"

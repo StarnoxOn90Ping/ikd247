@@ -10,6 +10,9 @@ import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.speech.tts.TextToSpeech
 import android.view.View
+import io.noties.markwon.LinkResolverDef
+import io.noties.markwon.MarkwonConfiguration
+import io.noties.markwon.AbstractMarkwonPlugin
 import ani.dantotsu.others.ThemeSongs
 import ani.dantotsu.others.ThemeSong
 import ani.dantotsu.databinding.ItemThemeSongBinding
@@ -833,30 +836,65 @@ class MediaInfoFragment : Fragment() {
                     }
                     parent.addView(themesSlot)
 
+                    // a song link of the plain list: find its AnimeThemes video and open the video page
+                    fun openThemeLink(link: String) {
+                        val uri = Uri.parse(link)
+                        val type = uri.getQueryParameter("type") ?: "OP"
+                        val number = uri.getQueryParameter("index")?.toIntOrNull() ?: 1
+                        val title = uri.getQueryParameter("title") ?: ""
+                        val youtube = uri.getQueryParameter("yt")
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val songs = withContext(Dispatchers.IO) {
+                                runCatching { ThemeSongs.loadAnimeThemes(media.id) }
+                                    .getOrDefault(emptyList())
+                            }
+                            val hit = ThemeSongs.match(songs, type, number, title)
+                            if (hit != null && _binding != null) {
+                                themePlayer?.stop()
+                                ThemeVideoActivity.open(requireContext(), hit, media.mainName())
+                            } else if (_binding != null) {
+                                snackString(getString(R.string.themes_video_not_found))
+                                if (youtube != null) {
+                                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(youtube)))
+                                }
+                            }
+                        }
+                    }
+
                     // plain text list (from MAL / Jikan), used when AnimeThemes has nothing
                     fun showLegacySongs() {
                         val markWon = Markwon.builder(requireContext())
-                            .usePlugin(SoftBreakAddsNewLinePlugin.create()).build()
+                            .usePlugin(SoftBreakAddsNewLinePlugin.create())
+                            .usePlugin(object : AbstractMarkwonPlugin() {
+                                override fun configureConfiguration(builder: MarkwonConfiguration.Builder) {
+                                    builder.linkResolver { view, link ->
+                                        if (link.startsWith("theme://")) openThemeLink(link)
+                                        else LinkResolverDef().resolve(view, link)
+                                    }
+                                }
+                            }).build()
 
-                        fun makeLink(a: String): String {
+                        fun makeLink(a: String, type: String, number: Int): String {
                             val first = a.indexOf('"').let { if (it != -1) it else return a } + 1
                             val end = a.indexOf('"', first).let { if (it != -1) it else return a }
                             val name = a.subSequence(first, end).toString()
+                            val enc = { s: String -> URLEncoder.encode(s, "utf-8") }
+                            val youtube =
+                                "https://www.youtube.com/results?search_query=${enc(name)}"
+                            val link = "theme://play?type=$type&index=$number" +
+                                    "&title=${enc(name)}&yt=${enc(youtube)}"
                             return "${a.subSequence(0, first)}" +
-                                    "[$name](https://www.youtube.com/results?search_query=${
-                                        URLEncoder.encode(
-                                            name,
-                                            "utf-8"
-                                        )
-                                    })" +
+                                    "[$name]($link)" +
                                     "${a.subSequence(end, a.length)}"
                         }
 
-                        fun makeText(textView: TextView, arr: ArrayList<String>) {
+                        fun makeText(textView: TextView, arr: ArrayList<String>, type: String) {
                             var op = ""
-                            arr.forEach {
+                            arr.forEachIndexed { i, line ->
                                 op += "\n"
-                                op += makeLink(it)
+                                val number = Regex("^#?(\\d+)").find(line.trim())
+                                    ?.groupValues?.get(1)?.toIntOrNull() ?: (i + 1)
+                                op += makeLink(line, type, number)
                             }
                             op = op.removePrefix("\n")
                             textView.setOnClickListener {
@@ -880,7 +918,7 @@ class MediaInfoFragment : Fragment() {
                             bind.itemTitle.setText(R.string.opening)
                             styleSectionHeading(bind.itemTitle)
                             tightTextSection(bind.itemTitle, bind.itemText)
-                            makeText(bind.itemText, anime.op)
+                            makeText(bind.itemText, anime.op, "OP")
                             bind.root.tag = "dynamic_view"
                             themesSlot.addView(bind.root)
                         }
@@ -895,7 +933,7 @@ class MediaInfoFragment : Fragment() {
                             bind.itemTitle.setText(R.string.ending)
                             styleSectionHeading(bind.itemTitle)
                             tightTextSection(bind.itemTitle, bind.itemText)
-                            makeText(bind.itemText, anime.ed)
+                            makeText(bind.itemText, anime.ed, "ED")
                             bind.root.tag = "dynamic_view"
                             themesSlot.addView(bind.root)
                         }
@@ -954,7 +992,13 @@ class MediaInfoFragment : Fragment() {
                                     rb.themeMeta.visibility =
                                         if (meta.isBlank()) View.GONE else View.VISIBLE
                                     themeRows[song] = ThemeRowHolder(rb)
-                                    rb.root.setOnClickListener { player.toggle(song) }
+                                    rb.themePlay.setOnClickListener { player.toggle(song) }
+                                    rb.root.setOnClickListener {
+                                        player.stop()
+                                        ThemeVideoActivity.open(
+                                            requireContext(), song, media.mainName()
+                                        )
+                                    }
                                     list.addView(rb.root)
                                 }
                             }
