@@ -518,7 +518,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         }
         // always open on the Info tab, whatever tab was used last
         selected = 0
-        binding.mediaTitle.translationX = -screenWidth
+        applyCollapseProgress(0f)
 
         val infoTab = navBar.createTab(R.drawable.ic_round_info_24, R.string.info, R.id.info)
         val watchTab = if (anime) {
@@ -701,7 +701,6 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
 
     //Collapsing UI Stuff
     private var isCollapsed = false
-    private val percent = 45
     private var mMaxScrollSize = 0
 
     private var bannerPan: ObjectAnimator? = null
@@ -811,36 +810,53 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
 
     override fun onOffsetChanged(appBar: AppBarLayout, i: Int) {
         if (!::binding.isInitialized) return
-        if (mMaxScrollSize == 0) mMaxScrollSize = appBar.totalScrollRange
-        val percentage = abs(i) * 100 / mMaxScrollSize
+        val range = appBar.totalScrollRange
+        if (range <= 0) return
+        val t = (abs(i).toFloat() / range).coerceIn(0f, 1f)
 
         binding.mediaCover.visibility =
             if (binding.mediaCover.scaleX == 0f) View.GONE else View.VISIBLE
-        val duration = (200 * (PrefManager.getVal(PrefName.AnimationSpeed) as Float)).toLong()
-        if (percentage >= percent && !isCollapsed) {
-            isCollapsed = true
-            ObjectAnimator.ofFloat(binding.mediaTitle, "translationX", 0f).setDuration(duration)
-                .start()
-            ObjectAnimator.ofFloat(binding.mediaCover, "translationX", screenWidth)
-                .setDuration(duration).start()
-            ObjectAnimator.ofFloat(binding.mediaCollapseContainer, "translationX", screenWidth)
-                .setDuration(duration).start()
-            bannerPan?.pause()
-        }
-        if (percentage <= percent && isCollapsed) {
-            isCollapsed = false
-            ObjectAnimator.ofFloat(binding.mediaTitle, "translationX", -screenWidth)
-                .setDuration(duration).start()
-            ObjectAnimator.ofFloat(binding.mediaCover, "translationX", 0f).setDuration(duration)
-                .start()
-            ObjectAnimator.ofFloat(binding.mediaCollapseContainer, "translationX", 0f)
-                .setDuration(duration).start()
-            bannerPan?.resume()
-        }
-        if (percentage == 1 && model.scrolledToTop.value != false) model.scrolledToTop.postValue(
-            false
-        )
+        applyCollapseProgress(t)
+
+        val percentage = abs(i) * 100 / range
+        if (percentage >= 1 && model.scrolledToTop.value != false) model.scrolledToTop.postValue(false)
         if (percentage == 0 && model.scrolledToTop.value != true) model.scrolledToTop.postValue(true)
+    }
+
+    /**
+     * Drives the whole header transition straight from the scroll position (t = 0 expanded, 1 collapsed),
+     * so it follows the finger and reverses exactly, with no timed animations or thresholds:
+     *  - cover, title, buttons and stats slide out to the left and fade over the first ~62% of the scroll
+     *  - the small title fades in and glides in from the right over the second half
+     *  - the banner fades out evenly across the whole scroll
+     */
+    private fun applyCollapseProgress(t: Float) {
+        val slideP = (t * 1.6f).coerceIn(0f, 1f)
+        val labelP = ((t - 0.5f) * 2f).coerceIn(0f, 1f)
+        val slideX = -screenWidth * slideP
+        val slideAlpha = 1f - slideP
+
+        binding.mediaCollapseContainer.translationX = slideX
+        binding.mediaCollapseContainer.alpha = slideAlpha
+        binding.mediaCover.translationX = slideX
+        binding.mediaCover.alpha = slideAlpha
+        binding.mediaBannerHolder.alpha = 1f - t
+
+        val title = binding.mediaTitle
+        title.alpha = labelP
+        title.translationX = 48f * resources.displayMetrics.density * (1f - labelP)
+        // the hidden title must not catch touches meant for the header underneath
+        val titleActive = labelP > 0.5f
+        if (title.isLongClickable != titleActive) {
+            title.isLongClickable = titleActive
+            title.isClickable = titleActive
+        }
+
+        val nowCollapsed = t >= 0.95f
+        if (nowCollapsed != isCollapsed) {
+            isCollapsed = nowCollapsed
+            if (nowCollapsed) bannerPan?.pause() else bannerPan?.resume()
+        }
     }
 
     class PopImageButton(

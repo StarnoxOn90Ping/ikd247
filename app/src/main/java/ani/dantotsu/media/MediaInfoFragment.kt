@@ -413,55 +413,82 @@ class MediaInfoFragment : Fragment() {
                     if (desc.toString() != "null") desc else getString(R.string.no_description_available)
                 binding.mediaInfoDescription.text = infoDesc
 
-                // "Read more / Read less" link, only when the synopsis is actually cut off
+                // "Read more / Read less" link, only when the synopsis is actually cut off.
+                // The last visible line fades out from the bottom instead of ending in "...".
                 val collapsedLines = 5
+                val descView = binding.mediaInfoDescription
+                var expanded = false
+                var lastWidth = -1
+                var truncated = false
+                descView.fadeAnimator?.cancel()
+                descView.heightAnimator?.cancel()
+                descView.fadeAmount = 0f
                 binding.mediaInfoReadMore.text = getString(R.string.read_more)
-                binding.mediaInfoDescription.maxLines = collapsedLines
+                descView.maxLines = collapsedLines
                 binding.mediaInfoReadMore.visibility = View.GONE
-                // Show "Read more" whenever the full text needs more than the collapsed lines.
-                // Re-checked on every size change, so it also works if the tab was laid out at width 0 first.
+
+                fun animateFade(to: Float, duration: Long) {
+                    descView.fadeAnimator?.cancel()
+                    descView.fadeAnimator = ValueAnimator.ofFloat(descView.fadeAmount, to).apply {
+                        this.duration = duration
+                        addUpdateListener { descView.fadeAmount = it.animatedValue as Float }
+                        start()
+                    }
+                }
+
+                // Measures the full text at the current width. Never runs inside a layout pass:
+                // changing visibility while the parent is being laid out can get the request dropped,
+                // which is why the button used to stay hidden until the synopsis was toggled.
                 fun updateReadMore() {
                     val b = _binding ?: return
                     val tv = b.mediaInfoDescription
                     val w = tv.width - tv.paddingLeft - tv.paddingRight
                     if (w <= 0) return
-                    val full = if (Build.VERSION.SDK_INT >= 23) {
-                        StaticLayout.Builder.obtain(infoDesc, 0, infoDesc.length, tv.paint, w)
-                            .setLineSpacing(tv.lineSpacingExtra, tv.lineSpacingMultiplier)
-                            .setIncludePad(tv.includeFontPadding)
-                            .setBreakStrategy(tv.breakStrategy)
-                            .setHyphenationFrequency(tv.hyphenationFrequency)
-                            .build()
-                    } else {
-                        @Suppress("DEPRECATION")
-                        StaticLayout(
-                            infoDesc, tv.paint, w, Layout.Alignment.ALIGN_NORMAL,
-                            tv.lineSpacingMultiplier, tv.lineSpacingExtra, tv.includeFontPadding
-                        )
+                    if (w != lastWidth) {
+                        lastWidth = w
+                        val full = if (Build.VERSION.SDK_INT >= 23) {
+                            StaticLayout.Builder.obtain(infoDesc, 0, infoDesc.length, tv.paint, w)
+                                .setLineSpacing(tv.lineSpacingExtra, tv.lineSpacingMultiplier)
+                                .setIncludePad(tv.includeFontPadding)
+                                .setBreakStrategy(tv.breakStrategy)
+                                .setHyphenationFrequency(tv.hyphenationFrequency)
+                                .build()
+                        } else {
+                            @Suppress("DEPRECATION")
+                            StaticLayout(
+                                infoDesc, tv.paint, w, Layout.Alignment.ALIGN_NORMAL,
+                                tv.lineSpacingMultiplier, tv.lineSpacingExtra, tv.includeFontPadding
+                            )
+                        }
+                        truncated = full.lineCount > collapsedLines
                     }
-                    val ellipsized = tv.layout?.let {
-                        it.lineCount >= collapsedLines && it.getEllipsisCount(collapsedLines - 1) > 0
-                    } ?: false
-                    b.mediaInfoReadMore.visibility =
-                        if (full.lineCount > collapsedLines || ellipsized) View.VISIBLE else View.GONE
+                    val target = if (truncated) View.VISIBLE else View.GONE
+                    if (b.mediaInfoReadMore.visibility != target) b.mediaInfoReadMore.visibility = target
+                    if (!expanded && descView.fadeAnimator?.isRunning != true) {
+                        tv.fadeAmount = if (truncated) 1f else 0f
+                    }
                 }
-                descLayoutListener?.let { binding.mediaInfoDescription.removeOnLayoutChangeListener(it) }
-                descLayoutListener = View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                    updateReadMore()
+                descLayoutListener?.let { descView.removeOnLayoutChangeListener(it) }
+                descLayoutListener = View.OnLayoutChangeListener { v, left, _, right, _, oldLeft, _, oldRight, _ ->
+                    // only the width matters; re-check after the layout pass has finished
+                    if (right - left != oldRight - oldLeft) v.post { updateReadMore() }
                 }
-                binding.mediaInfoDescription.addOnLayoutChangeListener(descLayoutListener)
-                binding.mediaInfoDescription.post { updateReadMore() }
+                descView.addOnLayoutChangeListener(descLayoutListener)
+                descView.post { updateReadMore() }
                 val toggleSynopsis = View.OnClickListener {
-                    val expand = binding.mediaInfoDescription.maxLines == collapsedLines
-                    ObjectAnimator.ofInt(
-                        binding.mediaInfoDescription,
+                    if (!truncated) return@OnClickListener
+                    expanded = !expanded
+                    descView.heightAnimator?.cancel()
+                    descView.heightAnimator = ObjectAnimator.ofInt(
+                        descView,
                         "maxLines",
-                        if (expand) 100 else collapsedLines
-                    ).setDuration(if (expand) 700 else 400).start()
+                        if (expanded) 100 else collapsedLines
+                    ).setDuration(if (expanded) 700 else 400).apply { start() }
+                    animateFade(if (expanded) 0f else 1f, if (expanded) 250 else 450)
                     binding.mediaInfoReadMore.text =
-                        getString(if (expand) R.string.read_less else R.string.read_more)
+                        getString(if (expanded) R.string.read_less else R.string.read_more)
                 }
-                binding.mediaInfoDescription.setOnClickListener(toggleSynopsis)
+                descView.setOnClickListener(toggleSynopsis)
                 binding.mediaInfoReadMore.setOnClickListener(toggleSynopsis)
 
                 // read the synopsis out loud (button squishes on tap and pulses while speaking)

@@ -81,12 +81,11 @@
                             tools:ignore="ContentDescription" />
                     </LinearLayout>
 
-                    <TextView
+                    <ani.dantotsu.media.FadingTextView
                         android:id="@+id/mediaInfoDescription"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:ellipsize="end"
                         android:maxLines="5"
                         android:text="@string/description"
                         android:textSize="14sp" />
