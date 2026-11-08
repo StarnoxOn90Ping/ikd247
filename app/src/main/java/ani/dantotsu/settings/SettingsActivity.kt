@@ -310,7 +310,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun checkIfOutdated() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                val res = client.get("https://api.github.com/repos/itsmechinmoy/dantotsu-updater/releases/latest")
+                val res = client.get("https://api.github.com/repos/StarnoxOn90Ping/Kiwami/releases/latest")
                 if (res.code == 200) {
                     val json = Mapper.json.parseToJsonElement(res.text).jsonObject
                     val tagName = json["tag_name"]?.jsonPrimitive?.contentOrNull
@@ -321,13 +321,13 @@ class SettingsActivity : AppCompatActivity() {
                                 BuildConfig.VERSION_NAME
                             )
                             binding.settingsVersion.setOnClickListener {
-                                openLinkInBrowser("https://github.com/itsmechinmoy/dantotsu-updater/releases/latest")
+                                openLinkInBrowser("https://github.com/StarnoxOn90Ping/Kiwami/releases/latest")
                             }
                         }
                     }
                 }
             } catch (e: Exception) {
-                Logger.log("Failed to check dantotsu-updater releases: ${e.message}")
+                Logger.log("Failed to check Kiwami releases: ${e.message}")
             }
         }
     }
