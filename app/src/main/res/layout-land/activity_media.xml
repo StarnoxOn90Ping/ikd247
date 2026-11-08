@@ -206,11 +206,16 @@
                                 android:baselineAligned="false"
                                 android:orientation="horizontal">
 
+                                <Space
+                                    android:id="@+id/mediaStatSpacer0"
+                                    android:layout_width="0dp"
+                                    android:layout_height="0dp"
+                                    android:layout_weight="0.6" />
+
                                 <LinearLayout
                                     android:id="@+id/mediaStatScoreColumn"
-                                    android:layout_width="0dp"
+                                    android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_weight="1"
                                     android:gravity="top|center_horizontal"
                                     android:orientation="vertical">
 
@@ -237,11 +242,16 @@
                                         android:textSize="11sp" />
                                 </LinearLayout>
 
+                                <Space
+                                    android:id="@+id/mediaStatSpacer1"
+                                    android:layout_width="0dp"
+                                    android:layout_height="0dp"
+                                    android:layout_weight="1" />
+
                                 <LinearLayout
                                     android:id="@+id/mediaStatPopularityColumn"
-                                    android:layout_width="0dp"
+                                    android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_weight="1"
                                     android:gravity="top|center_horizontal"
                                     android:orientation="vertical">
 
@@ -268,11 +278,16 @@
                                         android:textSize="11sp" />
                                 </LinearLayout>
 
+                                <Space
+                                    android:id="@+id/mediaStatSpacer2"
+                                    android:layout_width="0dp"
+                                    android:layout_height="0dp"
+                                    android:layout_weight="1" />
+
                                 <LinearLayout
                                     android:id="@+id/mediaStatFavoritesColumn"
-                                    android:layout_width="0dp"
+                                    android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_weight="1"
                                     android:gravity="top|center_horizontal"
                                     android:orientation="vertical">
 
@@ -299,11 +314,16 @@
                                         android:textSize="11sp" />
                                 </LinearLayout>
 
+                                <Space
+                                    android:id="@+id/mediaStatSpacer3"
+                                    android:layout_width="0dp"
+                                    android:layout_height="0dp"
+                                    android:layout_weight="1" />
+
                                 <LinearLayout
                                     android:id="@+id/mediaStatDurationColumn"
-                                    android:layout_width="0dp"
+                                    android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_weight="1"
                                     android:gravity="top|center_horizontal"
                                     android:orientation="vertical">
 
@@ -329,6 +349,12 @@
                                         android:textColor="?attr/colorOnBackground"
                                         android:textSize="11sp" />
                                 </LinearLayout>
+
+                                <Space
+                                    android:id="@+id/mediaStatSpacer4"
+                                    android:layout_width="0dp"
+                                    android:layout_height="0dp"
+                                    android:layout_weight="0.6" />
 
                             </LinearLayout>
 

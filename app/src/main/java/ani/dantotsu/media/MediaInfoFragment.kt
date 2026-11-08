@@ -845,7 +845,7 @@ class MediaInfoFragment : Fragment() {
                         val youtube = uri.getQueryParameter("yt")
                         viewLifecycleOwner.lifecycleScope.launch {
                             val songs = withContext(Dispatchers.IO) {
-                                runCatching { ThemeSongs.loadAnimeThemes(media.id) }
+                                runCatching { ThemeSongs.loadAnimeThemes(media) }
                                     .getOrDefault(emptyList())
                             }
                             val hit = ThemeSongs.match(songs, type, number, title)
@@ -853,7 +853,7 @@ class MediaInfoFragment : Fragment() {
                                 themePlayer?.stop()
                                 ThemeVideoActivity.open(requireContext(), hit, media.mainName())
                             } else if (_binding != null) {
-                                snackString(getString(R.string.themes_video_not_found))
+                                snackString(getString(R.string.themes_video_not_found) + (ThemeSongs.lastError?.let { " ($it)" } ?: ""))
                                 if (youtube != null) {
                                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(youtube)))
                                 }
@@ -1033,7 +1033,7 @@ class MediaInfoFragment : Fragment() {
                     if (anime.op.isNotEmpty() || anime.ed.isNotEmpty()) showLegacySongs()
                     if (media.id != 0) {
                         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                            val songs = runCatching { ThemeSongs.loadAnimeThemes(media.id) }
+                            val songs = runCatching { ThemeSongs.loadAnimeThemes(media) }
                                 .getOrDefault(emptyList())
                             withContext(Dispatchers.Main) {
                                 if (songs.isNotEmpty() && _binding != null) showPlayableThemes(songs)

@@ -124,11 +124,16 @@ object ThemeSongs {
 
     private val themesCache = HashMap<Int, List<ThemeSong>>()
 
+    /** Why the last AnimeThemes lookup found nothing (shown to help track problems down). */
+    @Volatile
+    var lastError: String? = null
+
+    private fun norm(s: String) = s.lowercase().filter { it.isLetterOrDigit() }
+
     /** Picks the AnimeThemes entry that belongs to a line of the plain-text list (by title, then by number). */
     fun match(songs: List<ThemeSong>, type: String, index: Int, title: String): ThemeSong? {
         val group = songs.filter { it.type.equals(type, ignoreCase = true) }
         if (group.isEmpty()) return null
-        fun norm(s: String) = s.lowercase().filter { it.isLetterOrDigit() }
         val t = norm(title)
         if (t.isNotEmpty()) {
             group.firstOrNull {
@@ -142,21 +147,64 @@ object ThemeSongs {
 
     private fun order(slug: String) = Regex("\\d+").find(slug)?.value?.toIntOrNull() ?: 0
 
-    /** Openings and endings with playable links, looked up by AniList id on AnimeThemes. */
-    suspend fun loadAnimeThemes(anilistId: Int): List<ThemeSong> {
-        if (anilistId == 0) return emptyList()
-        themesCache[anilistId]?.let { return it }
-        val url = "https://api.animethemes.moe/anime" +
-                "?filter%5Bhas%5D=resources&filter%5Bsite%5D=AniList&filter%5Bexternal_id%5D=$anilistId" +
-                "&include=animethemes.animethemeentries.videos.audio%2Canimethemes.song.artists" +
-                "&fields%5Bvideo%5D=id%2Cbasename%2Clink%2Ctags%2Cresolution%2Cnc%2Csource" +
-                "&fields%5Baudio%5D=id%2Cbasename%2Clink"
+    /**
+     * Openings and endings with playable links from AnimeThemes.
+     * Looks the anime up by AniList id, then by MAL id, then by its title.
+     */
+    suspend fun loadAnimeThemes(media: Media): List<ThemeSong> {
+        themesCache[media.id]?.let { return it }
+        lastError = null
+        var songs: List<ThemeSong> = emptyList()
+        if (media.id != 0) {
+            songs = fetchThemes(mapOf("filter[site]" to "AniList", "filter[external_id]" to "${media.id}"), null)
+        }
+        if (songs.isEmpty() && media.idMAL != null) {
+            songs = fetchThemes(
+                mapOf("filter[site]" to "MyAnimeList", "filter[external_id]" to "${media.idMAL}"),
+                null
+            )
+        }
+        if (songs.isEmpty()) {
+            val names = listOfNotNull(media.name, media.nameRomaji) + media.synonyms
+            for (name in listOfNotNull(media.nameRomaji, media.name)) {
+                if (name.isBlank()) continue
+                songs = fetchThemes(mapOf("q" to name), names.map { norm(it) }.filter { it.isNotEmpty() })
+                if (songs.isNotEmpty()) break
+            }
+        }
+        if (songs.isEmpty() && lastError == null) lastError = "no themes listed"
+        if (songs.isNotEmpty()) themesCache[media.id] = songs
+        return songs
+    }
+
+    private suspend fun fetchThemes(query: Map<String, String>, matchNames: List<String>?): List<ThemeSong> {
+        val params = mutableMapOf(
+            "include" to "animethemes.animethemeentries.videos.audio,animethemes.song.artists",
+            "fields[video]" to "id,basename,link,tags,resolution,nc,source",
+            "fields[audio]" to "id,basename,link"
+        )
+        if (matchNames == null) params["filter[has]"] = "resources"
+        params.putAll(query)
         val songs = ArrayList<ThemeSong>()
         try {
-            withTimeout(8000) {
-                val text = client.get(url, headers).text
-                val anime = (Json.parseToJsonElement(text).jsonObject["anime"] as? JsonArray)
-                    ?.firstOrNull() as? JsonObject ?: return@withTimeout
+            withTimeout(10000) {
+                val res = client.get(
+                    "https://api.animethemes.moe/anime",
+                    headers = mapOf("Accept" to "application/json"),
+                    params = params,
+                    cacheTime = 0
+                )
+                if (res.code !in 200..299) {
+                    lastError = "AnimeThemes HTTP ${res.code}"
+                    return@withTimeout
+                }
+                val list = Json.parseToJsonElement(res.text).jsonObject["anime"] as? JsonArray
+                val anime = (if (matchNames == null) list?.firstOrNull()
+                else list?.firstOrNull {
+                    val n = norm((it as? JsonObject)?.get("name")?.str() ?: "")
+                    n.isNotEmpty() && matchNames.contains(n)
+                }) as? JsonObject
+                if (anime == null) return@withTimeout
                 (anime["animethemes"] as? JsonArray)?.forEach { themeEl ->
                     val theme = themeEl as? JsonObject ?: return@forEach
                     val song = theme["song"] as? JsonObject
@@ -174,7 +222,7 @@ object ThemeSongs {
                             val v = vEl as? JsonObject ?: return@forEach
                             val link = v["link"]?.str() ?: return@forEach
                             val rank = (v["resolution"]?.int() ?: 0) +
-                                    if (v["nc"]?.bool() == true) 5 else 0
+                                    (if (v["nc"]?.bool() == true) 5 else 0)
                             if (rank > bestRank) {
                                 bestRank = rank
                                 bestVideo = link
@@ -199,16 +247,17 @@ object ThemeSongs {
                 }
             }
         } catch (e: Exception) {
-            Logger.log("ThemeSongs: AnimeThemes failed for $anilistId: ${e.message}")
+            lastError = e.javaClass.simpleName + (e.message?.let { ": $it" } ?: "")
+            Logger.log("ThemeSongs: AnimeThemes failed: $lastError")
             return emptyList()
         }
         songs.sortWith(compareBy({ !it.isOpening }, { order(it.slug) }))
-        themesCache[anilistId] = songs
         return songs
     }
 
     private fun JsonElement.str(): String? =
         (this as? JsonPrimitive)?.takeIf { it.isString }?.contentOrNull
+
     private fun JsonElement.int(): Int? = (this as? JsonPrimitive)?.intOrNull
     private fun JsonElement.bool(): Boolean? = (this as? JsonPrimitive)?.booleanOrNull
 }
