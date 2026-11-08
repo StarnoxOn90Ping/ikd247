@@ -4,7 +4,7 @@ import android.util.TypedValue
 import android.view.View
 import androidx.core.view.doOnLayout
 import ani.dantotsu.R
-import ani.dantotsu.databinding.ActivityMediaBinding
+import ani.dantotsu.databinding.FragmentMediaInfoBinding
 import java.util.Locale
 
 private fun compact(n: Int?): String = when {
@@ -33,7 +33,7 @@ private fun remaining(seconds: Long): String {
 }
 
 /** Fills the score / popularity / favourites / duration bar and the live "airs in" line. */
-fun bindMediaStatsBar(binding: ActivityMediaBinding, media: Media) {
+fun bindMediaStatsBar(binding: FragmentMediaInfoBinding, media: Media) {
     binding.mediaStatScore.text = media.meanScore?.let { (it / 10.0).toString() } ?: "~"
     binding.mediaStatPopularity.text = compact(media.popularity)
     binding.mediaStatFavorites.text = compact(media.favourites)
@@ -62,6 +62,7 @@ fun bindMediaStatsBar(binding: ActivityMediaBinding, media: Media) {
     }
     val airTick = object : Runnable {
         override fun run() {
+            if (!row.isAttachedToWindow) return // page is gone, stop ticking
             val left = nextTime - System.currentTimeMillis() / 1000
             if (left <= 0) {
                 row.visibility = View.GONE
@@ -83,7 +84,7 @@ fun bindMediaStatsBar(binding: ActivityMediaBinding, media: Media) {
 private const val STAT_MAX_SP = 18f
 private const val STAT_MIN_SP = 11f
 
-private fun equalizeStatValues(binding: ActivityMediaBinding) {
+private fun equalizeStatValues(binding: FragmentMediaInfoBinding) {
     val card = binding.mediaStatsCard
     val columns = listOf(
         binding.mediaStatScore to binding.mediaStatScoreColumn,

@@ -31,6 +31,15 @@ class FadingTextView @JvmOverloads constructor(
     private var shaderTop = Float.NaN
     private var shaderBottom = Float.NaN
 
+    /** How tall the soft edge is, in text lines. Grows while the synopsis is unfolding. */
+    var fadeSpan: Float = 0.85f
+        set(value) {
+            if (value != field) {
+                field = value
+                invalidate()
+            }
+        }
+
     var fadeAmount: Float = 0f
         set(value) {
             val v = value.coerceIn(0f, 1f)
@@ -48,7 +57,7 @@ class FadingTextView @JvmOverloads constructor(
         val w = width.toFloat()
         val h = height.toFloat()
         val bottom = h - compoundPaddingBottom
-        val top = bottom - lineHeight * 0.85f
+        val top = (bottom - lineHeight * fadeSpan).coerceAtLeast(0f)
         val save = canvas.saveLayer(0f, 0f, w, h, null)
         super.onDraw(canvas)
         if (top != shaderTop || bottom != shaderBottom) {

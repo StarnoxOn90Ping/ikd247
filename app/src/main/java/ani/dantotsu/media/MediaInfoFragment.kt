@@ -279,6 +279,7 @@ class MediaInfoFragment : Fragment() {
             if (media != null) {
                 loaded = true
 
+                bindMediaStatsBar(binding, media)
                 binding.mediaInfoProgressBar.visibility = View.GONE
                 binding.mediaInfoContainer.visibility = View.VISIBLE
                 binding.mediaInfoCountry.text = media.countryOfOrigin ?: "~"
@@ -478,15 +479,13 @@ class MediaInfoFragment : Fragment() {
                 val toggleSynopsis = View.OnClickListener {
                     if (!truncated) return@OnClickListener
                     expanded = !expanded
-                    descView.heightAnimator?.cancel()
-                    descView.heightAnimator = ObjectAnimator.ofInt(
+                    SynopsisAnimator.toggle(
                         descView,
-                        "maxLines",
-                        if (expanded) 100 else collapsedLines
-                    ).setDuration(if (expanded) 700 else 400).apply { start() }
-                    animateFade(if (expanded) 0f else 1f, if (expanded) 250 else 450)
-                    binding.mediaInfoReadMore.text =
+                        expanded,
+                        collapsedLines,
+                        binding.mediaInfoReadMore,
                         getString(if (expanded) R.string.read_less else R.string.read_more)
+                    )
                 }
                 descView.setOnClickListener(toggleSynopsis)
                 binding.mediaInfoReadMore.setOnClickListener(toggleSynopsis)
