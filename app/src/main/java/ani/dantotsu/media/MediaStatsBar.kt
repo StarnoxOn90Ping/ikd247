@@ -79,24 +79,39 @@ fun bindMediaStatsBar(binding: ActivityMediaBinding, media: Media) {
     airTick.run()
 }
 
-/** All four values share one text size: the biggest one at which the longest value still fits. */
+/** All four values share one text size: the biggest one at which every column fits side by side. */
+private const val STAT_MAX_SP = 18f
+private const val STAT_MIN_SP = 11f
+
 private fun equalizeStatValues(binding: ActivityMediaBinding) {
     val card = binding.mediaStatsCard
-    val values = listOf(
-        binding.mediaStatScore,
-        binding.mediaStatPopularity,
-        binding.mediaStatFavorites,
-        binding.mediaStatDuration
-    ).filter { (it.parent as View).visibility == View.VISIBLE }
+    val columns = listOf(
+        binding.mediaStatScore to binding.mediaStatScoreColumn,
+        binding.mediaStatPopularity to binding.mediaStatPopularityColumn,
+        binding.mediaStatFavorites to binding.mediaStatFavoritesColumn,
+        binding.mediaStatDuration to binding.mediaStatDurationColumn
+    ).filter { it.second.visibility == View.VISIBLE }
+    val values = columns.map { it.first }
+    // never cut a value off with "..."
+    values.forEach { it.ellipsize = null }
     fun fit() {
         val available = card.width - card.paddingLeft - card.paddingRight
         if (available <= 0 || values.isEmpty()) return
         val density = card.resources.displayMetrics.density
-        val columnWidth = available / values.size - 6 * density
-        var size = 18f
-        while (size > 11f) {
+        // each column is as wide as its value or its label, whichever is wider;
+        // keep a small gap between columns and a little room at both ends
+        val labelWidths = columns.map { (_, col) ->
+            val label = (col as android.view.ViewGroup).getChildAt(1) as android.widget.TextView
+            label.paint.measureText(label.text.toString())
+        }
+        val gaps = 10 * density * (values.size - 1) + 16 * density
+        var size = STAT_MAX_SP
+        while (size > STAT_MIN_SP) {
             values.forEach { it.setTextSize(TypedValue.COMPLEX_UNIT_SP, size) }
-            if (values.all { it.paint.measureText(it.text.toString()) <= columnWidth }) break
+            val needed = values.indices.sumOf {
+                maxOf(values[it].paint.measureText(values[it].text.toString()), labelWidths[it]).toDouble()
+            } + gaps
+            if (needed <= available) break
             size -= 0.5f
         }
     }

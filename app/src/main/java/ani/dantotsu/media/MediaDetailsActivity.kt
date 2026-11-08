@@ -519,7 +519,6 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         // always open on the Info tab, whatever tab was used last
         selected = 0
         binding.mediaTitle.translationX = -screenWidth
-        binding.mediaTitleContainer.visibility = View.GONE
 
         val infoTab = navBar.createTab(R.drawable.ic_round_info_24, R.string.info, R.id.info)
         val watchTab = if (anime) {
@@ -820,7 +819,6 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         val duration = (200 * (PrefManager.getVal(PrefName.AnimationSpeed) as Float)).toLong()
         if (percentage >= percent && !isCollapsed) {
             isCollapsed = true
-            binding.mediaTitleContainer.visibility = View.VISIBLE
             ObjectAnimator.ofFloat(binding.mediaTitle, "translationX", 0f).setDuration(duration)
                 .start()
             ObjectAnimator.ofFloat(binding.mediaCover, "translationX", screenWidth)
@@ -831,7 +829,6 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         }
         if (percentage <= percent && isCollapsed) {
             isCollapsed = false
-            binding.mediaTitleContainer.visibility = View.GONE
             ObjectAnimator.ofFloat(binding.mediaTitle, "translationX", -screenWidth)
                 .setDuration(duration).start()
             ObjectAnimator.ofFloat(binding.mediaCover, "translationX", 0f).setDuration(duration)
