@@ -330,7 +330,7 @@
             android:excludeFromRecents="true"
             android:exported="true"
             android:launchMode="singleTask">
-            <intent-filter android:label="Anilist Login for Dantotsu">
+            <intent-filter android:label="Anilist Login for Kiwami">
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
@@ -338,7 +338,7 @@
 
                 <data
                     android:host="anilist"
-                    android:scheme="dantotsu" />
+                    android:scheme="kiwami" />
             </intent-filter>
         </activity>
         <activity
@@ -347,13 +347,13 @@
             android:excludeFromRecents="true"
             android:exported="true"
             android:launchMode="singleTask">
-            <intent-filter android:label="Discord Login for Dantotsu">
+            <intent-filter android:label="Discord Login for Kiwami">
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="dantotsu" />
+                <data android:scheme="kiwami" />
                 <data android:host="discord" />
             </intent-filter>
         </activity>
@@ -363,17 +363,6 @@
             android:excludeFromRecents="true"
             android:exported="true"
             android:launchMode="singleTask">
-            <intent-filter android:label="Discord Login for Dantotsu">
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:scheme="dantotsu" />
-                <data android:scheme="http" />
-                <data android:scheme="https" />
-                <data android:host="discord.dantotsu.com" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".connections.anilist.UrlMedia"
@@ -381,7 +370,7 @@
             android:excludeFromRecents="true"
             android:exported="true"
             android:launchMode="singleTask">
-            <intent-filter android:label="Open in Dantotsu">
+            <intent-filter android:label="Open in Kiwami">
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
@@ -389,42 +378,31 @@
 
                 <data
                     android:host="anime"
-                    android:scheme="dantotsu" />
+                    android:scheme="kiwami" />
                 <data
                     android:host="watch"
-                    android:scheme="dantotsu" />
+                    android:scheme="kiwami" />
                 <data
                     android:host="manga"
-                    android:scheme="dantotsu" />
+                    android:scheme="kiwami" />
                 <data
                     android:host="read"
-                    android:scheme="dantotsu" />
+                    android:scheme="kiwami" />
                 <data
                     android:host="media"
-                    android:scheme="dantotsu" />
+                    android:scheme="kiwami" />
                 <data
                     android:host="open"
-                    android:scheme="dantotsu" />
+                    android:scheme="kiwami" />
                 <data
                     android:host="user"
-                    android:scheme="dantotsu" />
+                    android:scheme="kiwami" />
                 <data
                     android:host="u"
-                    android:scheme="dantotsu" />
+                    android:scheme="kiwami" />
                 <data
                     android:host="profile"
-                    android:scheme="dantotsu" />
-            </intent-filter>
-            <intent-filter android:label="Open in Dantotsu">
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:scheme="http" />
-                <data android:scheme="https" />
-                <data android:host="dantotsu.app" />
-                <data android:host="www.dantotsu.app" />
+                    android:scheme="kiwami" />
             </intent-filter>
             <intent-filter android:label="@string/read_on_dantotsu">
                 <action android:name="android.intent.action.VIEW" />
@@ -495,7 +473,7 @@
                 <data android:scheme="aniyomi"/>
                 <data android:scheme="novelyomi"/>
                 <data android:scheme="mihon"/>
-                <data android:scheme="dantotsu"/>
+                <data android:scheme="kiwami"/>
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

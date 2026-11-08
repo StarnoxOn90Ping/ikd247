@@ -44,6 +44,20 @@ android {
     compileSdk = 37
     compileSdkMinor = 2
 
+    // Release-style signing for CI builds. The keystore and passwords come from GitHub secrets
+    // (see beta.yml). When they are missing (e.g. local builds), the debug key is used instead.
+    val kiwamiKeystorePath: String? = System.getenv("KIWAMI_KEYSTORE_PATH")
+    signingConfigs {
+        if (!kiwamiKeystorePath.isNullOrEmpty() && file(kiwamiKeystorePath).exists()) {
+            create("kiwami") {
+                storeFile = file(kiwamiKeystorePath)
+                storePassword = System.getenv("KIWAMI_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KIWAMI_KEY_ALIAS")
+                keyPassword = System.getenv("KIWAMI_KEY_PASSWORD")
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "nox.kiwami"
         minSdk = 26
@@ -55,7 +69,7 @@ android {
             .map { it.toInt() }
             .let { (major, minor, patch) -> major * 1_000_000 + minor * 1_000 + patch }
 
-        signingConfig = signingConfigs.getByName("debug")
+        signingConfig = signingConfigs.findByName("kiwami") ?: signingConfigs.getByName("debug")
     }
 
     splits {

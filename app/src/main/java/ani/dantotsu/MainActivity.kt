@@ -530,13 +530,13 @@ class MainActivity : AppCompatActivity() {
                     .show(supportFragmentManager, "DirectTorrentBottomSheet")
                 return
             }
-            if (isRepoHost && (schemeLower == "tachiyomi" || schemeLower == "aniyomi" || schemeLower == "novelyomi" || schemeLower == "mihon" || schemeLower == "dantotsu")) {
+            if (isRepoHost && (schemeLower == "tachiyomi" || schemeLower == "aniyomi" || schemeLower == "novelyomi" || schemeLower == "mihon" || schemeLower == "kiwami")) {
                 val url = uri.getQueryParameter("url") ?: throw Exception("No url for repo import")
                 val (prefName, name) = when (schemeLower) {
                     "tachiyomi", "mihon" -> PrefName.MangaExtensionRepos to "Manga"
                     "aniyomi" -> PrefName.AnimeExtensionRepos to "Anime"
                     "novelyomi" -> PrefName.NovelExtensionRepos to "Novel"
-                    "dantotsu" -> {
+                    "kiwami" -> {
                         val type = uri.getQueryParameter("type")?.lowercase()
                         when (type) {
                             "anime" -> PrefName.AnimeExtensionRepos to "Anime"
@@ -555,7 +555,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 return
             }
-            if (uri.scheme.equals("dantotsu", ignoreCase = true)) {
+            if (uri.scheme.equals("kiwami", ignoreCase = true)) {
                 startActivity(Intent(this, ani.dantotsu.connections.anilist.UrlMedia::class.java).setData(uri))
                 return
             }
