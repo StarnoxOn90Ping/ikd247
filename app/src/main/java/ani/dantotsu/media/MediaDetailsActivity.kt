@@ -247,7 +247,6 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         val viewPager = binding.mediaViewPager
         viewPager.offscreenPageLimit = 2
         viewPager.isUserInputEnabled = false
-        viewPager.setPageTransformer(ZoomOutPageTransformer())
 
 
         val isDownload = intent.getBooleanExtra("download", false)
@@ -557,7 +556,8 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             ) {
                 selected = newIndex
                 binding.commentInputLayout.isVisible = selected == 2
-                viewPager.setCurrentItem(selected, true)
+                // straight swap: no slide, zoom or fade, so nothing re-animates when switching tabs
+                viewPager.setCurrentItem(selected, false)
                 val sel = model.loadSelected(media, isDownload)
                 sel.window = selected
                 model.saveSelected(media.id, sel)
@@ -708,17 +708,23 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
     /** Page-background fade at the bottom of the banner so it melts into the content (no blur involved). */
     private fun setupBannerFade() {
         val bg = getThemeColor(android.R.attr.colorBackground)
-        binding.mediaBannerFade.background = GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(
-                ColorUtils.setAlphaComponent(bg, 0),
-                ColorUtils.setAlphaComponent(bg, 18),
-                ColorUtils.setAlphaComponent(bg, 70),
-                ColorUtils.setAlphaComponent(bg, 150),
-                ColorUtils.setAlphaComponent(bg, 225),
-                bg
-            )
+        val colors = intArrayOf(
+            ColorUtils.setAlphaComponent(bg, (255 * 0.1f).toInt()),
+            ColorUtils.setAlphaComponent(bg, (255 * 0.5f).toInt()),
+            bg
         )
+        val stops = floatArrayOf(0f, 0.45f, 1f)
+        // same as Dartotsu: the page colour covers the whole banner, 10% at the top,
+        // 50% at 45% of the way down and solid at the bottom
+        binding.mediaBannerFade.background = android.graphics.drawable.PaintDrawable().apply {
+            shape = android.graphics.drawable.shapes.RectShape()
+            shaderFactory = object : android.graphics.drawable.ShapeDrawable.ShaderFactory() {
+                override fun resize(width: Int, height: Int): android.graphics.Shader =
+                    android.graphics.LinearGradient(
+                        0f, 0f, 0f, height.toFloat(), colors, stops, android.graphics.Shader.TileMode.CLAMP
+                    )
+            }
+        }
     }
 
     /** Fallback (no banner): the image just fills the backdrop, no panning. */
@@ -839,7 +845,8 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         binding.mediaCollapseContainer.alpha = slideAlpha
         binding.mediaCover.translationX = slideX
         binding.mediaCover.alpha = slideAlpha
-        binding.mediaBannerHolder.alpha = 1f - t
+        // the banner is completely gone by the time the small title starts to appear
+        binding.mediaBannerHolder.alpha = 1f - slideP
 
         val title = binding.mediaTitle
         title.alpha = labelP

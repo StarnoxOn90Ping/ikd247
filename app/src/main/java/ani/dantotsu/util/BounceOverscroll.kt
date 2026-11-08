@@ -16,7 +16,6 @@ import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.ln
 import kotlin.math.min
-import kotlin.math.sin
 
 /**
  * Damped-spring curve: goes 0 -> 1, overshoots past 1 and rings out.
@@ -75,15 +74,22 @@ private class Mover(private val apply: (Float) -> Unit, private val get: () -> F
         }
     }
 
-    /** A fling hit the edge: content is thrown past it by [peak] px, then rings back. */
+    /**
+     * A fling hit the edge: content is thrown past it by [peak] px, then eases back.
+     * One smooth lobe that starts and ends at rest (it never swings to the other side
+     * and never gets cut off at the end).
+     */
     fun kick(peak: Float) {
         cancel()
         anim = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = 800
+            duration = 750
             interpolator = android.view.animation.LinearInterpolator()
             addUpdateListener {
                 val t = it.animatedFraction
-                apply(peak * 1.9f * exp(-3.2f * t) * sin(2.0 * PI * 1.1 * t).toFloat())
+                val rise = 0.2f
+                val lobe = (t / rise) * exp(1f - t / rise)       // 0 -> 1 at t = rise, long soft tail
+                val tail = (1f - t) * (1f - t)                   // forces the end to exactly 0, with zero slope
+                apply(peak * lobe * tail * 1.15f)
             }
             addListener(object : android.animation.AnimatorListenerAdapter() {
                 override fun onAnimationEnd(a: android.animation.Animator) = apply(0f)
