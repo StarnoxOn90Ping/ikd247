@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.metro)
 }
 
-val baseVersion = "3.2.2"
+val baseVersion = "0.1.0"
 
 fun computeGitCommitHash(): String {
     val envHash = System.getenv("COMMIT_HASH")
@@ -36,6 +36,8 @@ fun computeGitCommitHash(): String {
 }
 
 val gitCommitHash = computeGitCommitHash()
+// Only alpha and beta (debug) builds carry the commit hash; release stays clean
+val hashSuffix = if (gitCommitHash.isNotEmpty()) "+$gitCommitHash" else ""
 
 android {
     namespace = "ani.dantotsu"
@@ -47,12 +49,11 @@ android {
         minSdk = 26
         targetSdk = 36
 
-        versionName = if (gitCommitHash.isNotEmpty()) "$baseVersion+$gitCommitHash" else baseVersion
+        versionName = baseVersion
+        // MAJOR * 1,000,000 + MINOR * 1,000 + PATCH (each part must stay below 1000)
         versionCode = baseVersion.split(".")
-            //noinspection WrongGradleMethod
-            .map { it.toInt() * 100 }
-            .joinToString("")
-            .toInt()
+            .map { it.toInt() }
+            .let { (major, minor, patch) -> major * 1_000_000 + minor * 1_000 + patch }
 
         signingConfig = signingConfigs.getByName("debug")
     }
@@ -82,7 +83,7 @@ android {
     buildTypes {
         create("alpha") {
             applicationIdSuffix = ".beta"
-            versionNameSuffix = "-alpha01"
+            versionNameSuffix = "-alpha$hashSuffix"
             manifestPlaceholders["icon_placeholder"] = "@mipmap/ic_launcher_alpha"
             manifestPlaceholders["icon_placeholder_round"] = "@mipmap/ic_launcher_alpha_round"
             isDebuggable = true
@@ -94,7 +95,7 @@ android {
 
         getByName("debug") {
             applicationIdSuffix = ".beta"
-            versionNameSuffix = "-beta01"
+            versionNameSuffix = "-beta$hashSuffix"
             manifestPlaceholders["icon_placeholder"] = "@mipmap/ic_launcher_beta"
             manifestPlaceholders["icon_placeholder_round"] = "@mipmap/ic_launcher_beta_round"
             isDebuggable = false
