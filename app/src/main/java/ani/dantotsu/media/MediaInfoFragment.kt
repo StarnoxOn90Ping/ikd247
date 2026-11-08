@@ -842,8 +842,12 @@ class MediaInfoFragment : Fragment() {
                         val type = uri.getQueryParameter("type") ?: "OP"
                         val number = uri.getQueryParameter("index")?.toIntOrNull() ?: 1
                         val title = uri.getQueryParameter("title") ?: ""
-                        val youtube = uri.getQueryParameter("yt")
+                        val ctx = requireContext()
+                        android.widget.Toast.makeText(
+                            ctx, R.string.themes_finding, android.widget.Toast.LENGTH_SHORT
+                        ).show()
                         viewLifecycleOwner.lifecycleScope.launch {
+                            // 1. AnimeThemes video
                             val songs = withContext(Dispatchers.IO) {
                                 runCatching { ThemeSongs.loadAnimeThemes(media) }
                                     .getOrDefault(emptyList())
@@ -851,13 +855,42 @@ class MediaInfoFragment : Fragment() {
                             val hit = ThemeSongs.match(songs, type, number, title)
                             if (hit != null && _binding != null) {
                                 themePlayer?.stop()
-                                ThemeVideoActivity.open(requireContext(), hit, media.mainName())
-                            } else if (_binding != null) {
-                                snackString(getString(R.string.themes_video_not_found) + (ThemeSongs.lastError?.let { " ($it)" } ?: ""))
-                                if (youtube != null) {
-                                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(youtube)))
-                                }
+                                ThemeVideoActivity.open(ctx, hit, media.mainName())
+                                return@launch
                             }
+                            val reason = ThemeSongs.lastError
+
+                            // 2. the same song on YouTube, played inside the app
+                            val word = if (type.equals("OP", true)) "opening" else "ending"
+                            val query = "${media.mainName()} $word $title"
+                            val ytId = withContext(Dispatchers.IO) {
+                                runCatching { ThemeSongs.findYoutubeId(query) }.getOrNull()
+                            }
+                            val searchUrl = "https://www.youtube.com/results?search_query=" +
+                                    java.net.URLEncoder.encode(query, "utf-8")
+                            if (_binding == null) return@launch
+                            if (ytId != null) {
+                                themePlayer?.stop()
+                                ThemeVideoActivity.openYoutube(
+                                    ctx, ytId, title.ifBlank { word }, media.mainName(), searchUrl
+                                )
+                                return@launch
+                            }
+
+                            // 3. nothing worked: say so and ask before leaving the app
+                            com.google.android.material.dialog.MaterialAlertDialogBuilder(requireActivity())
+                                .setTitle(R.string.themes_failed_title)
+                                .setMessage(
+                                    getString(
+                                        R.string.themes_failed_message,
+                                        reason?.let { " ($it)" } ?: ""
+                                    )
+                                )
+                                .setPositiveButton(R.string.themes_search_youtube) { _, _ ->
+                                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(searchUrl)))
+                                }
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .show()
                         }
                     }
 

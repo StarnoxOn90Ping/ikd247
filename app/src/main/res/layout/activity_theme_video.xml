@@ -16,6 +16,12 @@
             android:layout_gravity="center" />
     </FrameLayout>
 
+    <WebView
+        android:id="@+id/themeVideoWeb"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
     <ProgressBar
         android:id="@+id/themeVideoLoading"
         android:layout_width="48dp"
@@ -50,6 +56,16 @@
             android:fontFamily="@font/poppins_bold"
             android:padding="8dp"
             android:text="@string/themes_open_browser"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/themeVideoSearch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/poppins_bold"
+            android:padding="8dp"
+            android:text="@string/themes_search_youtube"
             android:textColor="?attr/colorPrimary"
             android:textSize="14sp" />
     </LinearLayout>

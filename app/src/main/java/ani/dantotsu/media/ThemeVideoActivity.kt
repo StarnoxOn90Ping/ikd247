@@ -34,6 +34,25 @@ class ThemeVideoActivity : AppCompatActivity() {
         private const val EXTRA_URL = "url"
         private const val EXTRA_TITLE = "title"
         private const val EXTRA_SUBTITLE = "subtitle"
+        private const val EXTRA_YT_ID = "ytId"
+        private const val EXTRA_SEARCH = "search"
+
+        /** Plays a YouTube video inside the app (used when AnimeThemes has no video). */
+        fun openYoutube(
+            context: Context,
+            videoId: String,
+            title: String,
+            subtitle: String?,
+            searchUrl: String?
+        ) {
+            context.startActivity(
+                Intent(context, ThemeVideoActivity::class.java)
+                    .putExtra(EXTRA_YT_ID, videoId)
+                    .putExtra(EXTRA_TITLE, title)
+                    .putExtra(EXTRA_SUBTITLE, subtitle)
+                    .putExtra(EXTRA_SEARCH, searchUrl)
+            )
+        }
 
         fun open(context: Context, song: ThemeSong, animeName: String?) {
             val url = song.videoUrl ?: song.audioUrl ?: return
@@ -43,11 +62,16 @@ class ThemeVideoActivity : AppCompatActivity() {
                 animeName,
                 song.artists.joinToString(", ").takeIf { it.isNotBlank() }
             ).joinToString(" · ")
+            val search = "https://www.youtube.com/results?search_query=" +
+                    java.net.URLEncoder.encode(
+                        listOfNotNull(animeName, song.title).joinToString(" "), "utf-8"
+                    )
             context.startActivity(
                 Intent(context, ThemeVideoActivity::class.java)
                     .putExtra(EXTRA_URL, url)
                     .putExtra(EXTRA_TITLE, label)
                     .putExtra(EXTRA_SUBTITLE, sub)
+                    .putExtra(EXTRA_SEARCH, search)
             )
         }
     }
@@ -59,6 +83,8 @@ class ThemeVideoActivity : AppCompatActivity() {
     private var videoHeight = 0f
     private var seeking = false
     private var url = ""
+    private var searchUrl: String? = null
+    private var webMode = false
 
     private val ticker = object : Runnable {
         override fun run() {
@@ -77,7 +103,11 @@ class ThemeVideoActivity : AppCompatActivity() {
         binding = ActivityThemeVideoBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        url = intent.getStringExtra(EXTRA_URL) ?: run { finish(); return }
+        val ytId = intent.getStringExtra(EXTRA_YT_ID)
+        webMode = ytId != null
+        url = intent.getStringExtra(EXTRA_URL) ?: ytId?.let { "https://www.youtube.com/watch?v=$it" }
+                ?: run { finish(); return }
+        searchUrl = intent.getStringExtra(EXTRA_SEARCH)
         binding.themeVideoTitle.text = intent.getStringExtra(EXTRA_TITLE)
         binding.themeVideoSubtitle.text = intent.getStringExtra(EXTRA_SUBTITLE)
 
@@ -101,6 +131,11 @@ class ThemeVideoActivity : AppCompatActivity() {
         binding.themeVideoBack.setOnClickListener { finish() }
         binding.themeVideoBrowser.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        }
+        binding.themeVideoSearch.visibility =
+            if (searchUrl != null) View.VISIBLE else View.GONE
+        binding.themeVideoSearch.setOnClickListener {
+            searchUrl?.let { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it))) }
         }
         binding.themeVideoStage.setOnClickListener {
             setControlsVisible(binding.themeVideoTop.visibility != View.VISIBLE)
@@ -132,7 +167,37 @@ class ThemeVideoActivity : AppCompatActivity() {
                 scheduleHide()
             }
         })
-        setupPlayer()
+        if (webMode) setupWeb(ytId!!) else setupPlayer()
+    }
+
+    // YouTube inside the app: same embed approach the trailer uses
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun setupWeb(id: String) {
+        val web = binding.themeVideoWeb
+        web.visibility = View.VISIBLE
+        binding.themeVideoStage.visibility = View.GONE
+        binding.themeVideoBottom.visibility = View.GONE
+        binding.themeVideoLoading.visibility = View.GONE
+        web.settings.javaScriptEnabled = true
+        web.settings.domStorageEnabled = true
+        web.settings.mediaPlaybackRequiresUserGesture = false
+        web.setBackgroundColor(0xFF000000.toInt())
+        web.webChromeClient = android.webkit.WebChromeClient()
+        // keep the video below the title bar, which stays visible in this mode
+        binding.themeVideoTop.post {
+            val d = resources.displayMetrics.density
+            val lp = web.layoutParams as FrameLayout.LayoutParams
+            lp.topMargin = (binding.themeVideoTop.height - 24 * d).toInt()
+            web.layoutParams = lp
+        }
+        val html = """
+            <html><body style="margin:0;background:#000">
+            <iframe src="https://www.youtube-nocookie.com/embed/$id?autoplay=1&playsinline=1&rel=0"
+                frameborder="0" allow="autoplay; encrypted-media; fullscreen" allowfullscreen
+                style="position:absolute;top:0;left:0;width:100%;height:100%"></iframe>
+            </body></html>
+        """.trimIndent()
+        web.loadDataWithBaseURL("https://www.youtube-nocookie.com", html, "text/html", "utf-8", null)
     }
 
     private fun setupPlayer() {
@@ -201,6 +266,7 @@ class ThemeVideoActivity : AppCompatActivity() {
     }
 
     private fun setControlsVisible(visible: Boolean) {
+        if (webMode) return
         handler.removeCallbacks(hideControls)
         val v = if (visible) View.VISIBLE else View.GONE
         binding.themeVideoTop.visibility = v
@@ -220,13 +286,23 @@ class ThemeVideoActivity : AppCompatActivity() {
 
     override fun onPause() {
         player?.pause()
+        if (webMode) binding.themeVideoWeb.onPause()
         super.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (webMode) binding.themeVideoWeb.onResume()
     }
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
         player?.release()
         player = null
+        if (webMode) {
+            binding.themeVideoWeb.loadUrl("about:blank")
+            binding.themeVideoWeb.destroy()
+        }
         super.onDestroy()
     }
 }

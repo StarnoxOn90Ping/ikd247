@@ -255,6 +255,28 @@ object ThemeSongs {
         return songs
     }
 
+    /** First YouTube video id for a search query (used when AnimeThemes has no video). */
+    suspend fun findYoutubeId(query: String): String? {
+        return try {
+            withTimeout(8000) {
+                val html = client.get(
+                    "https://www.youtube.com/results",
+                    headers = mapOf(
+                        "User-Agent" to headers["User-Agent"]!!,
+                        "Accept-Language" to "en-US,en;q=0.9"
+                    ),
+                    params = mapOf("search_query" to query, "sp" to "EgIQAQ=="),
+                    cookies = mapOf("CONSENT" to "YES+1", "SOCS" to "CAI"),
+                    cacheTime = 0
+                ).text
+                Regex("\"videoId\":\"([A-Za-z0-9_-]{11})\"").find(html)?.groupValues?.get(1)
+            }
+        } catch (e: Exception) {
+            Logger.log("ThemeSongs: YouTube lookup failed: ${e.message}")
+            null
+        }
+    }
+
     private fun JsonElement.str(): String? =
         (this as? JsonPrimitive)?.takeIf { it.isString }?.contentOrNull
 
