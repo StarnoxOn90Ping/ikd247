@@ -245,8 +245,11 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
                 GradientDrawable.Orientation.TOP_BOTTOM,
                 intArrayOf(
                     bg,
-                    ColorUtils.setAlphaComponent(bg, 170),
-                    ColorUtils.setAlphaComponent(bg, 60),
+                    ColorUtils.setAlphaComponent(bg, 240),
+                    ColorUtils.setAlphaComponent(bg, 205),
+                    ColorUtils.setAlphaComponent(bg, 140),
+                    ColorUtils.setAlphaComponent(bg, 70),
+                    ColorUtils.setAlphaComponent(bg, 22),
                     ColorUtils.setAlphaComponent(bg, 0)
                 )
             )

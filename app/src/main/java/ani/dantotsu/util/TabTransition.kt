@@ -21,7 +21,12 @@ class TabPageTransformer : ViewPager2.PageTransformer {
         val p = position.coerceIn(-1f, 1f)
         val a = abs(p)
         if (a >= 1f) {
+            // Off-screen pages must go back to their real position. Left shifted by the parallax they
+            // sit over the screen invisibly and swallow every touch on that half.
             page.alpha = 0f
+            page.translationX = 0f
+            page.scaleX = 1f
+            page.scaleY = 1f
             return
         }
         val scale = 1f - 0.07f * a
