@@ -52,7 +52,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="-64dp"
-android:clipChildren="false"
+                android:clipChildren="false"
                 android:orientation="vertical">
 
                 <LinearLayout
@@ -163,6 +163,7 @@ android:clipChildren="false"
 
                 <Button
                     android:id="@+id/mediaAddToList"
+                    android:layout_marginBottom="72dp"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
@@ -214,7 +215,7 @@ android:clipChildren="false"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_gravity="center_vertical"
-                    android:background="?android:colorBackground"
+                    android:background="@android:color/transparent"
                     android:ellipsize="marquee"
                     android:focusable="true"
                     android:focusableInTouchMode="true"

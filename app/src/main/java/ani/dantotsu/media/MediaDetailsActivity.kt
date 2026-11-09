@@ -63,6 +63,8 @@ import ani.dantotsu.snackString
 import ani.dantotsu.statusBarHeight
 import ani.dantotsu.themes.ThemeManager
 import ani.dantotsu.util.LauncherWrapper
+import ani.dantotsu.util.TabPageTransformer
+import ani.dantotsu.util.switchTabSmoothly
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
@@ -220,6 +222,17 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         binding.mediaCollapseContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin = coverTop }
         binding.mediaBannerHolder.updateLayoutParams { height = coverTop + (72 * density).toInt() }
         setupBannerFade()
+        // One flat colour for the whole header: no Material elevation tint, lift colour, scrim or
+        // shadow, so nothing lighter or darker shows above or below the small title when collapsed.
+        binding.mediaAppBar.apply {
+            background = android.graphics.drawable.ColorDrawable(getThemeColor(android.R.attr.colorBackground))
+            setLiftOnScroll(false)
+            stateListAnimator = null
+            elevation = 0f
+            translationZ = 0f
+        }
+        binding.mediaCollapsing.contentScrim = null
+        binding.mediaCollapsing.statusBarScrim = null
         binding.mediaClose.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
         binding.mediaHome.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
         binding.incognito.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
@@ -247,6 +260,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         val viewPager = binding.mediaViewPager
         viewPager.offscreenPageLimit = 2
         viewPager.isUserInputEnabled = false
+        viewPager.setPageTransformer(TabPageTransformer())
 
 
         val isDownload = intent.getBooleanExtra("download", false)
@@ -556,8 +570,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             ) {
                 selected = newIndex
                 binding.commentInputLayout.isVisible = selected == 2
-                // straight swap: no slide, zoom or fade, so nothing re-animates when switching tabs
-                viewPager.setCurrentItem(selected, false)
+                viewPager.switchTabSmoothly(selected)
                 val sel = model.loadSelected(media, isDownload)
                 sel.window = selected
                 model.saveSelected(media.id, sel)
