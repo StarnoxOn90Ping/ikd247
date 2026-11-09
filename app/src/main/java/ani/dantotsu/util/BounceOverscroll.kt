@@ -211,9 +211,32 @@ class BounceNestedScrollView @JvmOverloads constructor(
         return handled
     }
 
+    private fun releasePull() {
+        if (pull != 0f) {
+            pull = 0f
+            mover.settle()
+        }
+    }
+
+    // a gesture that ended somewhere we never saw the UP of (e.g. a nested list) must not leave a bounce behind
+    override fun stopNestedScroll(type: Int) {
+        super.stopNestedScroll(type)
+        if (type == ViewCompat.TYPE_TOUCH) releasePull()
+    }
+
+    override fun onStopNestedScroll(target: android.view.View, type: Int) {
+        super.onStopNestedScroll(target, type)
+        if (type == ViewCompat.TYPE_TOUCH) releasePull()
+    }
+
     override fun dispatchNestedPreScroll(
         dx: Int, dy: Int, consumed: IntArray?, offsetInWindow: IntArray?, type: Int
     ): Boolean {
+        // the bounce state only makes sense while we really are at that edge; otherwise drop it so it can never swallow scrolling
+        if (pull > 0f && canScrollVertically(-1) || pull < 0f && canScrollVertically(1)) {
+            pull = 0f
+            mover.settle()
+        }
         var used = 0
         if (type == ViewCompat.TYPE_TOUCH && pull != 0f && pull * dy > 0f) {
             // finger is travelling back towards the content: unwind the bounce first
@@ -238,7 +261,7 @@ class BounceNestedScrollView @JvmOverloads constructor(
         if (rest == 0) return
         if (type == ViewCompat.TYPE_TOUCH) {
             mover.cancel()
-            pull -= rest
+            pull = (pull - rest).coerceIn(-maxOffset * 6f, maxOffset * 6f)
             move(rubber(pull, maxOffset))
         } else if (!mover.running && pull == 0f) {
             // a fling ran into the edge: throw the content past it and let it ring back

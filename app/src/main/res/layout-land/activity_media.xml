@@ -213,6 +213,14 @@
                     tools:ignore="UselessParent">
 
 
+                    <!-- flat colour behind the small title (status bar included), faded in with it -->
+                    <View
+                        android:id="@+id/mediaBarBackdrop"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:alpha="0"
+                        android:importantForAccessibility="no" />
+
                     <TextView
                         android:id="@+id/mediaTitle"
                         android:layout_width="match_parent"
@@ -252,6 +260,16 @@
                 android:nestedScrollingEnabled="false"
                 tools:ignore="SpeakableTextPresentCheck" />
         </LinearLayout>
+
+        <!-- soft edge under the collapsed bar so scrolling text fades out instead of being cut -->
+        <View
+            android:id="@+id/mediaBarFade"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:alpha="0"
+            android:importantForAccessibility="no"
+            app:layout_anchor="@id/mediaAppBar"
+            app:layout_anchorGravity="bottom" />
 
         <androidx.cardview.widget.CardView
             android:id="@+id/mediaCover"

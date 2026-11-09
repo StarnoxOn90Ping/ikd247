@@ -231,6 +231,26 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             elevation = 0f
             translationZ = 0f
         }
+        binding.mediaAppBar.setStatusBarForeground(null)
+        binding.mediaAppBar.backgroundTintList = null
+        run {
+            // flat page colour behind the small title, reaching up under the status bar
+            val bg = getThemeColor(android.R.attr.colorBackground)
+            binding.mediaBarBackdrop.setBackgroundColor(bg)
+            (binding.mediaBarBackdrop.layoutParams as FrameLayout.LayoutParams).topMargin = -statusBarHeight
+            (binding.mediaBarBackdrop.parent as ViewGroup).clipChildren = false
+            (binding.mediaBarBackdrop.parent.parent as ViewGroup).clipChildren = false
+            // soft fade under the bar
+            binding.mediaBarFade.background = GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                intArrayOf(
+                    bg,
+                    ColorUtils.setAlphaComponent(bg, 170),
+                    ColorUtils.setAlphaComponent(bg, 60),
+                    ColorUtils.setAlphaComponent(bg, 0)
+                )
+            )
+        }
         binding.mediaCollapsing.contentScrim = null
         binding.mediaCollapsing.statusBarScrim = null
         binding.mediaClose.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
@@ -861,6 +881,8 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         binding.mediaCover.alpha = slideAlpha
         // the banner is completely gone by the time the small title starts to appear
         binding.mediaBannerHolder.alpha = 1f - slideP
+        binding.mediaBarBackdrop.alpha = labelP
+        binding.mediaBarFade.alpha = labelP
 
         val title = binding.mediaTitle
         title.alpha = labelP
