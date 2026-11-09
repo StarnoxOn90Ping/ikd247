@@ -261,16 +261,6 @@
                 tools:ignore="SpeakableTextPresentCheck" />
         </LinearLayout>
 
-        <!-- soft edge under the collapsed bar so scrolling text fades out instead of being cut -->
-        <View
-            android:id="@+id/mediaBarFade"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:alpha="0"
-            android:importantForAccessibility="no"
-            app:layout_anchor="@id/mediaAppBar"
-            app:layout_anchorGravity="bottom" />
-
         <androidx.cardview.widget.CardView
             android:id="@+id/mediaCover"
             android:layout_width="wrap_content"

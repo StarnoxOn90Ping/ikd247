@@ -240,19 +240,6 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
             (binding.mediaBarBackdrop.layoutParams as FrameLayout.LayoutParams).topMargin = -statusBarHeight
             (binding.mediaBarBackdrop.parent as ViewGroup).clipChildren = false
             (binding.mediaBarBackdrop.parent.parent as ViewGroup).clipChildren = false
-            // soft fade under the bar
-            binding.mediaBarFade.background = GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(
-                    bg,
-                    ColorUtils.setAlphaComponent(bg, 240),
-                    ColorUtils.setAlphaComponent(bg, 205),
-                    ColorUtils.setAlphaComponent(bg, 140),
-                    ColorUtils.setAlphaComponent(bg, 70),
-                    ColorUtils.setAlphaComponent(bg, 22),
-                    ColorUtils.setAlphaComponent(bg, 0)
-                )
-            )
         }
         binding.mediaCollapsing.contentScrim = null
         binding.mediaCollapsing.statusBarScrim = null
@@ -885,7 +872,6 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         // the banner is completely gone by the time the small title starts to appear
         binding.mediaBannerHolder.alpha = 1f - slideP
         binding.mediaBarBackdrop.alpha = labelP
-        binding.mediaBarFade.alpha = labelP
 
         val title = binding.mediaTitle
         title.alpha = labelP

@@ -38,26 +38,47 @@ class TabPageTransformer : ViewPager2.PageTransformer {
 }
 
 private val running = WeakHashMap<ViewPager2, ValueAnimator>()
+private val wanted = WeakHashMap<ViewPager2, Int>()
+private val guarded = WeakHashMap<ViewPager2, Boolean>()
+
+/** Whatever happens while switching quickly, the pager always ends on the tab that was asked for last. */
+private fun ViewPager2.ensureGuard() {
+    if (guarded.put(this, true) != null) return
+    val pager = this
+    registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+        override fun onPageScrollStateChanged(state: Int) {
+            if (state != ViewPager2.SCROLL_STATE_IDLE) return
+            if (running[pager]?.isRunning == true || pager.isFakeDragging) return
+            val w = wanted[pager] ?: return
+            if (pager.currentItem != w) pager.setCurrentItem(w, false)
+        }
+    })
+}
 
 /**
  * Switches to [item] with a longer, softer glide than ViewPager2's built-in smooth scroll
- * (fast start, long gentle landing). Falls back to the built-in one if a switch is already running.
+ * (fast start, long gentle landing). If a switch is still in flight the glide is stopped cleanly
+ * and the built-in smooth scroll takes over, so quick taps never leave the pager on a wrong tab.
  */
 fun ViewPager2.switchTabSmoothly(item: Int, duration: Long = 480L) {
-    val diff = item - currentItem
-    if (diff == 0) return
+    wanted[this] = item
+    ensureGuard()
     if (width == 0) {
         setCurrentItem(item, false)
         return
     }
-    if (isFakeDragging || running[this]?.isRunning == true) {
-        // a previous glide is still running: stop it cleanly (this ends its fake drag), then
-        // hand over to the built-in smooth scroll. setCurrentItem throws while fake dragging.
+    val busy = isFakeDragging || running[this]?.isRunning == true ||
+        scrollState != ViewPager2.SCROLL_STATE_IDLE
+    if (busy) {
+        // stop the running glide (its end handler finishes the fake drag), then re-aim.
+        // setCurrentItem throws while fake dragging.
         running[this]?.cancel()
         if (isFakeDragging) endFakeDrag()
         setCurrentItem(item, true)
         return
     }
+    val diff = item - currentItem
+    if (diff == 0) return
     val total = width * diff
     var last = 0
     val animator = ValueAnimator.ofInt(0, total).apply {
