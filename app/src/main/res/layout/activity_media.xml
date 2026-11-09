@@ -51,7 +51,6 @@
                 android:id="@+id/mediaHeaderColumn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="-64dp"
                 android:clipChildren="false"
                 android:orientation="vertical">
 
@@ -163,7 +162,7 @@
 
                 <Button
                     android:id="@+id/mediaAddToList"
-                    android:layout_marginBottom="72dp"
+                    android:layout_marginBottom="8dp"
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
@@ -194,6 +193,7 @@
         </com.google.android.material.appbar.CollapsingToolbarLayout>
 
         <LinearLayout
+            android:layout_marginTop="-64dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">

@@ -236,7 +236,8 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
         binding.mediaClose.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
         binding.mediaHome.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
         binding.incognito.updateLayoutParams<ViewGroup.MarginLayoutParams> { topMargin += statusBarHeight }
-        binding.mediaCollapsing.minimumHeight = statusBarHeight
+        // the pinned small-title row overlaps the bottom 64dp of the collapsing header (see layout)
+        binding.mediaCollapsing.minimumHeight = statusBarHeight + (64 * density).toInt()
 
         binding.mediaTitle.isSelected = true
 

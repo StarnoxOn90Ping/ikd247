@@ -46,6 +46,10 @@ fun ViewPager2.switchTabSmoothly(item: Int, duration: Long = 480L) {
         return
     }
     if (isFakeDragging || running[this]?.isRunning == true) {
+        // a previous glide is still running: stop it cleanly (this ends its fake drag), then
+        // hand over to the built-in smooth scroll. setCurrentItem throws while fake dragging.
+        running[this]?.cancel()
+        if (isFakeDragging) endFakeDrag()
         setCurrentItem(item, true)
         return
     }
