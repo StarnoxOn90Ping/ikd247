@@ -592,17 +592,6 @@ object SettingsRegistry {
         )
         list.add(
             SearchableSetting(
-                title = context.getString(R.string.forks),
-                desc = context.getString(R.string.forks_desc),
-                icon = R.drawable.ic_round_restaurant_24,
-                category = context.getString(R.string.about),
-                breadcrumbs = "${context.getString(R.string.settings)} > ${context.getString(R.string.about)}",
-                targetActivity = SettingsAboutActivity::class.java,
-                highlightKey = context.getString(R.string.forks)
-            )
-        )
-        list.add(
-            SearchableSetting(
                 title = context.getString(R.string.privacy_policy),
                 desc = context.getString(R.string.privacy_policy_desc),
                 icon = R.drawable.ic_incognito_24,

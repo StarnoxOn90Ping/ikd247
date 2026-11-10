@@ -435,7 +435,6 @@
     <string name="timestamp_proxy">Use Proxy for Timestamps</string>
     <string name="check_app_updates">Check for Updates</string>
     <string name="author">Author</string>
-    <string name="forks">Versions</string>
     <string name="faq">FAQ</string>
     <string name="accounts">Accounts</string>
     <string name="addons">Add-ons</string>
@@ -452,7 +451,7 @@
     <string name="checking_subscriptions">Notification for Checking Subscriptions</string>
     <string name="subscriptions_checking_time_s">Subscriptions Update Frequency : %1$s</string>
     <string name="subscriptions_checking_time">Subscriptions Update Frequency</string>
-    <string name="subscriptions_info">Amount of time for Dantotsu to periodically check for new Episodes/Chapters\n(Less time will cause more battery consumption)</string>
+    <string name="subscriptions_info">Amount of time for Kiwami to periodically check for new Episodes/Chapters\n(Less time will cause more battery consumption)</string>
     <string name="do_not_update">Don\'t Update</string>
     <string name="loading_chap_number">Loading Chapter %1$s</string>
     <string name="sort_by_release_date">Sort by Release Date</string>
@@ -727,7 +726,7 @@
     <string name="onboarding_maybe_later">Maybe later</string>
     <string name="onboarding_start_fresh">I\'ll start fresh</string>
     <string name="onboarding_get_started">Let\'s go</string>
-    <string name="onboarding_welcome_title">Welcome to Dantotsu Enhanced</string>
+    <string name="onboarding_welcome_title">Welcome to Kiwami</string>
     <string name="onboarding_welcome_desc">Your personal tracker for anime, manga and novels. Beautiful, fast and set up in under a minute.</string>
     <string name="onboarding_track_title">Track. Organise. Sync.</string>
     <string name="onboarding_track_desc">Keep tabs on every anime, manga and novel you love, follow release countdowns, and sync your lists with AniList so they\'re always up to date.</string>
@@ -735,7 +734,7 @@
     <string name="onboarding_restore_desc">Restore a backup to bring back your settings and preferences in one tap. New here? Just start fresh.</string>
     <string name="onboarding_restore_action">Restore from backup</string>
     <string name="onboarding_disclaimer_title">Quick heads-up</string>
-    <string name="onboarding_disclaimer_desc">Dantotsu Enhanced is a tracking app. It doesn\'t host, store or distribute any media.</string>
+    <string name="onboarding_disclaimer_desc">Kiwami is a tracking app. It doesn\'t host, store or distribute any media.</string>
     <string name="onboarding_disclaimer_note">You\'re responsible for how you use it, and the developers aren\'t liable for any misuse.</string>
     <string name="onboarding_permissions_title">Almost there</string>
     <string name="onboarding_permissions_desc">A few permissions keep everything running smoothly. All optional, all changeable later.</string>
@@ -753,7 +752,7 @@
     <string name="onboarding_themes_desc">Pick the colour that suits you best.</string>
     <string name="onboarding_themes_hint">You can change this anytime in Settings → Theme.</string>
     <string name="onboarding_done_title">You\'re all set!</string>
-    <string name="onboarding_done_desc">Enjoy Dantotsu Enhanced. Your library is waiting.</string>
+    <string name="onboarding_done_desc">Enjoy Kiwami. Your library is waiting.</string>
     <string name="airing_channel_name">New Episode Alerts</string>
     <string name="airing_notification_text">Episode %1$d has just been released!</string>
     <string name="notifications_permission_denied">Notifications are blocked, so alerts can\'t be delivered. Enable them in system settings.</string>
@@ -837,7 +836,6 @@
     <string name="purge_manga_downloads">Delete all Manga Downloads</string>
     <string name="purge_novel_downloads">Delete all Novel Downloads</string>
     <string name="requires_android_12">Requires Android 12+</string>
-    <string name="share_username_in_crash_reports">Share username</string>
     <string name="pinned_sources">Pinned Sources</string>
     <string name="backup_restore">Backup and Restore</string>
     <string name="restore_settings">Import Settings</string>
@@ -1040,12 +1038,10 @@ Non quae tempore quo provident laudantium qui illo dolor vel quia dolor et exerc
     <string name="restrict_messages_desc">Allow only users I follow to message me</string>
 
     <string name="notifications_desc">Customise your news and updates</string>
-    <string name="about_desc">Learn more about Dantotsu</string>
-    <string name="faq_desc">General questions about Dantotsu</string>
+    <string name="about_desc">Learn more about Kiwami</string>
+    <string name="faq_desc">General questions about Kiwami</string>
     <string name="check_app_updates_desc">Check Github for app updates</string>
-    <string name="share_username_in_crash_reports_desc">Share username in crash reports</string>
     <string name="devs_desc">Dantotsu\'s very own unpaid labours </string>
-    <string name="forks_desc">More like Dantotsu</string>
     <string name="disclaimer_desc">Something to keep in mind</string>
     <string name="enable_torrent_desc">This will run a torrent server in the background</string>
     <string name="player_settings_desc">All the player related settings</string>
@@ -1455,7 +1451,7 @@ Non quae tempore quo provident laudantium qui illo dolor vel quia dolor et exerc
     <string name="restore_backup">Restore Backup</string>
     <string name="restore_backup_desc">Import app settings from a backup file</string>
     <string name="change_download_directory">Change Download Directory</string>
-    <string name="change_download_directory_desc">Choose a directory to store Dantotsu downloads</string>
+    <string name="change_download_directory_desc">Choose a directory to store Kiwami downloads</string>
     <string name="change_download_directory_confirm">Are you sure you want to change the download directory? Existing downloads will remain in the old directory.</string>
     <string name="purge_downloads">Purge All Downloads</string>
     <string name="purge_downloads_desc">Delete all downloaded anime, manga, and novel files to free up storage</string>

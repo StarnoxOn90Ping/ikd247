@@ -125,17 +125,6 @@ class App : Application(), GraphProvider<AppGraph> {
         }
 
         crashlytics.setCrashlyticsCollectionEnabled(!DisabledReports)
-        (PrefManager.getVal(PrefName.SharedUserID) as Boolean).let {
-            if (!it) return@let
-            val dUsername = PrefManager.getVal(PrefName.DiscordUserName, null as String?)
-            val aUsername = PrefManager.getVal(PrefName.AnilistUserName, null as String?)
-            if (dUsername != null) {
-                crashlytics.setCustomKey("dUsername", dUsername)
-            }
-            if (aUsername != null) {
-                crashlytics.setCustomKey("aUsername", aUsername)
-            }
-        }
         crashlytics.setCustomKey("device Info", SettingsActivity.getDeviceInfo())
 
         initializeNetwork()

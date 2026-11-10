@@ -186,7 +186,7 @@ class ContinueWidget : AppWidgetProvider() {
 
             if (isActive) {
                 headerText = prefs.getString(KEY_ACTIVE_HEADER, "CURRENTLY ACTIVE") ?: "CURRENTLY ACTIVE"
-                titleText = prefs.getString(KEY_ACTIVE_TITLE, "Dantotsu") ?: "Dantotsu"
+                titleText = prefs.getString(KEY_ACTIVE_TITLE, "Kiwami") ?: "Kiwami"
                 detailText = prefs.getString(KEY_ACTIVE_DETAIL, "In Progress") ?: "In Progress"
                 coverUrl = prefs.getString(KEY_ACTIVE_COVER, null)
                 logoIconRes = prefs.getInt(KEY_ACTIVE_ICON_RES, R.drawable.ic_round_play_circle_24)
@@ -209,7 +209,7 @@ class ContinueWidget : AppWidgetProvider() {
                 } else {
                     headerText = "DANTOTSU"
                     titleText = "Nothing active"
-                    detailText = "Open Dantotsu to start"
+                    detailText = "Open Kiwami to start"
                     coverUrl = null
                     logoIconRes = R.drawable.ic_dantotsu_round
                 }

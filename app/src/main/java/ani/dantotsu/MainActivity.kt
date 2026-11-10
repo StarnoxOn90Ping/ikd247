@@ -425,7 +425,7 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (!(PrefManager.getVal(PrefName.AllowOpeningLinks) as Boolean)) {
                 CustomBottomDialog.newInstance().apply {
-                    title = "Allow Dantotsu to automatically open Anilist Links?"
+                    title = "Allow Kiwami to automatically open Anilist Links?"
                     val md = "Open settings & click +Add Links & select Anilist urls"
                     addView(TextView(this@MainActivity).apply {
                         val markWon =

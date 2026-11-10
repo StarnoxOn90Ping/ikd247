@@ -10,7 +10,6 @@ import ani.dantotsu.settings.saving.internal.Pref
 
 enum class PrefName(val data: Pref) {
     //General
-    SharedUserID(Pref(Location.General, Boolean::class, true)),
     // Streak data as JSON. Lives in Location.General, which is exportable, so backups include it.
     StreakData(Pref(Location.General, String::class, "")),
     // Watch / read time per day as JSON (Home info pill). Exportable, so backups include it.

@@ -70,17 +70,6 @@ class SettingsAboutActivity : AppCompatActivity() {
                     ),
                     Settings(
                         type = 2,
-                        name = getString(R.string.share_username_in_crash_reports),
-                        desc = getString(R.string.share_username_in_crash_reports_desc),
-                        icon = R.drawable.ic_round_search_24,
-                        isChecked = PrefManager.getVal(PrefName.SharedUserID),
-                        switch = { isChecked, _ ->
-                            PrefManager.setVal(PrefName.SharedUserID, isChecked)
-                        },
-                        isVisible = !BuildConfig.FLAVOR.contains("fdroid")
-                    ),
-                    Settings(
-                        type = 2,
                         name = getString(R.string.log_to_file),
                         desc = getString(R.string.logging_warning),
                         icon = R.drawable.ic_round_edit_note_24,
@@ -116,15 +105,6 @@ class SettingsAboutActivity : AppCompatActivity() {
                         icon = R.drawable.ic_round_accessible_forward_24,
                         onClick = {
                             DevelopersDialogFragment().show(supportFragmentManager, "dialog")
-                        }
-                    ),
-                    Settings(
-                        type = 1,
-                        name = getString(R.string.forks),
-                        desc = getString(R.string.forks_desc),
-                        icon = R.drawable.ic_round_restaurant_24,
-                        onClick = {
-                            ForksDialogFragment().show(supportFragmentManager, "dialog")
                         }
                     ),
                     Settings(

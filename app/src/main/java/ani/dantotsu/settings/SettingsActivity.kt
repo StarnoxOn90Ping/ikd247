@@ -375,7 +375,7 @@ class SettingsActivity : AppCompatActivity() {
     companion object {
         fun getDeviceInfo(): String {
             return """
-                dantotsu Version: ${BuildConfig.VERSION_NAME}
+                Kiwami Version: ${BuildConfig.VERSION_NAME}
                 Device: $BRAND $DEVICE
                 Architecture: ${getArch()}
                 OS Version: $CODENAME $RELEASE ($SDK_INT)
