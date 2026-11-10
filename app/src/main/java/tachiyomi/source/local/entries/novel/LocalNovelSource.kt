@@ -253,7 +253,7 @@ class LocalNovelSource(
 
     companion object {
         const val ID = 2L
-        const val HELP_URL = "https://dantotsu.app"
+        const val HELP_URL = "https://github.com/StarnoxOn90Ping/Kiwami"
         private val LATEST_THRESHOLD = TimeUnit.DAYS.toMillis(7)
 
         fun getBaseDirectory(context: Context): DocumentFile? {

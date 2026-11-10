@@ -184,6 +184,7 @@
                 android:fontFamily="@font/poppins_bold"
                 android:maxLines="3"
                 android:text="@string/donate_desc"
+                android:visibility="gone"
                 android:textAlignment="center"
                 tools:ignore="TextContrastCheck" />
 
@@ -194,7 +195,8 @@
                 android:gravity="center"
                 android:orientation="horizontal"
                 android:paddingTop="16dp"
-                android:paddingBottom="16dp">
+                android:paddingBottom="16dp"
+                android:visibility="gone">
 
                 <ImageView
                     android:id="@+id/settingBuyMeCoffee"
@@ -212,6 +214,7 @@
                 android:ellipsize="end"
                 android:maxLines="3"
                 android:text="@string/donate_goal"
+                android:visibility="gone"
                 android:textAlignment="center"
                 tools:ignore="TextContrastCheck" />
 
