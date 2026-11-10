@@ -402,6 +402,13 @@ class EpisodeAdapter(
         }
     }
 
+    /**
+     * The alpha a view has in its layout (the dimming cover is only 33% opaque). Animations must
+     * return to that value, never to 1, or the cover turns into a solid block hiding the tile.
+     */
+    private val baseAlpha = java.util.WeakHashMap<View, Float>()
+    private fun base(v: View): Float = baseAlpha.getOrPut(v) { v.alpha }
+
     private class WatchViews(
         val cover: View,
         val badge: View?,
@@ -429,8 +436,8 @@ class EpisodeAdapter(
         v.cover.animate().cancel()
         v.badge?.animate()?.cancel()
         holder.itemView.animate().cancel()
-        v.cover.alpha = 1f
-        v.badge?.let { it.alpha = 1f; it.scaleX = 1f; it.scaleY = 1f }
+        v.cover.alpha = base(v.cover)
+        v.badge?.let { it.alpha = base(it); it.scaleX = 1f; it.scaleY = 1f }
         holder.itemView.scaleX = 1f
         holder.itemView.scaleY = 1f
     }
@@ -452,13 +459,13 @@ class EpisodeAdapter(
             // the tile dims in, the check pops in just after, and the whole card gives a little nod
             v.cover.alpha = 0f
             v.cover.visibility = View.VISIBLE
-            v.cover.animate().alpha(1f).setDuration(650).setInterpolator(soft).start()
+            v.cover.animate().alpha(base(v.cover)).setDuration(650).setInterpolator(soft).start()
             v.badge?.let {
                 it.alpha = 0f
                 it.scaleX = 0.2f
                 it.scaleY = 0.2f
                 it.visibility = View.VISIBLE
-                it.animate().alpha(1f).scaleX(1f).scaleY(1f)
+                it.animate().alpha(base(it)).scaleX(1f).scaleY(1f)
                     .setStartDelay(240).setDuration(520).setInterpolator(pop).start()
             }
             root.animate().cancel()
@@ -470,12 +477,12 @@ class EpisodeAdapter(
             // un-watched: the dimming lifts and the check shrinks away
             v.cover.animate().alpha(0f).setDuration(380).setInterpolator(soft).withEndAction {
                 v.cover.visibility = View.GONE
-                v.cover.alpha = 1f
+                v.cover.alpha = base(v.cover)
             }.start()
             v.badge?.let { b ->
                 b.animate().alpha(0f).scaleX(0.2f).scaleY(0.2f).setDuration(260).withEndAction {
                     b.visibility = View.GONE
-                    b.alpha = 1f
+                    b.alpha = base(b)
                     b.scaleX = 1f
                     b.scaleY = 1f
                 }.start()
