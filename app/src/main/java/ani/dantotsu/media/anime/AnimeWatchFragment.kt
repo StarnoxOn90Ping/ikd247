@@ -628,7 +628,7 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
         episodeAdapter.clearSelection()
         view?.postDelayed({
             if (_binding != null && ::episodeAdapter.isInitialized) {
-                episodeAdapter.notifyDataSetChanged()
+                episodeAdapter.refreshWatchState()
             }
         }, 1500)
     }
@@ -667,7 +667,7 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
                         Refresh.all()
                         withContext(Dispatchers.Main) {
                             if (_binding != null && ::episodeAdapter.isInitialized) {
-                                episodeAdapter.notifyDataSetChanged()
+                                episodeAdapter.refreshWatchState()
                             }
                             toast("Progress set to episode $newProgress")
                         }
@@ -1122,9 +1122,6 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
         model.saveSelected(media.id, selected)
         headerAdapter.handleEpisodes()
         val isDownloaded = model.watchSources!!.isDownloadedSource(media.selected!!.sourceIndex)
-        episodeAdapter.offlineMode = isDownloaded
-        episodeAdapter.clearSelection()
-        episodeAdapter.notifyItemRangeRemoved(0, episodeAdapter.arr.size)
         var arr: ArrayList<Episode> = arrayListOf()
         if (media.anime!!.episodes != null) {
             val end = if (end != null && end!! < media.anime!!.episodes!!.size) end else null
@@ -1135,15 +1132,37 @@ class AnimeWatchFragment : Fragment(), AnimeWatchAdapter.ScanlatorSelectionListe
             if (reverse)
                 arr = (arr.reversed() as? ArrayList<Episode>) ?: arr
         }
-        episodeAdapter.arr = arr
-        episodeAdapter.updateType(style ?: PrefManager.getVal(PrefName.AnimeDefaultView))
-        episodeAdapter.notifyItemRangeInserted(0, arr.size)
-        episodeAdapter.clearAllDownloaded()
+        val newType = style ?: PrefManager.getVal(PrefName.AnimeDefaultView)
+        val downloaded = linkedMapOf<String, Double>()
         for (download in downloadManager.animeDownloadedTypes) {
             if (media.compareName(download.titleName)) {
-                episodeAdapter.addToDownloadedEpisodes(download.chapterName, downloadManager.getSize(download))
+                downloaded[download.chapterName] = downloadManager.getSize(download)
             }
         }
+
+        // Same episodes, same order, same layout (e.g. just back from the player with new progress):
+        // keep the list as it is and only update what changed. The tile you just watched dims in
+        // with an animation instead of the whole list being rebuilt.
+        val old = episodeAdapter.arr
+        val sameList = old.isNotEmpty() &&
+            old.size == arr.size &&
+            episodeAdapter.offlineMode == isDownloaded &&
+            episodeAdapter.currentType == newType &&
+            old.indices.all { old[it].number == arr[it].number }
+        if (sameList) {
+            episodeAdapter.softUpdate(arr)
+            episodeAdapter.syncDownloaded(downloaded)
+            return
+        }
+
+        episodeAdapter.offlineMode = isDownloaded
+        episodeAdapter.clearSelection()
+        episodeAdapter.notifyItemRangeRemoved(0, episodeAdapter.arr.size)
+        episodeAdapter.arr = arr
+        episodeAdapter.updateType(newType)
+        episodeAdapter.notifyItemRangeInserted(0, arr.size)
+        episodeAdapter.clearAllDownloaded()
+        downloaded.forEach { (name, size) -> episodeAdapter.addToDownloadedEpisodes(name, size) }
     }
 
     override fun onDestroyView() {

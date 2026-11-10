@@ -70,6 +70,8 @@ class EpisodeAdapter(
         private const val PAYLOAD_DOWNLOAD_STATE = "download_state"
         /** Partial bind: only refresh the selected/unselected look of a card. */
         private const val PAYLOAD_SELECTION = "selection"
+        /** Partial bind: watched / unwatched look and resume bar, animated, nothing else is touched. */
+        private const val PAYLOAD_WATCHED = "watched_state"
     }
 
     /** Episodes picked in multi-select mode (long-press an episode to start). */
@@ -155,10 +157,16 @@ class EpisodeAdapter(
         }
         if (position !in arr.indices) return
         val ep = arr[position]
+        var handled = false
         if (payloads.contains(PAYLOAD_SELECTION)) {
             applySelection(holder, ep, true)
-            return
+            handled = true
         }
+        if (payloads.contains(PAYLOAD_WATCHED)) {
+            bindWatchState(holder, ep)
+            handled = true
+        }
+        if (handled) return
         val listHolder = holder as? EpisodeListViewHolder ?: return
 
         when {
@@ -175,6 +183,8 @@ class EpisodeAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val ep = arr[position]
+        resetWatchAnim(holder)
+        boundKeys[ep.number] = contentKey(ep)
         val isTorrent = ep.extra?.containsKey("torrentHash") == true || ep.link?.contains("127.0.0.1:8090") == true
         val title = if (isTorrent) {
             ep.title ?: ep.sEpisode?.name ?: ep.number
@@ -344,6 +354,134 @@ class EpisodeAdapter(
 
     override fun getItemCount(): Int = arr.size
     private val downloadedEpisodes = mutableSetOf<String>()
+
+    val currentType: Int get() = type
+
+    // ---------------------------------------------------------------------------------------
+    // In-place updates: the list is never torn down for things that only changed a little
+    // ---------------------------------------------------------------------------------------
+
+    /** What each episode looked like the last time it was fully bound (number -> content key). */
+    private val boundKeys = HashMap<String, String>()
+
+    private fun contentKey(ep: Episode): String =
+        listOf(ep.title, ep.desc, ep.thumb?.url, ep.filler, ep.rating, ep.date).joinToString("\u0001")
+
+    private fun isWatched(ep: Episode): Boolean {
+        val progress = media.userProgress ?: return false
+        val epNum = MediaNameAdapter.findEpisodeNumber(ep.number) ?: ep.number.toFloatOrNull() ?: 9999f
+        return epNum <= progress.toFloat()
+    }
+
+    /**
+     * Same episodes as before (same order, same layout): swap the data in place. Episodes whose
+     * details changed (title, thumbnail, description...) are rebound; every other visible tile only
+     * refreshes its watched look and resume bar, which animates if it actually changed.
+     */
+    fun softUpdate(newArr: List<Episode>) {
+        arr = newArr
+        if (newArr.isEmpty()) return
+        notifyItemRangeChanged(0, newArr.size, PAYLOAD_WATCHED)
+        for (i in newArr.indices) {
+            val ep = newArr[i]
+            val bound = boundKeys[ep.number]
+            if (bound != null && bound != contentKey(ep)) notifyItemChanged(i)
+        }
+    }
+
+    /** Progress changed (marked watched / unwatched, returned from the player, ...). */
+    fun refreshWatchState() {
+        if (arr.isNotEmpty()) notifyItemRangeChanged(0, arr.size, PAYLOAD_WATCHED)
+    }
+
+    /** Brings the downloaded set in line with [current] (episode -> size in MB) without clearing it first. */
+    fun syncDownloaded(current: Map<String, Double>) {
+        downloadedEpisodes.toList().filter { it !in current }.forEach { deleteDownload(it) }
+        current.forEach { (number, size) ->
+            if (number !in downloadedEpisodes) addToDownloadedEpisodes(number, size)
+        }
+    }
+
+    private class WatchViews(
+        val cover: View,
+        val badge: View?,
+        val cont: LinearLayout,
+        val bar: View,
+        val empty: View
+    )
+
+    private fun watchViews(holder: RecyclerView.ViewHolder): WatchViews? = when (holder) {
+        is EpisodeListViewHolder -> holder.binding.let {
+            WatchViews(it.itemEpisodeViewedCover, it.itemEpisodeViewed, it.itemMediaProgressCont, it.itemMediaProgress, it.itemMediaProgressEmpty)
+        }
+        is EpisodeGridViewHolder -> holder.binding.let {
+            WatchViews(it.itemEpisodeViewedCover, it.itemEpisodeViewed, it.itemMediaProgressCont, it.itemMediaProgress, it.itemMediaProgressEmpty)
+        }
+        is EpisodeCompactViewHolder -> holder.binding.let {
+            WatchViews(it.itemEpisodeViewedCover, null, it.itemMediaProgressCont, it.itemMediaProgress, it.itemMediaProgressEmpty)
+        }
+        else -> null
+    }
+
+    /** A recycled tile must never carry half an animation over to another episode. */
+    private fun resetWatchAnim(holder: RecyclerView.ViewHolder) {
+        val v = watchViews(holder) ?: return
+        v.cover.animate().cancel()
+        v.badge?.animate()?.cancel()
+        holder.itemView.animate().cancel()
+        v.cover.alpha = 1f
+        v.badge?.let { it.alpha = 1f; it.scaleX = 1f; it.scaleY = 1f }
+        holder.itemView.scaleX = 1f
+        holder.itemView.scaleY = 1f
+    }
+
+    private fun bindWatchState(holder: RecyclerView.ViewHolder, ep: Episode) {
+        val v = watchViews(holder) ?: return
+        // the resume bar (how far into the episode you are) follows along too
+        handleProgress(v.cont, v.bar, v.empty, media.id, ep.number)
+        val watched = isWatched(ep)
+        val shown = v.cover.visibility == View.VISIBLE
+        if (watched == shown) return // already looks right, leave the tile completely alone
+
+        val root = holder.itemView
+        val soft = android.view.animation.DecelerateInterpolator(1.6f)
+        val pop = android.view.animation.OvershootInterpolator(2.4f)
+        v.cover.animate().cancel()
+        v.badge?.animate()?.cancel()
+        if (watched) {
+            // the tile dims in, the check pops in just after, and the whole card gives a little nod
+            v.cover.alpha = 0f
+            v.cover.visibility = View.VISIBLE
+            v.cover.animate().alpha(1f).setDuration(650).setInterpolator(soft).start()
+            v.badge?.let {
+                it.alpha = 0f
+                it.scaleX = 0.2f
+                it.scaleY = 0.2f
+                it.visibility = View.VISIBLE
+                it.animate().alpha(1f).scaleX(1f).scaleY(1f)
+                    .setStartDelay(240).setDuration(520).setInterpolator(pop).start()
+            }
+            root.animate().cancel()
+            root.animate().scaleX(0.965f).scaleY(0.965f).setDuration(160).withEndAction {
+                root.animate().scaleX(1f).scaleY(1f).setDuration(460)
+                    .setInterpolator(android.view.animation.OvershootInterpolator(2.6f)).start()
+            }.start()
+        } else {
+            // un-watched: the dimming lifts and the check shrinks away
+            v.cover.animate().alpha(0f).setDuration(380).setInterpolator(soft).withEndAction {
+                v.cover.visibility = View.GONE
+                v.cover.alpha = 1f
+            }.start()
+            v.badge?.let { b ->
+                b.animate().alpha(0f).scaleX(0.2f).scaleY(0.2f).setDuration(260).withEndAction {
+                    b.visibility = View.GONE
+                    b.alpha = 1f
+                    b.scaleX = 1f
+                    b.scaleY = 1f
+                }.start()
+            }
+        }
+    }
 
     fun clearAllDownloaded() {
         downloadedEpisodes.clear()
