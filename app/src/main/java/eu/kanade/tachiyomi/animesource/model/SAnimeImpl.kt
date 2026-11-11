@@ -1,0 +1,70 @@
+@file:Suppress("PropertyName")
+
+package eu.kanade.tachiyomi.animesource.model
+
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.Json
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
+
+class SAnimeImpl : SAnime {
+
+    override lateinit var url: String
+
+    // AM (CUSTOM_INFORMATION) -->
+    override var title: String = ""
+    // <-- AM (CUSTOM_INFORMATION)
+
+    override var artist: String? = null
+
+    override var author: String? = null
+
+    override var description: String? = null
+
+    override var genre: String? = null
+
+    override var status: Int = 0
+
+    override var thumbnail_url: String? = null
+
+    override var background_url: String? = null
+
+    override var initialized: Boolean = false
+
+    override var update_strategy: AnimeUpdateStrategy = AnimeUpdateStrategy.ALWAYS_UPDATE
+
+    override var fetch_type: FetchType = FetchType.Episodes
+
+    override var season_number: Double = -1.0
+
+    @kotlin.jvm.Transient
+    override var memo: JsonObject = JsonObject(emptyMap())
+
+    private fun writeObject(out: ObjectOutputStream) {
+        out.defaultWriteObject()
+        runCatching { out.writeObject(memo.toString()) }
+    }
+
+    private fun readObject(`in`: ObjectInputStream) {
+        `in`.defaultReadObject()
+        memo = runCatching {
+            val raw = `in`.readObject() as? String ?: "{}"
+            Json.parseToJsonElement(raw) as? JsonObject ?: JsonObject(emptyMap())
+        }.getOrDefault(JsonObject(emptyMap()))
+    }
+
+    // AM (CUSTOM_INFORMATION) -->
+    override val originalTitle: String
+        get() = title
+    override val originalAuthor: String?
+        get() = author
+    override val originalArtist: String?
+        get() = artist
+    override val originalDescription: String?
+        get() = description
+    override val originalGenre: String?
+        get() = genre
+    override val originalStatus: Int
+        get() = status
+    // <-- AM (CUSTOM_INFORMATION)
+}

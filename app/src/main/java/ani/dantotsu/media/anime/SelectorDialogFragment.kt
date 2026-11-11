@@ -1,0 +1,1158 @@
+package ani.dantotsu.media.anime
+
+import android.annotation.SuppressLint
+import android.app.Dialog
+import android.content.ActivityNotFoundException
+import android.content.ComponentName
+import android.content.DialogInterface
+import android.content.Intent
+import android.graphics.Color
+import android.net.Uri
+import android.os.Bundle
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+//import androidx.compose.ui.test.performClick
+//import androidx.compose.ui.geometry.isEmpty
+//import androidx.compose.ui.semantics.text
+import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
+import androidx.core.view.updateLayoutParams
+import androidx.fragment.app.activityViewModels
+//import androidx.glance.visibility
+//import androidx.glance.visibility
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withCreated
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import ani.dantotsu.BottomSheetDialogFragment
+import ani.dantotsu.R
+import ani.dantotsu.addons.download.DownloadAddonManager
+import ani.dantotsu.torrent.TorrentServerManager
+import ani.dantotsu.connections.crashlytics.CrashlyticsInterface
+import ani.dantotsu.copyToClipboard
+import ani.dantotsu.currActivity
+import ani.dantotsu.currContext
+import ani.dantotsu.databinding.BottomSheetSelectorBinding
+import ani.dantotsu.databinding.ItemStreamBinding
+import ani.dantotsu.databinding.ItemUrlBinding
+import ani.dantotsu.download.DownloadedType
+import ani.dantotsu.download.video.Helper
+import ani.dantotsu.getThemeColor
+import ani.dantotsu.hideSystemBarsExtendView
+import ani.dantotsu.media.Media
+import ani.dantotsu.media.MediaDetailsViewModel
+import ani.dantotsu.media.MediaType
+import ani.dantotsu.media.SubtitleDownloader
+import ani.dantotsu.navBarHeight
+import ani.dantotsu.others.Download.download
+import ani.dantotsu.parsers.Subtitle
+import ani.dantotsu.parsers.Video
+import ani.dantotsu.parsers.VideoExtractor
+import ani.dantotsu.parsers.VideoType
+import ani.dantotsu.setSafeOnClickListener
+import ani.dantotsu.settings.SettingsAddonActivity
+import ani.dantotsu.settings.saving.PrefManager
+import ani.dantotsu.settings.saving.PrefName
+import ani.dantotsu.snackString
+import ani.dantotsu.toast
+import ani.dantotsu.tryWith
+import ani.dantotsu.util.Logger
+import ani.dantotsu.util.customAlertDialog
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import tachiyomi.core.util.lang.launchIO
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+import java.text.DecimalFormat
+
+
+class SelectorDialogFragment : BottomSheetDialogFragment() {
+    private var _binding: BottomSheetSelectorBinding? = null
+    private val binding get() = _binding!!
+    val model: MediaDetailsViewModel by activityViewModels()
+    private var scope: CoroutineScope = lifecycleScope
+    private var media: Media? = null
+    private var episode: Episode? = null
+    private var prevEpisode: String? = null
+    private var makeDefault = false
+    private var selected: String? = null
+    private var launch: Boolean? = null
+    private var isDownloadMenu: Boolean? = null
+    private var episodes: ArrayList<String>? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        arguments?.let {
+            selected = it.getString("server")
+            launch = it.getBoolean("launch", true)
+            prevEpisode = it.getString("prev")
+            isDownloadMenu = it.getBoolean("isDownload")
+            episodes = it.getStringArrayList("episodes")
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = BottomSheetSelectorBinding.inflate(inflater, container, false)
+        val window = dialog?.window
+        window?.statusBarColor = Color.TRANSPARENT
+        window?.navigationBarColor =
+            requireContext().getThemeColor(com.google.android.material.R.attr.colorSurface)
+        return binding.root
+    }
+
+    interface EpisodeDownloadListener {
+        fun onFinishingUserSelection(selectedServerName: String,
+                                     selectedSubtitles: MutableList<String>,
+                                     selectedAudioTracks: MutableList<String>)
+    }
+    class EpisodeDownloadHandler(private val _onFinishingUserSelection: (String, MutableList<String>, MutableList<String>) -> Unit)
+        : EpisodeDownloadListener{
+        override fun onFinishingUserSelection(selectedServerName: String,
+                                              selectedSubtitles: MutableList<String>,
+                                              selectedAudioTracks: MutableList<String>) {
+            _onFinishingUserSelection(selectedServerName, selectedSubtitles, selectedAudioTracks)
+        }
+    }
+
+    fun findBestVideoForDownload(
+        videos: List<Video>,
+        preferredResolutions: List<String>
+    ): Video? {
+        if (videos.isEmpty()) return null
+        val preferredVideo = videos.firstOrNull { it.preferred }
+        if (preferredVideo != null) return preferredVideo
+        if (preferredResolutions.isEmpty()) return videos.maxByOrNull { it.quality ?: 0 } ?: videos.first()
+
+        for (preferred in preferredResolutions) {
+            val resNumber = Regex("""\d+""").find(preferred)?.value?.toIntOrNull()
+            if (resNumber != null) {
+                val match = videos.firstOrNull { it.quality == resNumber }
+                if (match != null) return match
+            }
+            val cleanPreferred = preferred.lowercase().replace("p", "").trim()
+            val matchFallback = videos.firstOrNull { video ->
+                val note = video.extraNote?.lowercase() ?: ""
+                val url = video.file.url.lowercase()
+                note.contains(preferred.lowercase()) || note.contains(cleanPreferred) ||
+                        url.contains("${cleanPreferred}p") || url.contains(cleanPreferred)
+            }
+            if (matchFallback != null) return matchFallback
+        }
+
+        return videos.maxByOrNull { it.quality ?: 0 } ?: videos.first()
+    }
+
+    @SuppressLint("SetTextI18n")
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        var loaded = false
+        model.getMedia().observe(viewLifecycleOwner) { m ->
+            media = m
+            if (media != null && !loaded) {
+                loaded = true
+
+                fun fail(resId: Int){
+                    ContextCompat.getMainExecutor(context ?: currContext() ?: return).execute {
+                        snackString(getString(resId))
+                        tryWith {
+                            dismissAllowingStateLoss()
+                        }
+                    }
+                }
+
+                fun initializeVideoServerSelector(ep: Episode, onEpisodeDownloadHandler: EpisodeDownloadHandler? = null) {
+                    binding.selectorRecyclerView.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                        bottomMargin = navBarHeight
+                    }
+                    binding.selectorRecyclerView.adapter = null
+                    binding.selectorProgressBar.visibility = View.VISIBLE
+                    makeDefault = PrefManager.getVal(PrefName.MakeDefault)
+                    binding.selectorMakeDefault.isChecked = makeDefault
+                    binding.selectorMakeDefault.setOnClickListener {
+                        makeDefault = binding.selectorMakeDefault.isChecked
+                        PrefManager.setVal(PrefName.MakeDefault, makeDefault)
+                    }
+                    binding.selectorRecyclerView.layoutManager =
+                        LinearLayoutManager(
+                            requireActivity(),
+                            LinearLayoutManager.VERTICAL,
+                            false
+                        )
+                    val adapter = ExtractorAdapter(onEpisodeDownloadHandler)
+                    binding.selectorRecyclerView.adapter = adapter
+                    if (!ep.allStreams) {
+                        ep.extractorCallback = { extractor ->
+                            scope.launch(Dispatchers.Main) {
+                                if (_binding == null || !isAdded) return@launch
+                                adapter.add(extractor)
+                                binding.selectorProgressBar.visibility = View.GONE
+                            }
+                        }
+                        scope.launch(Dispatchers.IO) {
+                            model.loadEpisodeVideos(ep, media!!.selected!!.sourceIndex)
+                            withContext(Dispatchers.Main) {
+                                if (_binding == null || !isAdded) return@withContext
+                                binding.selectorProgressBar.visibility = View.GONE
+                                if (adapter.itemCount == 0) {
+                                    fail(R.string.stream_selection_empty)
+                                }
+                                if (model.watchSources!!.isDownloadedSource(media?.selected!!.sourceIndex)) {
+                                    adapter.performClick(0)
+                                }
+                            }
+                        }
+                    } else {
+                        val epKey = media?.anime?.episodes?.getEpisodeKey(ep.number) ?: media?.anime?.selectedEpisode
+                        if (epKey != null) {
+                            media!!.anime?.episodes?.set(epKey, ep)
+                        }
+                        adapter.addAll(ep.extractors)
+                        if (ep.extractors?.size == 0) {
+                            fail(R.string.stream_selection_empty)
+                        }
+                        if (model.watchSources!!.isDownloadedSource(media?.selected!!.sourceIndex)) {
+                            adapter.performClick(0)
+                        }
+                        binding.selectorProgressBar.visibility = View.GONE
+                    }
+                }
+
+                fun autoSelectServerAndPlay(ep: Episode) {
+                    binding.selectorListContainer.visibility = View.GONE
+                    binding.selectorAutoListContainer.visibility = View.VISIBLE
+                    binding.selectorAutoText.text = getString(R.string.auto_select_server)
+                    var isCancelled = false
+                    binding.selectorCancel.setOnClickListener {
+                        isCancelled = true
+                        binding.selectorAutoListContainer.visibility = View.GONE
+                        binding.selectorListContainer.visibility = View.VISIBLE
+                        initializeVideoServerSelector(ep)
+                    }
+
+                    val sourceName = model.watchSources?.get(media?.selected?.sourceIndex ?: 0)?.name
+                    val preferredResolutions = PrefManager.getPreferredDownloadResolutions(sourceName)
+
+                    fun selectAndStart(chosenExtractor: VideoExtractor): Boolean {
+                        val bestVideo = findBestVideoForDownload(chosenExtractor.videos, preferredResolutions) ?: return false
+                        ep.selectedExtractor = chosenExtractor.server.name
+                        ep.selectedVideo = chosenExtractor.videos.indexOf(bestVideo).takeIf { it >= 0 } ?: 0
+                        val currentKey = media!!.anime!!.selectedEpisode ?: ep.number
+                        media!!.anime!!.episodes?.getEpisode(currentKey)?.selectedExtractor = ep.selectedExtractor
+                        media!!.anime!!.episodes?.getEpisode(currentKey)?.selectedVideo = ep.selectedVideo
+                        startExoplayer(media!!)
+                        return true
+                    }
+
+                    if (ep.allStreams) {
+                        val extractors = ep.extractors ?: emptyList()
+                        val validExtractor = extractors.firstOrNull { it.isPreferred && it.videos.isNotEmpty() }
+                            ?: extractors.firstOrNull { it.videos.isNotEmpty() }
+                        if (validExtractor != null && selectAndStart(validExtractor)) {
+                            return
+                        } else {
+                            binding.selectorAutoListContainer.visibility = View.GONE
+                            binding.selectorListContainer.visibility = View.VISIBLE
+                            initializeVideoServerSelector(ep)
+                            return
+                        }
+                    }
+
+                    var hasStarted = false
+                    ep.extractorCallback = { extractor ->
+                        scope.launch(Dispatchers.Main) {
+                            if (_binding == null || !isAdded || isCancelled || hasStarted) return@launch
+                            if (extractor.videos.isNotEmpty() && extractor.isPreferred) {
+                                hasStarted = true
+                                selectAndStart(extractor)
+                            }
+                        }
+                    }
+                    scope.launch(Dispatchers.IO) {
+                        model.loadEpisodeVideos(ep, media!!.selected!!.sourceIndex)
+                        withContext(Dispatchers.Main) {
+                            if (_binding == null || !isAdded || isCancelled) return@withContext
+                            if (!hasStarted) {
+                                val valid = ep.extractors?.firstOrNull { it.isPreferred && it.videos.isNotEmpty() }
+                                    ?: ep.extractors?.firstOrNull { it.videos.isNotEmpty() }
+                                if (valid != null) {
+                                    hasStarted = true
+                                    selectAndStart(valid)
+                                } else {
+                                    binding.selectorAutoListContainer.visibility = View.GONE
+                                    binding.selectorListContainer.visibility = View.VISIBLE
+                                    initializeVideoServerSelector(ep)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                suspend fun loadEpisodeSingleServer(episodeName: String, selectedServerName: String): Boolean{
+                    val ep = media?.anime?.episodes?.getEpisode(episodeName) ?: media?.anime?.episodes?.getEpisode(media?.anime?.selectedEpisode)
+                    if (ep == null) return false
+                    episode = ep
+
+                    var success = false
+                    scope.launch(Dispatchers.IO) {
+                        success = model.loadEpisodeSingleVideo(
+                            ep,
+                            media!!.selected!!,
+                            selectedServerName = selectedServerName
+                        )
+                    }.join()
+                    Log.d("AnimeDownloader", "Loading Episode Server State: $success")
+                    return success
+                }
+                fun startEpisodeDownload(episodeName: String, selectedServerName: String,
+                                         selectedSubtitles: MutableList<String>,
+                                         selectedAudioTracks: MutableList<String>){
+                    fun downloadUsingSingleServer(extractor: VideoExtractor, currentEp: Episode): Boolean {
+                        val sourceName = model.watchSources?.get(media?.selected?.sourceIndex ?: 0)?.name
+                        val preferredResolutions = PrefManager.getPreferredDownloadResolutions(sourceName)
+                        val autoPriority = PrefManager.getVal<Boolean>(PrefName.AutoSelectResolutionPriority)
+
+                        currentEp.selectedExtractor = extractor.server.name
+                        val bestVideo = if (autoPriority && extractor.videos.isNotEmpty()) {
+                            findBestVideoForDownload(extractor.videos, preferredResolutions)
+                        } else null
+
+                        val chosenVideoIndex = if (bestVideo != null) {
+                            extractor.videos.indexOf(bestVideo).takeIf { it >= 0 } ?: 0
+                        } else {
+                            if (currentEp.selectedVideo >= extractor.videos.size) 0 else currentEp.selectedVideo
+                        }
+                        currentEp.selectedVideo = chosenVideoIndex
+
+                        val epKey = media?.anime?.episodes?.getEpisodeKey(currentEp.number) ?: currentEp.number
+                        media?.anime?.episodes?.get(epKey)?.let { mapEp ->
+                            mapEp.selectedExtractor = extractor.server.name
+                            mapEp.selectedVideo = currentEp.selectedVideo
+                        }
+                        if ((PrefManager.getVal(PrefName.DownloadManager) as Int) != 0) {
+                            val act = activity ?: currActivity()
+                            if (act != null) {
+                                download(
+                                    act,
+                                    currentEp,
+                                    media!!.userPreferredName
+                                )
+                            }
+                        }
+                        else {
+                            val downloadAddonManager: DownloadAddonManager = Injekt.get()
+                            if (!downloadAddonManager.isAvailable()) {
+                                val context = context ?: currContext()
+                                context?.customAlertDialog()?.apply {
+                                    setTitle(R.string.download_addon_not_installed)
+                                    setMessage(R.string.would_you_like_to_install)
+                                    setPosButton(R.string.yes) {
+                                        context.startActivity(
+                                            Intent(context, SettingsAddonActivity::class.java)
+                                        )
+                                    }
+                                    setNegButton(R.string.no) { }
+                                    show()
+                                }
+                                return false
+                            }
+                            val subtitles = extractor.subtitles
+                            val subtitlesToDownload: MutableList<Pair<String, String>> = mutableListOf()
+                            val embedUrl = extractor.server.embed.url
+                            val selectedVideoUrl = if (extractor.videos.isNotEmpty()) {
+                                if (currentEp.selectedVideo in extractor.videos.indices) extractor.videos[currentEp.selectedVideo].file.url else extractor.videos[0].file.url
+                            } else ""
+                            subtitles.forEach {
+                                if (it.language in selectedSubtitles) {
+                                    val resolvedUrl = ani.dantotsu.media.anime.player.PlayerSubtitleManager.resolveSubtitleUrl(
+                                        it.file.url, embedUrl, selectedVideoUrl
+                                    )
+                                    subtitlesToDownload.add(Pair(resolvedUrl, it.language))
+                                }
+                            }
+
+                            val audioTracks = extractor.audioTracks
+                            val audioTracksToDownload: MutableList<Pair<String, String>> = mutableListOf()
+                            audioTracks.forEach {
+                                if (it.lang in selectedAudioTracks) {
+                                    audioTracksToDownload.add(Pair(it.url, it.lang))
+                                }
+                            }
+
+                            val selectedVideo =
+                                if (extractor.videos.isNotEmpty()) {
+                                    if (currentEp.selectedVideo in extractor.videos.indices) extractor.videos[currentEp.selectedVideo] else extractor.videos[0]
+                                } else null
+                            val activity = activity ?: currActivity()
+                            selectedVideo?.file?.url?.let { url ->
+                                if (url.startsWith("magnet:") || url.endsWith(".torrent")) {
+                                    val torrentManager = Injekt.get<TorrentServerManager>()
+                                    if (!torrentManager.isAvailable()) {
+                                        toast(R.string.torrent_addon_not_available)
+                                        return false
+                                    }
+                                    runBlocking {
+                                        try {
+                                            withContext(Dispatchers.IO) {
+                                                torrentManager.activeTorrentHash?.let {
+                                                    torrentManager.removeTorrent(it)
+                                                }
+                                                val index = if (url.contains("index=")) {
+                                                    url.substringAfter("index=")
+                                                        .toIntOrNull() ?: 0
+                                                } else 0
+                                                Logger.log("Sending: ${url}, ${selectedVideo.quality}, $index")
+                                                val currentTorrent = torrentManager.addTorrent(
+                                                    url,
+                                                    selectedVideo.quality.toString(),
+                                                    "",
+                                                    "",
+                                                    false
+                                                )
+                                                torrentManager.activeTorrentHash =
+                                                    currentTorrent.hash
+
+                                                // Pre-buffer the first piece
+                                                torrentManager.prebuffer(currentTorrent.hash!!, index)
+
+                                                selectedVideo.file.url =
+                                                    torrentManager.getLink(currentTorrent, index)
+                                                Logger.log("Received: ${selectedVideo.file.url}")
+                                            }
+                                        } catch (e: Exception) {
+                                            Injekt.get<CrashlyticsInterface>()
+                                                .logException(e)
+                                            Logger.log(e)
+                                            toast("Error starting video: ${e.message}")
+                                            return@runBlocking
+                                        }
+                                    }
+                                }
+                            }
+                            val act = activity ?: currActivity()
+                            if (selectedVideo != null && act != null) {
+                                Helper.startAnimeDownloadService(
+                                    act,
+                                    media!!.mainName(),
+                                    currentEp.number,
+                                    selectedVideo,
+                                    subtitlesToDownload,
+                                    audioTracksToDownload,
+                                    media,
+                                    currentEp.thumb?.url ?: media!!.banner
+                                    ?: media!!.cover
+                                )
+                                val intent =
+                                    Intent(AnimeWatchFragment.ACTION_DOWNLOAD_STARTED).apply {
+                                        putExtra(
+                                            AnimeWatchFragment.EXTRA_EPISODE_NUMBER,
+                                            currentEp.number,
+                                        )
+                                        putExtra("mediaId", media?.id)
+                                    }
+                                act.sendBroadcast(intent)
+                            } else if (selectedVideo == null) {
+                                snackString(R.string.no_video_selected)
+                            }
+                        }
+                        return true
+                    }
+
+                    val ep = media?.anime?.episodes?.getEpisode(episodeName) ?: media?.anime?.episodes?.get(episodeName)
+                    if (ep == null) {
+                        fail(R.string.auto_select_server_error)
+                        return
+                    }
+                    val epKey = media?.anime?.episodes?.getEpisodeKey(episodeName) ?: episodeName
+                    media?.anime?.selectedEpisode = epKey
+                    episode = ep
+
+                    Log.d("AnimeDownloader", "Downloading Episode: ${ep.number}, server: $selectedServerName")
+
+                    val selectedExtractor = ep.extractors?.find { it.server.name == selectedServerName }
+                    if (selectedExtractor == null)
+                        fail(R.string.auto_select_server_error)
+                    else {
+                        media!!.anime?.episodes?.set(epKey, ep)
+                        if(!downloadUsingSingleServer(selectedExtractor, ep))
+                            fail(R.string.auto_select_server_error)
+                    }
+                }
+
+                Log.d("AnimeDownloader", "Selected Server for watching: $selected")
+                if(episodes.isNullOrEmpty()){
+                    fail(R.string.empty_episodes_list)
+                }
+                if (isDownloadMenu == false) {
+                    val rawKey = episodes?.get(0)
+                    val ep = media?.anime?.episodes?.getEpisode(rawKey)
+                    val actualKey = media?.anime?.episodes?.getEpisodeKey(rawKey) ?: rawKey
+                    media?.anime?.selectedEpisode = actualKey
+                    episode = ep
+                    if (ep != null) {
+                        if (selected != null && media?.format != "LOCAL") {
+                            binding.selectorListContainer.visibility = View.GONE
+                            binding.selectorAutoListContainer.visibility = View.VISIBLE
+                            binding.selectorAutoText.text = selected
+                            binding.selectorCancel.setOnClickListener {
+                                media!!.selected!!.server = null
+                                model.saveSelected(media!!.id, media!!.selected!!)
+                                tryWith {
+                                    dismissAllowingStateLoss()
+                                }
+                            }
+
+                            fun failToList() {
+                                snackString(getString(R.string.auto_select_server_error))
+                                media!!.selected!!.server = null
+                                model.saveSelected(media!!.id, media!!.selected!!)
+                                binding.selectorAutoListContainer.visibility = View.GONE
+                                binding.selectorListContainer.visibility = View.VISIBLE
+                                initializeVideoServerSelector(ep)
+                            }
+
+                            fun load() {
+                                val matchedExtractor =
+                                    if (model.watchSources!!.isDownloadedSource(media!!.selected!!.sourceIndex)) {
+                                        ep.extractors?.firstOrNull()
+                                    } else {
+                                        ep.extractors?.find { it.server.name == selected }
+                                            ?: ep.extractors?.find { it.isPreferred }
+                                            ?: ep.extractors?.firstOrNull()
+                                    }
+
+                                val size = matchedExtractor?.videos?.size
+
+                                if (matchedExtractor != null && size != null && size > 0) {
+                                    val currentKey = media!!.anime!!.selectedEpisode ?: actualKey
+                                    media!!.anime!!.episodes?.getEpisode(currentKey)?.selectedExtractor = matchedExtractor.server.name
+                                    val chosenVideo = if (media!!.selected!!.video in 0 until size) media!!.selected!!.video else 0
+                                    media!!.anime!!.episodes?.getEpisode(currentKey)?.selectedVideo = chosenVideo
+                                    media!!.selected!!.server = matchedExtractor.server.name
+                                    model.saveSelected(media!!.id, media!!.selected!!)
+                                    startExoplayer(media!!)
+                                } else failToList()
+                            }
+
+                            val hasMatchingExtractor = ep.extractors?.any {
+                                it.server.name == selected || it.isPreferred
+                            } == true
+
+                            if (!hasMatchingExtractor) {
+                                scope.launch{
+                                    val success = withContext(Dispatchers.IO){
+                                        loadEpisodeSingleServer(ep.number, selected!!)
+                                    }
+                                    withContext(Dispatchers.Main) {
+                                        if (_binding == null || !isAdded) return@withContext
+                                        if (!success) {
+                                            failToList()
+                                        } else {
+                                            load()
+                                        }
+                                    }
+                                }
+                            } else load()
+                        }
+                        else if (PrefManager.getVal<Boolean>(PrefName.AutoSelectServer) && media?.format != "LOCAL" && isDownloadMenu != true) {
+                            autoSelectServerAndPlay(ep)
+                        }
+                        else
+                            initializeVideoServerSelector(ep)
+                    }
+                }
+                else {
+                    binding.selectorMakeDefault.visibility = View.GONE
+                    val rawKey = episodes?.get(0)
+                    val ep = media?.anime?.episodes?.getEpisode(rawKey)
+                    val actualKey = media?.anime?.episodes?.getEpisodeKey(rawKey) ?: rawKey
+                    media?.anime?.selectedEpisode = actualKey
+                    episode = ep
+
+                    if (ep != null) {
+                        val downloadHandler =
+                            EpisodeDownloadHandler(_onFinishingUserSelection = { selectedServerName,
+                                                                                 selectedSubtitles,
+                                                                                 selectedAudioTracks ->
+                                binding.selectorListContainer.visibility = View.GONE
+                                binding.selectorAutoListContainer.visibility = View.VISIBLE
+                                binding.selectorTitle.text = "Starting Download"
+                                binding.selectorAutoText.text =
+                                    "Starting download using server:\n$selectedServerName"
+                                binding.selectorCancel.visibility = View.GONE
+
+                                scope.launch(Dispatchers.IO) {
+                                    val currentEpisodes = episodes ?: return@launch
+                                    val serverSelectionScope = CoroutineScope(Dispatchers.IO)
+                                    val serverSelectionTasks = mutableListOf<Deferred<Unit>>()
+                                    for (episodeName in currentEpisodes.drop(1)) {
+                                        serverSelectionTasks.add(serverSelectionScope.async {
+                                            if(!loadEpisodeSingleServer(episodeName, selectedServerName)){
+                                                Log.d("AnimeDownloader", "Error loading server $selectedServerName for episode $episodeName")
+                                                fail(R.string.auto_select_server_error)
+                                            }
+                                        })
+                                    }
+                                    serverSelectionTasks.awaitAll()
+
+                                    for(episodeName in currentEpisodes){
+                                        startEpisodeDownload(episodeName, selectedServerName, selectedSubtitles, selectedAudioTracks)
+                                    }
+                                    withContext(Dispatchers.Main) {
+                                        tryWith{
+                                            dismissAllowingStateLoss()
+                                        }
+                                    }
+                                }
+                            })
+                        initializeVideoServerSelector(ep, downloadHandler)
+                    }
+                }
+            }
+        }
+        super.onViewCreated(view, savedInstanceState)
+    }
+
+    private val externalPlayerResult = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result: ActivityResult ->
+        Logger.log(result.data.toString())
+    }
+
+    private fun exportMagnetIntent(episode: Episode, video: Video): Intent {
+        val amnis = "com.amnis"
+        return Intent(Intent.ACTION_VIEW).apply {
+            component = ComponentName(amnis, "$amnis.gui.player.PlayerActivity")
+            data = Uri.parse(video.file.url)
+            putExtra("title", "${media?.name} - ${episode.title}")
+            putExtra("position", 0)
+            putExtra(Intent.EXTRA_RETURN_RESULT, true)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            putExtra("secure_uri", true)
+            val headersArray = arrayOf<String>()
+            video.file.headers.forEach {
+                headersArray.plus(arrayOf(it.key, it.value))
+            }
+            putExtra("headers", headersArray)
+        }
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    @SuppressLint("UnsafeOptInUsageError")
+    fun startExoplayer(media: Media) {
+        if (!isAdded || _binding == null) return
+        prevEpisode = null
+
+        episode?.let { ep ->
+            val video = ep.extractors?.find {
+                it.server.name == ep.selectedExtractor
+            }?.videos?.getOrNull(ep.selectedVideo)
+            video?.file?.url?.let { url ->
+                val isTorrent = url.startsWith("magnet:") || url.endsWith(".torrent") ||
+                        url.contains("/stream?hash=") || url.contains("127.0.0.1") ||
+                        ep.extra?.containsKey("torrentHash") == true
+                if (isTorrent) {
+                    val torrentManager = Injekt.get<TorrentServerManager>()
+                    if (torrentManager.isAvailable()) {
+                        val activity = activity ?: currActivity()
+                        launchIO {
+                            try {
+                                ani.dantotsu.addons.torrent.TorrentServerService.start()
+                                torrentManager.start()
+                                val torrentHash = ep.extra?.get("torrentHash")
+                                    ?: (if (url.contains("hash=")) url.substringAfter("hash=").substringBefore("&") else null)
+                                val index = ep.extra?.get("fileId")?.toIntOrNull()
+                                    ?: (if (url.contains("index=")) url.substringAfter("index=").substringBefore("&").toIntOrNull() else null)
+                                    ?: 0
+
+                                if (torrentHash != null) {
+                                    torrentManager.activeTorrentHash = torrentHash
+                                    torrentManager.prebuffer(torrentHash, index)
+                                } else if (url.startsWith("magnet:") || url.endsWith(".torrent")) {
+                                    torrentManager.activeTorrentHash?.let {
+                                        torrentManager.removeTorrent(it)
+                                    }
+                                    val currentTorrent = torrentManager.addTorrent(
+                                        url, video.quality.toString(), "", "", false
+                                    )
+                                    torrentManager.activeTorrentHash = currentTorrent.hash
+                                    torrentManager.prebuffer(currentTorrent.hash!!, index)
+                                    video.file.url = torrentManager.getLink(currentTorrent, index)
+                                }
+
+                                if (launch == true) {
+                                    Intent(activity, ExoplayerView::class.java).apply {
+                                        ExoplayerView.media = media
+                                        ExoplayerView.initialized = true
+                                        startActivity(this)
+                                    }
+                                } else {
+                                    val epKey = media.anime?.selectedEpisode
+                                    val targetEp = media.anime?.episodes?.getEpisode(epKey) ?: ep
+                                    if (targetEp != null) {
+                                        model.setEpisode(targetEp, "startExo no launch")
+                                    }
+                                }
+                                dismissAllowingStateLoss()
+                            } catch (e: Exception) {
+                                Injekt.get<CrashlyticsInterface>().logException(e)
+                                Logger.log(e)
+                                toast("Error starting video: ${e.message}")
+                                dismissAllowingStateLoss()
+                            }
+                        }
+                        return
+                    }
+                } else if (url.startsWith("magnet:")) {
+                    try {
+                        externalPlayerResult.launch(exportMagnetIntent(ep, video))
+                    } catch (e: ActivityNotFoundException) {
+                        val amnis = "com.amnis"
+                        try {
+                            startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("market://details?id=$amnis")
+                                )
+                            )
+                            dismissAllowingStateLoss()
+                        } catch (e: ActivityNotFoundException) {
+                            startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://play.google.com/store/apps/details?id=$amnis")
+                                )
+                            )
+                        }
+                    }
+                    return
+                }
+            }
+        }
+
+        dismissAllowingStateLoss()
+        if (launch!!) {
+            stopAddingToList()
+            val intent = Intent(activity, ExoplayerView::class.java)
+            ExoplayerView.media = media
+            ExoplayerView.initialized = true
+            startActivity(intent)
+        } else {
+            val epKey = media.anime?.selectedEpisode
+            val targetEp = media.anime?.episodes?.getEpisode(epKey) ?: episode
+            if (targetEp != null) {
+                model.setEpisode(targetEp, "startExo no launch")
+            }
+        }
+    }
+
+    private fun stopAddingToList() {
+        episode?.extractorCallback = null
+        episode?.also {
+            it.extractors = it.extractors?.toMutableList()
+        }
+    }
+
+    private inner class ExtractorAdapter(private val onEpisodeDownloadHandler: EpisodeDownloadHandler? = null) :
+        RecyclerView.Adapter<ExtractorAdapter.StreamViewHolder>() {
+        val links = mutableListOf<VideoExtractor>()
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StreamViewHolder =
+            StreamViewHolder(
+                ItemStreamBinding.inflate(
+                    LayoutInflater.from(parent.context),
+                    parent,
+                    false
+                )
+            )
+
+        override fun onBindViewHolder(holder: StreamViewHolder, position: Int) {
+            val extractor = links.getOrNull(position) ?: return
+            holder.binding.streamName.text = ""//extractor.server.name
+            holder.binding.streamName.visibility = View.GONE
+
+            holder.binding.streamRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+            holder.binding.streamRecyclerView.adapter = VideoAdapter(extractor, onEpisodeDownloadHandler)
+        }
+
+        override fun getItemCount(): Int = links.size
+
+        fun add(videoExtractor: VideoExtractor) {
+            if (videoExtractor.videos.isNotEmpty()) {
+                val existingIndex = links.indexOfFirst {
+                    it.server.name == videoExtractor.server.name
+                }
+                if (existingIndex >= 0) {
+                    links[existingIndex] = videoExtractor
+                    notifyItemChanged(existingIndex)
+                } else {
+                    if (videoExtractor.isPreferred) {
+                        links.add(0, videoExtractor)
+                        notifyItemInserted(0)
+                    } else {
+                        links.add(videoExtractor)
+                        notifyItemInserted(links.size - 1)
+                    }
+                }
+            }
+        }
+
+        fun addAll(extractors: List<VideoExtractor>?) {
+            if (extractors == null) return
+            val sorted = extractors.sortedByDescending { it.isPreferred }
+            links.addAll(sorted)
+            notifyItemRangeInserted(0, sorted.size)
+        }
+
+        fun performClick(position: Int) {
+            try {
+                val extractor = links[position]
+                val currentEp = media?.anime?.episodes?.getEpisode(media?.anime?.selectedEpisode) ?: episode
+                val epKey = media?.anime?.episodes?.getEpisodeKey(media?.anime?.selectedEpisode) ?: media?.anime?.selectedEpisode
+                if (currentEp != null) {
+                    currentEp.selectedExtractor = extractor.server.name
+                    currentEp.selectedVideo = 0
+                }
+                if (epKey != null) {
+                    media?.anime?.episodes?.get(epKey)?.selectedExtractor = extractor.server.name
+                    media?.anime?.episodes?.get(epKey)?.selectedVideo = 0
+                }
+                startExoplayer(media!!)
+            } catch (e: Exception) {
+                Injekt.get<CrashlyticsInterface>().logException(e)
+            }
+        }
+
+        private inner class StreamViewHolder(val binding: ItemStreamBinding) :
+            RecyclerView.ViewHolder(binding.root)
+    }
+
+    private inner class VideoAdapter(private val extractor: VideoExtractor,private val onEpisodeDownloadHandler: EpisodeDownloadHandler?) :
+        RecyclerView.Adapter<VideoAdapter.UrlViewHolder>() {
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UrlViewHolder {
+            return UrlViewHolder(
+                ItemUrlBinding.inflate(
+                    LayoutInflater.from(parent.context),
+                    parent,
+                    false
+                )
+            )
+        }
+
+        override fun onBindViewHolder(holder: UrlViewHolder, position: Int) {
+            val binding = holder.binding
+            val video = extractor.videos[position]
+            if (isDownloadMenu == true) {
+                binding.urlDownload.visibility = View.VISIBLE
+            } else {
+                binding.urlDownload.visibility = View.GONE
+            }
+            val subtitles = extractor.subtitles
+            if (subtitles.isNotEmpty()) {
+                binding.urlSub.visibility = View.VISIBLE
+            } else {
+                binding.urlSub.visibility = View.GONE
+            }
+            binding.urlSub.setOnClickListener {
+                if (subtitles.isNotEmpty()) {
+                    val subtitleNames = subtitles.map { it.language }
+                    var subtitleToDownload: Subtitle? = null
+                    val currentEp = media?.anime?.episodes?.getEpisode(media?.anime?.selectedEpisode) ?: episode
+                    val epNumber = currentEp?.number ?: media?.anime?.selectedEpisode ?: "1"
+                    (activity ?: currActivity())?.customAlertDialog()?.apply {
+                        setTitle(R.string.download_subtitle)
+                        singleChoiceItems(subtitleNames.toTypedArray(),  dismissOnSelect = false) { which ->
+                            subtitleToDownload = subtitles[which]
+                        }
+                        setPosButton(R.string.download) {
+                            scope.launch(Dispatchers.IO) {
+                                if (subtitleToDownload != null) {
+                                    SubtitleDownloader.downloadSubtitle(
+                                        context ?: currContext() ?: return@launch,
+                                        subtitleToDownload.file.url,
+                                        DownloadedType(
+                                            media!!.mainName(),
+                                            epNumber,
+                                            MediaType.ANIME
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                        setNegButton(R.string.cancel) {}
+                    }?.show()
+                } else {
+                    snackString(R.string.no_subtitles_available)
+                }
+            }
+            binding.urlDownload.setSafeOnClickListener {
+                val currentEp = media?.anime?.episodes?.getEpisode(media?.anime?.selectedEpisode) ?: episode
+                val epKey = media?.anime?.episodes?.getEpisodeKey(media?.anime?.selectedEpisode) ?: media?.anime?.selectedEpisode
+                if (currentEp != null) {
+                    currentEp.selectedExtractor = extractor.server.name
+                    currentEp.selectedVideo = position
+                }
+                if (epKey != null) {
+                    media?.anime?.episodes?.get(epKey)?.selectedExtractor = extractor.server.name
+                    media?.anime?.episodes?.get(epKey)?.selectedVideo = position
+                }
+                if ((PrefManager.getVal(PrefName.DownloadManager) as Int) != 0) {
+                    val act = activity ?: currActivity()
+                    if (act != null && currentEp != null) {
+                        download(
+                            act,
+                            currentEp,
+                            media!!.userPreferredName
+                        )
+                    }
+                }
+                else {
+                    val ep = currentEp ?: return@setSafeOnClickListener
+                    val selectedVideo =
+                        if (extractor.videos.size > ep.selectedVideo) extractor.videos[ep.selectedVideo] else extractor.videos.getOrNull(0)
+                    val downloadAddonManager: DownloadAddonManager = Injekt.get()
+                    if (!downloadAddonManager.isAvailable()) {
+                        val context = context ?: currContext()
+                        context?.customAlertDialog()?.apply {
+                            setTitle(R.string.download_addon_not_installed)
+                            setMessage(R.string.would_you_like_to_install)
+                            setPosButton(R.string.yes) {
+                                ContextCompat.startActivity(
+                                    context,
+                                    Intent(context, SettingsAddonActivity::class.java),
+                                    null
+                                )
+                            }
+                            setNegButton(R.string.no) {
+                                return@setNegButton
+                            }
+                            show()
+                        }
+                        dismissAllowingStateLoss()
+                        return@setSafeOnClickListener
+                    }
+                    selectedVideo?.file?.url?.let { url ->
+                        if (url.startsWith("magnet:") || url.endsWith(".torrent")) {
+                            val torrentManager = Injekt.get<TorrentServerManager>()
+                            if (!torrentManager.isAvailable()) {
+                                toast(R.string.torrent_addon_not_available)
+                                return@setSafeOnClickListener
+                            }
+                        }
+                    }
+
+                    val subtitleNames = subtitles.map { it.language }
+                    var selectedSubtitles: MutableList<String> = mutableListOf()
+                    var selectedAudioTracks: MutableList<String> = mutableListOf()
+
+                    val currContext = currContext() ?: requireContext()
+
+                    fun go(){
+                        onEpisodeDownloadHandler?.onFinishingUserSelection(extractor.server.name, selectedSubtitles, selectedAudioTracks)
+                    }
+
+                    fun checkAudioTracks() {
+                        val audioTracks = extractor.audioTracks.map { it.lang }
+                        if (audioTracks.isNotEmpty()) {
+                            val audioNamesArray = audioTracks.toTypedArray()
+                            val checkedItems = BooleanArray(audioNamesArray.size) { false }
+
+                            currContext.customAlertDialog().apply { // ToTest
+                                setTitle(R.string.download_audio_tracks)
+                                multiChoiceItems(audioNamesArray, checkedItems) {
+                                    it.forEachIndexed { index, isChecked ->
+                                        val audioName = extractor.audioTracks[index].lang
+                                        if (isChecked) {
+                                            selectedAudioTracks.add(audioName)
+                                        } else {
+                                            selectedAudioTracks.remove(audioName)
+                                        }
+                                    }
+                                }
+                                setPosButton(R.string.download) {
+                                    go()
+                                }
+                                setNegButton(R.string.skip) {
+                                    selectedAudioTracks = mutableListOf()
+                                    go()
+                                }
+                                setNeutralButton(R.string.cancel) {
+                                    selectedAudioTracks = mutableListOf()
+                                }
+                                show()
+                            }
+                        } else {
+                            go()
+                        }
+                    }
+                    if (subtitles.isNotEmpty()) { // ToTest
+                        val subtitleNamesArray = subtitleNames.toTypedArray()
+                        val subLanguages = arrayOf(
+                            "Albanian", "Arabic", "Bosnian", "Bulgarian", "Chinese", "Croatian", "Czech", "Danish", "Dutch", "English",
+                            "Estonian", "Finnish", "French", "Georgian", "German", "Greek", "Hebrew", "Hindi", "Indonesian", "Irish",
+                            "Italian", "Japanese", "Korean", "Lithuanian", "Luxembourgish", "Macedonian", "Mongolian", "Norwegian",
+                            "Polish", "Portuguese", "Punjabi", "Romanian", "Russian", "Serbian", "Slovak", "Slovenian", "Spanish",
+                            "Turkish", "Ukrainian", "Urdu", "Vietnamese"
+                        )
+                        val prefLang = subLanguages.getOrNull(PrefManager.getVal<Int>(PrefName.SubLanguage)) ?: "English"
+                        val isPrefEnglish = prefLang.equals("English", ignoreCase = true)
+                        val hasPrefMatch = if (!isPrefEnglish) subtitleNamesArray.any { it.contains(prefLang, ignoreCase = true) } else false
+                        val englishRegex = Regex("""(?i)(?:^|[^a-zA-Z])(en|eng|english)(?:[^a-zA-Z]|$)""")
+
+                        val checkedItems = BooleanArray(subtitleNamesArray.size) { index ->
+                            val name = subtitleNamesArray[index]
+                            val isDefaultMatch = if (hasPrefMatch) {
+                                name.contains(prefLang, ignoreCase = true)
+                            } else {
+                                name.contains("English", true) || englishRegex.containsMatchIn(name) || (subtitles.size == 1)
+                            }
+                            if (isDefaultMatch) {
+                                selectedSubtitles.add(subtitles[index].language)
+                            }
+                            isDefaultMatch
+                        }
+
+                        currContext.customAlertDialog().apply {
+                            setTitle(R.string.download_subtitle)
+                            multiChoiceItems(subtitleNamesArray, checkedItems) {
+                                it.forEachIndexed { index, isChecked ->
+                                    val subtitleName = subtitles[index].language
+                                    if (isChecked) {
+                                        if (!selectedSubtitles.contains(subtitleName)) selectedSubtitles.add(subtitleName)
+                                    } else {
+                                        selectedSubtitles.remove(subtitleName)
+                                    }
+                                }
+                            }
+                            setPosButton(R.string.download) {
+                                checkAudioTracks()
+                            }
+                            setNegButton(R.string.skip) {
+                                selectedSubtitles = mutableListOf()
+                                checkAudioTracks()
+                            }
+                            setNeutralButton(R.string.cancel) {
+                                selectedSubtitles = mutableListOf()
+                            }
+                            show()
+                        }
+                    } else {
+                        checkAudioTracks()
+                    }
+                }
+            }
+            if (video.format == VideoType.CONTAINER) {
+                binding.urlSize.isVisible = video.size != null
+                // if video size is null or 0, show "Unknown Size" else show the size in MB
+                val sizeText = getString(
+                    R.string.mb_size, "${if (video.extraNote != null) " : " else ""}${
+                        if (video.size == 0.0) getString(R.string.size_unknown) else DecimalFormat("#.##").format(
+                            video.size ?: 0
+                        )
+                    }"
+                )
+                binding.urlSize.text = sizeText
+            }
+            val isPref = video.preferred || extractor.isPreferred
+            binding.urlNote.visibility = View.VISIBLE
+            binding.urlNote.text = if (isPref) "${video.format.name} • Preferred" else video.format.name
+            binding.urlQuality.text = extractor.server.name
+        }
+
+        override fun getItemCount(): Int = extractor.videos.size
+
+        private inner class UrlViewHolder(val binding: ItemUrlBinding) :
+            RecyclerView.ViewHolder(binding.root) {
+            init {
+                itemView.setSafeOnClickListener {
+                    if (isDownloadMenu == true) {
+                        binding.urlDownload.performClick()
+                        return@setSafeOnClickListener
+                    }
+                    tryWith(true) {
+                        val currentEp = media?.anime?.episodes?.getEpisode(media?.anime?.selectedEpisode) ?: episode
+                        val epKey = media?.anime?.episodes?.getEpisodeKey(media?.anime?.selectedEpisode) ?: media?.anime?.selectedEpisode
+                        if (currentEp != null) {
+                            currentEp.selectedExtractor = extractor.server.name
+                            currentEp.selectedVideo = bindingAdapterPosition
+                        }
+                        if (epKey != null) {
+                            media?.anime?.episodes?.get(epKey)?.selectedExtractor = extractor.server.name
+                            media?.anime?.episodes?.get(epKey)?.selectedVideo = bindingAdapterPosition
+                        }
+                        if (makeDefault) {
+                            media!!.selected!!.server = extractor.server.name
+                            media!!.selected!!.video = bindingAdapterPosition
+                            model.saveSelected(media!!.id, media!!.selected!!)
+                        }
+                        Log.d("AnimeDownloader", "Should start the player")
+                        startExoplayer(media!!)
+                    }
+                }
+                itemView.setOnLongClickListener {
+                    val video = extractor.videos[bindingAdapterPosition]
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(Uri.parse(video.file.url), "video/*")
+                    }
+                    copyToClipboard(video.file.url, true)
+                    dismissAllowingStateLoss()
+                    startActivity(Intent.createChooser(intent, "Open Video in :"))
+                    true
+                }
+            }
+        }
+    }
+
+    companion object {
+        fun newInstance(
+            server: String? = null,
+            la: Boolean = true,
+            prev: String? = null,
+            isDownload: Boolean,
+            episodes: ArrayList<String>
+        ): SelectorDialogFragment =
+            SelectorDialogFragment().apply {
+                arguments = Bundle().apply {
+                    putString("server", server)
+                    putBoolean("launch", la)
+                    putString("prev", prev)
+                    putBoolean("isDownload", isDownload)
+                    putStringArrayList("episodes", episodes)
+                }
+            }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {}
+
+    override fun onDismiss(dialog: DialogInterface) {
+        if (launch == false) {
+            activity?.hideSystemBarsExtendView()
+            model.epChanged.postValue(true)
+            if (prevEpisode != null) {
+                media?.anime?.selectedEpisode = prevEpisode
+                model.setEpisode(media?.anime?.episodes?.get(prevEpisode) ?: return, "prevEp")
+            }
+        }
+        super.onDismiss(dialog)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+}

@@ -1,0 +1,268 @@
+[versions]
+kotlin = "2.4.21"
+ksp = "2.3.12"
+agp = "9.4.1"
+serialization = "1.12.0"
+coroutines = "1.11.0"
+firebase-bom = "35.0.2"
+glide = "5.0.9"
+exo = "1.11.1"
+markwon = "4.6.2"
+groupie = "2.10.1"
+nextlib = "0.8.4"
+ass = "0.5.1"
+libtorrent4j = "2.1.0-39"
+shizuku = "13.1.5"
+ffmpeg-kit = "2.2.3"
+nanohttpd = "2.3.1"
+metro = "1.4.5"
+metrox-viewmodel = "1.4.5"
+materialKolor = "5.0.1"
+compose-runtime = "1.12.1"
+coil = "3.5.0"
+kotlinx-datetime = "0.8.0-0.6.x-compat"
+sqldelight = "2.4.1"
+sqldelight-androidx-driver = "0637a964a1"
+androidx-baselineProfile = "1.5.0"
+androidx-profileInstaller = "1.4.1"
+leakcanary = "2.14"
+webgpuviewer = "53"
+image-decoder = "17"
+mlkit-text-japanese = "16.0.1"
+mlkit-text = "16.0.1"
+readium = "3.4.0"
+desugar-jdk-libs = "2.1.5"
+
+[libraries]
+leakcanary-android = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakcanary" }
+leakcanary-plumber = { module = "com.squareup.leakcanary:plumber-android", version.ref = "leakcanary" }
+ffmpeg-kit = { module = "com.antonkarpenko:ffmpeg-kit-https", version.ref = "ffmpeg-kit" }
+
+
+# Firebase
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+
+# AndroidX Core
+androidx-core = "androidx.core:core-ktx:1.19.1"
+androidx-appcompat = "androidx.appcompat:appcompat:1.8.0"
+androidx-activity = "androidx.activity:activity-ktx:1.13.0"
+androidx-fragment = "androidx.fragment:fragment-ktx:1.9.1"
+androidx-browser = "androidx.browser:browser:1.10.0"
+androidx-swipe = "androidx.swiperefreshlayout:swiperefreshlayout:1.2.0"
+androidx-legacy = "androidx.legacy:legacy-support-v4:1.0.0"
+
+androidx-work = "androidx.work:work-runtime-ktx:2.12.0"
+androidx-preference = "androidx.preference:preference-ktx:1.2.1"
+androidx-webkit = "androidx.webkit:webkit:1.17.1"
+androidx-biometric = "androidx.biometric:biometric:1.1.0"
+mediarouter = "androidx.mediarouter:mediarouter:1.8.1"
+paging = "androidx.paging:paging-runtime-ktx:3.5.3"
+
+# Kotlin
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+
+# Networking / misc
+gson = "com.google.code.gson:gson:2.14.0"
+nicehttp = "com.github.Blatzar:NiceHttp:0.4.18"
+
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "serialization" }
+serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+serialization-json-okio = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json-okio", version.ref = "serialization" }
+serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "serialization" }
+storage = "com.anggrayudi:storage:3.1.0"
+jsoup = "org.jsoup:jsoup:1.23.2"
+quickjs = "app.cash.quickjs:quickjs-android:0.9.2"
+natsort = "com.github.gpanther:java-nat-sort:natural-comparator-1.1"
+unifile = "com.github.tachiyomiorg:unifile:17bec43"
+libarchive = "me.zhanghai.android.libarchive:library:1.1.7"
+xmlutil-core = "io.github.pdvrieze.xmlutil:core-android:1.0.2.1"
+xmlutil-serialization = "io.github.pdvrieze.xmlutil:serialization:1.0.2.1"
+nanohttpd = { module = "org.nanohttpd:nanohttpd", version.ref = "nanohttpd" }
+androidx-compose-runtime = { module = "androidx.compose.runtime:runtime", version.ref = "compose-runtime" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui", version.ref = "compose-runtime" }
+
+# Glide
+glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
+glide-ksp = { module = "com.github.bumptech.glide:ksp", version.ref = "glide" }
+glide-okhttp = { module = "com.github.bumptech.glide:okhttp3-integration", version.ref = "glide" }
+glide-transform = "jp.wasabeef:glide-transformations:4.3.0"
+
+# Media3 / Exo
+media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "exo" }
+media3-ui = { module = "androidx.media3:media3-ui", version.ref = "exo" }
+media3-hls = { module = "androidx.media3:media3-exoplayer-hls", version.ref = "exo" }
+media3-dash = { module = "androidx.media3:media3-exoplayer-dash", version.ref = "exo" }
+media3-okhttp = { module = "androidx.media3:media3-datasource-okhttp", version.ref = "exo" }
+media3-cronet = { module = "androidx.media3:media3-datasource-cronet", version.ref = "exo" }
+play-services-cronet = "com.google.android.gms:play-services-cronet:18.1.1"
+media3-session = { module = "androidx.media3:media3-session", version.ref = "exo" }
+media3-cast = { module = "androidx.media3:media3-cast", version.ref = "exo" }
+media3-effect = { module = "androidx.media3:media3-effect", version.ref = "exo" }
+
+# Extra Media
+nextlib = { module = "com.github.anilbeesetti.nextlib:nextlib-media3ext", version.ref = "nextlib" }
+ass-media = { module = "io.github.peerless2012:ass-media", version.ref = "ass" }
+ass-kt = { module = "io.github.peerless2012:ass-kt", version.ref = "ass" }
+
+# UI
+material = "com.google.android.material:material:1.14.0"
+flexbox = "com.google.android.flexbox:flexbox:3.0.0"
+kenburns = "com.flaviofaria:kenburnsview:1.0.7"
+subsampling = "com.davemorrissey.labs:subsampling-scale-image-view-androidx:3.10.0"
+gesture = "com.alexvasilkov:gesture-views:2.10.0"
+desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar-jdk-libs" }
+readium-shared = { module = "org.readium.kotlin-toolkit:readium-shared", version.ref = "readium" }
+readium-streamer = { module = "org.readium.kotlin-toolkit:readium-streamer", version.ref = "readium" }
+readium-navigator = { module = "org.readium.kotlin-toolkit:readium-navigator", version.ref = "readium" }
+readium-navigator-media-tts = { module = "org.readium.kotlin-toolkit:readium-navigator-media-tts", version.ref = "readium" }
+readium-adapter-pdfium-document = { module = "org.readium.kotlin-toolkit:readium-adapter-pdfium-document", version.ref = "readium" }
+readium-adapter-pdfium-navigator = { module = "org.readium.kotlin-toolkit:readium-adapter-pdfium-navigator", version.ref = "readium" }
+dialogs = "com.github.eltos:simpledialogfragments:3.10"
+charts = "com.github.AAChartModel:AAChartCore-Kotlin:8.2.1"
+
+# Markwon
+markwon-core = { module = "io.noties.markwon:core", version.ref = "markwon" }
+markwon-editor = { module = "io.noties.markwon:editor", version.ref = "markwon" }
+markwon-strike = { module = "io.noties.markwon:ext-strikethrough", version.ref = "markwon" }
+markwon-tables = { module = "io.noties.markwon:ext-tables", version.ref = "markwon" }
+markwon-tasklist = { module = "io.noties.markwon:ext-tasklist", version.ref = "markwon" }
+markwon-html = { module = "io.noties.markwon:html", version.ref = "markwon" }
+markwon-glide = { module = "io.noties.markwon:image-glide", version.ref = "markwon" }
+
+# Groupie
+groupie = { module = "com.github.lisawray.groupie:groupie", version.ref = "groupie" }
+groupie-vb = { module = "com.github.lisawray.groupie:groupie-viewbinding", version.ref = "groupie" }
+
+# Rx / misc
+rxjava = "io.reactivex:rxjava:1.3.8"
+rxandroid = "io.reactivex:rxandroid:1.2.1"
+rxrelay = "com.jakewharton.rxrelay:rxrelay:1.2.0"
+flowreactive = "ru.beryukhov:flowreactivenetwork:1.0.4"
+fuzzy = "me.xdrop:fuzzywuzzy:1.4.0"
+voyager = "ca.gosyer:voyager-navigator:1.0.0-rc08"
+logcat = "com.squareup.logcat:logcat:0.4"
+injekt = "com.github.mihonapp:injekt:91edab2317"
+
+# OkHttp
+okhttp = "com.squareup.okhttp3:okhttp:5.5.0"
+okhttp-logging = "com.squareup.okhttp3:logging-interceptor:5.5.0"
+okhttp-brotli = "com.squareup.okhttp3:okhttp-brotli:5.5.0"
+okhttp-doh = "com.squareup.okhttp3:okhttp-dnsoverhttps:5.5.0"
+okhttp-zstd = "com.squareup.okhttp3:okhttp-zstd:5.5.0"
+okio = "com.squareup.okio:okio:3.18.2"
+
+# libtorrent4j
+libtorrent4j = { group = "org.libtorrent4j", name = "libtorrent4j", version.ref = "libtorrent4j" }
+libtorrent4j-android-arm = { group = "org.libtorrent4j", name = "libtorrent4j-android-arm", version.ref = "libtorrent4j" }
+libtorrent4j-android-arm64 = { group = "org.libtorrent4j", name = "libtorrent4j-android-arm64", version.ref = "libtorrent4j" }
+libtorrent4j-android-x86 = { group = "org.libtorrent4j", name = "libtorrent4j-android-x86", version.ref = "libtorrent4j" }
+libtorrent4j-android-x86-x64 = { group = "org.libtorrent4j", name = "libtorrent4j-android-x86_64", version.ref = "libtorrent4j" }
+
+shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
+shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
+
+metro-runtime = { module = "dev.zacsweers.metro:runtime", version.ref = "metro" }
+metrox-viewmodel = { module = "dev.zacsweers.metro:metrox-viewmodel", version.ref = "metrox-viewmodel" }
+materialKolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+sqldelight-androidxDriver = { module = "com.github.mihon.sqldelight-androidx-driver:sqldelight-androidx-driver", version.ref = "sqldelight-androidx-driver" }
+sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
+sqldelight-androidxPaging = { module = "app.cash.sqldelight:androidx-paging3-extensions", version.ref = "sqldelight" }
+androidx-profileInstaller = { module = "androidx.profileinstaller:profileinstaller", version.ref = "androidx-profileInstaller" }
+webgpuviewer = { module = "ca.mpreg:webgpuviewer", version.ref = "webgpuviewer" }
+image-decoder = { module = "ca.mpreg:imagedecoder", version.ref = "image-decoder" }
+mlkit-text-japanese = { module = "com.google.android.gms:play-services-mlkit-text-recognition-japanese", version.ref = "mlkit-text-japanese" }
+mlkit-text = { module = "com.google.mlkit:text-recognition", version.ref = "mlkit-text" }
+play-services-base = "com.google.android.gms:play-services-base:18.11.1"
+
+[plugins]
+android = { id = "com.android.application", version.ref = "agp" }
+serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+google = { id = "com.google.gms.google-services", version = "4.5.0" }
+crashlytics = { id = "com.google.firebase.crashlytics", version = "3.0.8" }
+metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
+sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
+androidx-baselineProfile = { id = "androidx.baselineprofile", version.ref = "androidx-baselineProfile" }
+
+[bundles]
+
+sqldelight = ["sqldelight-androidxDriver", "sqldelight-coroutines", "sqldelight-androidxPaging"]
+
+firebase = ["firebase-analytics", "firebase-crashlytics"]
+
+androidx = [
+    "androidx-core",
+    "androidx-appcompat",
+    "androidx-activity",
+    "androidx-fragment",
+    "androidx-browser",
+    "androidx-swipe",
+    "androidx-legacy",
+    "androidx-work",
+    "androidx-preference",
+    "androidx-webkit",
+    "androidx-biometric",
+    "paging"
+]
+
+glide = ["glide", "glide-okhttp", "glide-transform"]
+
+media3 = [
+    "media3-exoplayer",
+    "media3-ui",
+    "media3-hls",
+    "media3-dash",
+    "media3-okhttp",
+    "media3-session",
+    "media3-cast",
+    "media3-effect"
+]
+
+subtitles = ["ass-media", "ass-kt"]
+
+markwon = [
+    "markwon-core",
+    "markwon-editor",
+    "markwon-strike",
+    "markwon-tables",
+    "markwon-tasklist",
+    "markwon-html",
+    "markwon-glide"
+]
+
+groupie = ["groupie", "groupie-vb"]
+
+okhttp = ["okhttp", "okhttp-logging", "okhttp-brotli", "okhttp-doh", "okhttp-zstd"]
+
+rx = ["rxjava", "rxandroid", "rxrelay"]
+shizuku = ["shizuku-api", "shizuku-provider"]
+
+misc = [
+    "gson",
+    "nicehttp",
+    "coroutines-core",
+    "coroutines-android",
+    "serialization-core",
+    "serialization-json",
+    "serialization-json-okio",
+    "serialization-protobuf",
+    "storage",
+    "jsoup",
+    "quickjs",
+    "natsort",
+    "unifile",
+    "flowreactive",
+    "fuzzy",
+    "voyager",
+    "logcat",
+    "injekt",
+    "nanohttpd",
+    "kotlinx-datetime",
+    "androidx-compose-runtime"
+]

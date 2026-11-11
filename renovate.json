@@ -1,0 +1,36 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "labels": ["Dependencies"],
+  "semanticCommits": "disabled",
+  "packageRules": [
+    {
+      "groupName": "GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true
+    },
+    {
+      "matchPackageNames": [
+        "com.github.tachiyomiorg:unifile",
+        "com.github.mihon:unifile",
+        "com.github.mihonapp:injekt",
+        "com.github.mihon.sqldelight-androidx-driver:sqldelight-androidx-driver"
+      ],
+      "enabled": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["(^|/)gradle/libs\\.versions\\.toml$"],
+      "matchStrings": [
+        "injekt\\s*=\\s*\"(?<currentDigest>[0-9a-f]{7,40})\""
+      ],
+      "currentValueTemplate": "master",
+      "depNameTemplate": "https://github.com/mihonapp/injekt.git",
+      "datasourceTemplate": "git-refs"
+    }
+  ]
+}
