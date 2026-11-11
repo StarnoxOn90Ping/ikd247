@@ -1,8 +1,8 @@
-name: Delete old artifacts
+name: Artifact Cleanup
 
 on:
   workflow_run:
-    workflows: ["Build APK"]
+    workflows: ["Alpha apk", "Beta apk", "Release apk"]
     types: [completed]
   schedule:
     - cron: "*/30 * * * *"

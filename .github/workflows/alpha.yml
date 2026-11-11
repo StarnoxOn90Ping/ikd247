@@ -1,0 +1,19 @@
+name: Alpha apk
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/_build.yml
+    with:
+      gradle-task: assembleGoogleAlpha
+      apk-dir: alpha
+      artifact-name: Kiwami-Alpha
+    secrets: inherit

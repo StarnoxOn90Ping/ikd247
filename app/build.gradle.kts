@@ -45,7 +45,7 @@ android {
     compileSdkMinor = 2
 
     // Release-style signing for CI builds. The keystore and passwords come from GitHub secrets
-    // (see beta.yml). When they are missing (e.g. local builds), the debug key is used instead.
+    // (see .github/workflows/_build.yml). When they are missing (e.g. local builds), the debug key is used instead.
     val kiwamiKeystorePath: String? = System.getenv("KIWAMI_KEYSTORE_PATH")
     signingConfigs {
         if (!kiwamiKeystorePath.isNullOrEmpty() && file(kiwamiKeystorePath).exists()) {
@@ -72,12 +72,20 @@ android {
         signingConfig = signingConfigs.findByName("kiwami") ?: signingConfigs.getByName("debug")
     }
 
+    // CI passes -Pkiwami.arm64Only=true so it only builds the arm64-v8a APK (much faster).
+    // Local builds (no property) still produce every ABI plus the universal APK.
+    val arm64Only = providers.gradleProperty("kiwami.arm64Only").orNull == "true"
+
     splits {
         abi {
             isEnable = true
             reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-            isUniversalApk = true
+            if (arm64Only) {
+                include("arm64-v8a")
+            } else {
+                include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            }
+            isUniversalApk = !arm64Only
         }
     }
 

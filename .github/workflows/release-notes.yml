@@ -1,0 +1,46 @@
+name: Release Notes
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_ref:
+        description: "Start after this tag or commit (empty = latest tag, or the last 30 commits if there are no tags)"
+        required: false
+        default: ""
+      to_ref:
+        description: "Stop at this tag or commit (empty = latest commit)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+
+    - name: Generate release notes
+      env:
+        FROM_REF: ${{ inputs.from_ref }}
+        TO_REF: ${{ inputs.to_ref }}
+      run: |
+        bash .github/scripts/release-notes.sh "$FROM_REF" "${TO_REF:-HEAD}" > release-notes.md
+        cat release-notes.md
+        {
+          cat release-notes.md
+          echo
+          echo "---"
+          echo "<details><summary>Copyable Markdown</summary>"
+          echo
+          echo '````markdown'
+          cat release-notes.md
+          echo '````'
+          echo
+          echo "</details>"
+        } >> "$GITHUB_STEP_SUMMARY"
