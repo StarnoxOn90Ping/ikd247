@@ -101,3 +101,4 @@ jobs:
         compression-level: 0
         if-no-files-found: warn
         path: "app/build/outputs/apk/google/release/*arm64-v8a*.apk"
+
