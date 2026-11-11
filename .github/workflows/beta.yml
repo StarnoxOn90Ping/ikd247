@@ -1,13 +1,7 @@
 name: Build APK
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
-    branches-ignore:
-      - l10n_dev_crowdin
-    paths-ignore:
-      - '**/README.md'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -58,17 +52,52 @@ jobs:
           echo "No signing key set, falling back to the debug key"
         fi
 
-    - name: Build with Gradle
+    - name: Build Alpha and Beta
       env:
         KIWAMI_KEYSTORE_PASSWORD: ${{ secrets.KIWAMI_KEYSTORE_PASSWORD }}
         KIWAMI_KEY_ALIAS: ${{ secrets.KIWAMI_KEY_ALIAS }}
         KIWAMI_KEY_PASSWORD: ${{ secrets.KIWAMI_KEY_PASSWORD }}
-      run: ./gradlew assembleGoogleAlpha
+      run: ./gradlew assembleGoogleAlpha assembleGoogleDebug
 
-    - name: Upload APK as artifact
+    - name: Build Release
+      id: release
+      continue-on-error: true
+      env:
+        KIWAMI_KEYSTORE_PASSWORD: ${{ secrets.KIWAMI_KEYSTORE_PASSWORD }}
+        KIWAMI_KEY_ALIAS: ${{ secrets.KIWAMI_KEY_ALIAS }}
+        KIWAMI_KEY_PASSWORD: ${{ secrets.KIWAMI_KEY_PASSWORD }}
+      run: ./gradlew assembleGoogleRelease
+
+    - name: Warn if Release failed
+      if: ${{ steps.release.outcome == 'failure' }}
+      run: echo "::warning::The Release build failed. Alpha and Beta were still built."
+
+    - name: Upload Kiwami Alpha
+      if: ${{ !cancelled() }}
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
-        name: Kiwami
+        name: Kiwami-Alpha
         retention-days: 1
         compression-level: 0
-        path: "app/build/outputs/apk/**/*arm64-v8a*.apk"
+        if-no-files-found: warn
+        path: "app/build/outputs/apk/google/alpha/*arm64-v8a*.apk"
+
+    - name: Upload Kiwami Beta
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: Kiwami-Beta
+        retention-days: 1
+        compression-level: 0
+        if-no-files-found: warn
+        path: "app/build/outputs/apk/google/debug/*arm64-v8a*.apk"
+
+    - name: Upload Kiwami Release
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: Kiwami-Release
+        retention-days: 1
+        compression-level: 0
+        if-no-files-found: warn
+        path: "app/build/outputs/apk/google/release/*arm64-v8a*.apk"

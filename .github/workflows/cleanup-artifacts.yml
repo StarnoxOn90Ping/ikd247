@@ -1,0 +1,50 @@
+name: Delete old artifacts
+
+on:
+  workflow_run:
+    workflows: ["Build APK"]
+    types: [completed]
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  after-build:
+    if: ${{ github.event_name == 'workflow_run' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+    - name: Wait 30 minutes, then delete this run's artifacts
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+        RUN_ID: ${{ github.event.workflow_run.id }}
+      run: |
+        sleep 1800
+        ids=$(gh api --paginate "repos/$REPO/actions/runs/$RUN_ID/artifacts" --jq '.artifacts[].id')
+        for id in $ids; do
+          echo "Deleting artifact $id"
+          gh api -X DELETE "repos/$REPO/actions/artifacts/$id"
+        done
+
+  safety-net:
+    if: ${{ github.event_name != 'workflow_run' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - name: Delete artifacts older than 45 minutes
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+      run: |
+        cutoff=$(date -u -d '45 minutes ago' +%Y-%m-%dT%H:%M:%SZ)
+        ids=$(gh api --paginate "repos/$REPO/actions/artifacts?per_page=100" \
+          --jq ".artifacts[] | select(.created_at < \"$cutoff\") | .id")
+        for id in $ids; do
+          echo "Deleting old artifact $id"
+          gh api -X DELETE "repos/$REPO/actions/artifacts/$id"
+        done
