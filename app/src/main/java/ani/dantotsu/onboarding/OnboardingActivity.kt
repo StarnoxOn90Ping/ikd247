@@ -629,7 +629,7 @@ class OnboardingActivity : AppCompatActivity() {
                 grid.addView(circle)
                 style(key, key == current)
             }
-            b.themeName.text = label(if (current in themeSwatches) current else "PURPLE")
+            b.themeName.text = label(if (current in themeSwatches) current else "BLUE")
         }
 
         /** Soft light behind the icon that slowly breathes. */
