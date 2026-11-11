@@ -72,7 +72,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="2dp"
-                        android:fontFamily="@font/poppins_bold"
+                        android:fontFamily="@font/manrope_bold"
                         android:paddingTop="2dp"
                         android:textColor="?attr/colorOnPrimary"
                         android:textSize="12sp"

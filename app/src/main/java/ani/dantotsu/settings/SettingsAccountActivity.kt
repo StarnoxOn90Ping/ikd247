@@ -81,24 +81,9 @@ class SettingsAccountActivity : AppCompatActivity() {
                         settingsAnilistBanner.visibility = View.GONE
                         settingsAnilistScrim.visibility = View.GONE
                     }
-                    
-                    val daysLeft = Anilist.getTokenExpiryDays()
-                    if (daysLeft != null) {
-                        settingsAnilistTokenExpiry.visibility = View.VISIBLE
-                        settingsAnilistTokenExpiry.text = when {
-                            daysLeft <= 0 -> "Reconnect Now"
-                            else -> "Reconnect in $daysLeft days"
-                        }
-                        settingsAnilistTokenExpiry.setOnClickListener {
-                            Anilist.loginIntent(context)
-                        }
-                    } else {
-                        settingsAnilistTokenExpiry.visibility = View.GONE
-                    }
                 } else {
                     settingsAnilistAvatar.setImageResource(R.drawable.ic_round_person_24)
                     settingsAnilistUsername.visibility = View.GONE
-                    settingsAnilistTokenExpiry.visibility = View.GONE
                     settingsAnilistBanner.visibility = View.GONE
                     settingsAnilistScrim.visibility = View.GONE
                     settingsRecyclerView.visibility = View.GONE

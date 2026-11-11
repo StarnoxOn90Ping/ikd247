@@ -89,12 +89,15 @@
                 android:id="@+id/settingsAnilistLoginContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:padding="8dp">
 
                 <ImageView
                     android:layout_width="24dp"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:adjustViewBounds="true"
                     android:layout_marginStart="4dp"
                     android:layout_marginEnd="20dp"
                     android:contentDescription="@string/anilist"
@@ -113,22 +116,11 @@
                         android:id="@+id/settingsAnilistUsername"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="-2dp"
                         android:fontFamily="@font/poppins_bold"
                         android:text="@string/username"
                         android:textColor="?attr/colorSecondary"
                         android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/settingsAnilistTokenExpiry"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="-4dp"
-                        android:fontFamily="@font/poppins_semi_bold"
-                        android:textColor="?attr/colorPrimary"
-                        android:textSize="12sp"
-                        android:visibility="gone"
-                        tools:text="Reconnect in 30 days"
-                        tools:visibility="visible" />
 
                     <TextView
                         android:id="@+id/settingsAnilistLogin"
@@ -148,7 +140,7 @@
                 android:id="@+id/settingsAnilistAvatarContainer"
                 android:layout_width="51dp"
                 android:layout_height="51dp"
-                android:layout_marginTop="4dp"
+                android:layout_gravity="center_vertical"
                 android:backgroundTint="@color/nav_bg_inv"
                 app:cardCornerRadius="26dp">
 
@@ -170,12 +162,15 @@
             android:id="@+id/settingsDiscordLoginContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center_vertical"
             android:orientation="horizontal"
             tools:ignore="ExtraText">
 
             <ImageView
                 android:layout_width="31dp"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:adjustViewBounds="true"
                 android:layout_marginEnd="16dp"
                 android:src="@drawable/ic_discord"
                 app:tint="?attr/colorPrimary"
@@ -193,7 +188,7 @@
                     android:id="@+id/settingsDiscordUsername"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="-4dp"
+                    android:layout_marginBottom="-2dp"
                     android:fontFamily="@font/poppins_bold"
                     android:gravity="center"
                     android:maxLines="1"
@@ -219,6 +214,7 @@
                 android:id="@+id/settingsPresenceSwitcher"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
                 android:contentDescription="@string/discord_rich_presence"
                 android:padding="16dp"
                 android:src="@drawable/discord_status_idle" />
@@ -227,7 +223,7 @@
                 android:id="@+id/settingsDiscordAvatarContainer"
                 android:layout_width="51dp"
                 android:layout_height="51dp"
-                android:layout_marginTop="4dp"
+                android:layout_gravity="center_vertical"
                 android:backgroundTint="@color/nav_bg_inv"
                 app:cardCornerRadius="26dp">
 
