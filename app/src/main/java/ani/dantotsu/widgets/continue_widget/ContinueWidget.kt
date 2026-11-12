@@ -211,7 +211,7 @@ class ContinueWidget : AppWidgetProvider() {
                     titleText = "Nothing active"
                     detailText = "Open Kiwami to start"
                     coverUrl = null
-                    logoIconRes = R.drawable.ic_dantotsu_round
+                    logoIconRes = R.drawable.ic_kiwami_round
                 }
             }
 
@@ -240,15 +240,15 @@ class ContinueWidget : AppWidgetProvider() {
                 setTextColor(R.id.widget_status_header, subtitleTextColor)
                 setTextColor(R.id.widget_subtitle, subtitleTextColor)
 
-                if (logoIconRes == R.drawable.ic_dantotsu_round) {
-                    val drawable = ResourcesCompat.getDrawable(context.resources, R.drawable.ic_dantotsu_round, null)
+                if (logoIconRes == R.drawable.ic_kiwami_round) {
+                    val drawable = ResourcesCompat.getDrawable(context.resources, R.drawable.ic_kiwami_round, null)
                     if (drawable != null) {
                         val density = context.resources.displayMetrics.density
                         val size = (16 * density).toInt().coerceAtLeast(1)
                         val bitmap = drawable.toBitmap(size, size)
                         setImageViewBitmap(R.id.widget_logo, bitmap)
                     } else {
-                        setImageViewResource(R.id.widget_logo, R.drawable.ic_dantotsu_round)
+                        setImageViewResource(R.id.widget_logo, R.drawable.ic_kiwami_round)
                     }
                 } else {
                     val drawable = ResourcesCompat.getDrawable(context.resources, logoIconRes, null)

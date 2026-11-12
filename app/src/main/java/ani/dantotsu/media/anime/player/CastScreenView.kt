@@ -123,8 +123,8 @@ class CastScreenView(
             Glide.with(activity)
                 .load(coverUrl)
                 .transform(CenterCrop(), RoundedCorners(28))
-                .placeholder(R.drawable.ic_dantotsu_round)
-                .error(R.drawable.ic_dantotsu_round)
+                .placeholder(R.drawable.ic_kiwami_round)
+                .error(R.drawable.ic_kiwami_round)
                 .into(binding.exoCastCover)
         }
     }

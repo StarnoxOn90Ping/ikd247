@@ -197,7 +197,7 @@ class NotificationItem(
             binding.notificationCoverUser.visibility = View.VISIBLE
             binding.notificationCoverUserContainer.visibility = View.VISIBLE
             if (commentNotification) {
-                binding.notificationCoverUser.setImageResource(R.drawable.ic_dantotsu_round)
+                binding.notificationCoverUser.setImageResource(R.drawable.ic_kiwami_round)
                 binding.notificationCoverUser.scaleX = 1.4f
                 binding.notificationCoverUser.scaleY = 1.4f
             } else {

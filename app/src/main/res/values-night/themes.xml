@@ -1,13 +1,13 @@
 <resources>
 
-    <style name="Theme.Dantotsu" parent="Theme.Base">
+    <style name="Theme.Kiwami" parent="Theme.Base">
         <item name="android:statusBarColor">@color/transparent</item>
         <item name="colorOnPrimary">@color/bg_black</item>
         <item name="android:textColor">@color/bg_white</item>
         <item name="colorSecondaryVariant">@color/violet_400</item>
     </style>
 
-    <style name="Theme.Dantotsu.Blue" parent="Theme.Base">
+    <style name="Theme.Kiwami.Blue" parent="Theme.Base">
         <item name="colorPrimary">@color/md_theme_dark_1_primary</item>
         <item name="colorOnPrimary">@color/md_theme_dark_1_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_dark_1_primaryContainer</item>
@@ -36,7 +36,7 @@
         <item name="colorPrimaryInverse">@color/md_theme_dark_1_inversePrimary</item>
     </style>
 
-    <style name="Theme.Dantotsu.Green" parent="Theme.Base">
+    <style name="Theme.Kiwami.Green" parent="Theme.Base">
         <item name="colorPrimary">@color/md_theme_dark_2_primary</item>
         <item name="colorOnPrimary">@color/md_theme_dark_2_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_dark_2_primaryContainer</item>
@@ -65,7 +65,7 @@
         <item name="colorPrimaryInverse">@color/md_theme_dark_2_inversePrimary</item>
     </style>
 
-    <style name="Theme.Dantotsu.Purple" parent="Theme.Base">
+    <style name="Theme.Kiwami.Purple" parent="Theme.Base">
         <item name="colorPrimary">@color/md_theme_dark_3_primary</item>
         <item name="colorOnPrimary">@color/md_theme_dark_3_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_dark_3_primaryContainer</item>
@@ -94,7 +94,7 @@
         <item name="colorPrimaryInverse">@color/md_theme_dark_3_inversePrimary</item>
     </style>
 
-    <style name="Theme.Dantotsu.Pink" parent="Theme.Base">
+    <style name="Theme.Kiwami.Pink" parent="Theme.Base">
         <item name="colorPrimary">@color/md_theme_dark_4_primary</item>
         <item name="colorOnPrimary">@color/md_theme_dark_4_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_dark_4_primaryContainer</item>
@@ -123,7 +123,7 @@
         <item name="colorPrimaryInverse">@color/md_theme_dark_4_inversePrimary</item>
     </style>
 
-    <style name="Theme.Dantotsu.Saikou" parent="Theme.Base">
+    <style name="Theme.Kiwami.Saikou" parent="Theme.Base">
         <item name="colorPrimary">@color/md_theme_dark_5_primary</item>
         <item name="colorOnPrimary">@color/md_theme_dark_5_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_dark_5_primaryContainer</item>
@@ -152,7 +152,7 @@
         <item name="colorPrimaryInverse">@color/md_theme_dark_5_inversePrimary</item>
     </style>
 
-    <style name="Theme.Dantotsu.Red" parent="Theme.Base">
+    <style name="Theme.Kiwami.Red" parent="Theme.Base">
         <item name="colorPrimary">@color/md_theme_dark_6_primary</item>
         <item name="colorOnPrimary">@color/md_theme_dark_6_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_dark_6_primaryContainer</item>
@@ -181,7 +181,7 @@
         <item name="colorPrimaryInverse">@color/md_theme_dark_6_inversePrimary</item>
     </style>
 
-    <style name="Theme.Dantotsu.Lavender" parent="Theme.Base">
+    <style name="Theme.Kiwami.Lavender" parent="Theme.Base">
         <item name="colorPrimary">@color/md_theme_dark_7_primary</item>
         <item name="colorOnPrimary">@color/md_theme_dark_7_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_dark_7_primaryContainer</item>
@@ -210,7 +210,7 @@
         <item name="colorPrimaryInverse">@color/md_theme_dark_7_inversePrimary</item>
     </style>
 
-    <style name="Theme.Dantotsu.Ocean" parent="Theme.Base">
+    <style name="Theme.Kiwami.Ocean" parent="Theme.Base">
         <item name="colorPrimary">@color/md_theme_dark_8_primary</item>
         <item name="colorOnPrimary">@color/md_theme_dark_8_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_dark_8_primaryContainer</item>
@@ -239,7 +239,7 @@
         <item name="colorPrimaryInverse">@color/md_theme_dark_8_inversePrimary</item>
     </style>
 
-    <style name="Theme.Dantotsu.Oriax" parent="Theme.Base">
+    <style name="Theme.Kiwami.Oriax" parent="Theme.Base">
         <item name="colorPrimary">@color/md_theme_dark_9_primary</item>
         <item name="colorOnPrimary">@color/md_theme_dark_9_onPrimary</item>
         <item name="colorPrimaryContainer">@color/md_theme_dark_9_primaryContainer</item>
@@ -268,7 +268,7 @@
         <item name="colorPrimaryInverse">@color/md_theme_dark_9_inversePrimary</item>
     </style>
 
-    <style name="Theme.Dantotsu.Monochrome" parent="Theme.Base">
+    <style name="Theme.Kiwami.Monochrome" parent="Theme.Base">
         <item name="colorPrimary">@color/bg_white</item>
         <item name="colorOnPrimary">@color/bg_black</item>
         <item name="colorPrimaryContainer">@color/bg_white</item>
@@ -297,61 +297,61 @@
         <item name="colorPrimaryInverse">@color/bg_black</item>
     </style>
 
-    <style name="Theme.Dantotsu.BlueOLED" parent="Theme.Dantotsu.Blue">
+    <style name="Theme.Kiwami.BlueOLED" parent="Theme.Kiwami.Blue">
         <item name="android:colorBackground">@color/darkest_Black</item>
         <item name="colorSurface">@color/darkest_Black</item>
         <item name="colorSurfaceVariant">@color/nav_bg</item>
     </style>
 
-    <style name="Theme.Dantotsu.GreenOLED" parent="Theme.Dantotsu.Green">
+    <style name="Theme.Kiwami.GreenOLED" parent="Theme.Kiwami.Green">
         <item name="android:colorBackground">@color/darkest_Black</item>
         <item name="colorSurface">@color/darkest_Black</item>
         <item name="colorSurfaceVariant">@color/nav_bg</item>
     </style>
 
-    <style name="Theme.Dantotsu.PurpleOLED" parent="Theme.Dantotsu.Purple">
+    <style name="Theme.Kiwami.PurpleOLED" parent="Theme.Kiwami.Purple">
         <item name="android:colorBackground">@color/darkest_Black</item>
         <item name="colorSurface">@color/darkest_Black</item>
         <item name="colorSurfaceVariant">@color/nav_bg</item>
     </style>
 
-    <style name="Theme.Dantotsu.PinkOLED" parent="Theme.Dantotsu.Pink">
+    <style name="Theme.Kiwami.PinkOLED" parent="Theme.Kiwami.Pink">
         <item name="android:colorBackground">@color/darkest_Black</item>
         <item name="colorSurface">@color/darkest_Black</item>
         <item name="colorSurfaceVariant">@color/nav_bg</item>
     </style>
 
-    <style name="Theme.Dantotsu.MonochromeOLED" parent="Theme.Dantotsu.Monochrome">
+    <style name="Theme.Kiwami.MonochromeOLED" parent="Theme.Kiwami.Monochrome">
         <item name="android:colorBackground">@color/darkest_Black</item>
         <item name="colorSurface">@color/darkest_Black</item>
         <item name="colorSurfaceVariant">@color/nav_bg</item>
     </style>
 
-    <style name="Theme.Dantotsu.RedOLED" parent="Theme.Dantotsu.Red">
+    <style name="Theme.Kiwami.RedOLED" parent="Theme.Kiwami.Red">
         <item name="android:colorBackground">@color/darkest_Black</item>
         <item name="colorSurface">@color/darkest_Black</item>
         <item name="colorSurfaceVariant">@color/nav_bg</item>
     </style>
 
-    <style name="Theme.Dantotsu.OriaxOLED" parent="Theme.Dantotsu.Oriax">
+    <style name="Theme.Kiwami.OriaxOLED" parent="Theme.Kiwami.Oriax">
         <item name="android:colorBackground">@color/darkest_Black</item>
         <item name="colorSurface">@color/darkest_Black</item>
         <item name="colorSurfaceVariant">@color/nav_bg</item>
     </style>
 
-    <style name="Theme.Dantotsu.LavenderOLED" parent="Theme.Dantotsu.Lavender">
+    <style name="Theme.Kiwami.LavenderOLED" parent="Theme.Kiwami.Lavender">
         <item name="android:colorBackground">@color/darkest_Black</item>
         <item name="colorSurface">@color/darkest_Black</item>
         <item name="colorSurfaceVariant">@color/nav_bg</item>
     </style>
 
-    <style name="Theme.Dantotsu.SaikouOLED" parent="Theme.Dantotsu.Saikou">
+    <style name="Theme.Kiwami.SaikouOLED" parent="Theme.Kiwami.Saikou">
         <item name="android:colorBackground">@color/darkest_Black</item>
         <item name="colorSurface">@color/darkest_Black</item>
         <item name="colorSurfaceVariant">@color/nav_bg</item>
     </style>
 
-    <style name="Theme.Dantotsu.OceanOLED" parent="Theme.Dantotsu.Ocean">
+    <style name="Theme.Kiwami.OceanOLED" parent="Theme.Kiwami.Ocean">
         <item name="android:colorBackground">@color/darkest_Black</item>
         <item name="colorSurface">@color/darkest_Black</item>
         <item name="colorSurfaceVariant">@color/nav_bg</item>

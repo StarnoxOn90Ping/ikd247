@@ -110,7 +110,7 @@ class OnboardingActivity : AppCompatActivity() {
 
     private val pages = listOf(
         Page(
-            Kind.INFO, R.drawable.ic_dantotsu_round, R.string.onboarding_eyebrow_welcome,
+            Kind.INFO, R.drawable.ic_kiwami_round, R.string.onboarding_eyebrow_welcome,
             R.string.onboarding_welcome_title, R.string.onboarding_welcome_desc,
             Motion.FLOAT, tintIcon = false, iconDp = 200, containerDp = 300
         ),

@@ -102,5 +102,5 @@
     </style>
 
 
-    <style name="ThemeOverlay_Dantotsu_MediaRouter" parent="ThemeOverlay.AppCompat" />
+    <style name="ThemeOverlay_Kiwami_MediaRouter" parent="ThemeOverlay.AppCompat" />
 </resources>

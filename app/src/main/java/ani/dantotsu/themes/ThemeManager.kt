@@ -42,17 +42,17 @@ class ThemeManager(private val context: Activity) {
         val theme: String = PrefManager.getVal(PrefName.Theme)
 
         val themeToApply = when (theme) {
-            "BLUE" -> if (useOLED) R.style.Theme_Dantotsu_BlueOLED else R.style.Theme_Dantotsu_Blue
-            "GREEN" -> if (useOLED) R.style.Theme_Dantotsu_GreenOLED else R.style.Theme_Dantotsu_Green
-            "PURPLE" -> if (useOLED) R.style.Theme_Dantotsu_PurpleOLED else R.style.Theme_Dantotsu_Purple
-            "PINK" -> if (useOLED) R.style.Theme_Dantotsu_PinkOLED else R.style.Theme_Dantotsu_Pink
-            "ORIAX" -> if (useOLED) R.style.Theme_Dantotsu_OriaxOLED else R.style.Theme_Dantotsu_Oriax
-            "SAIKOU" -> if (useOLED) R.style.Theme_Dantotsu_SaikouOLED else R.style.Theme_Dantotsu_Saikou
-            "RED" -> if (useOLED) R.style.Theme_Dantotsu_RedOLED else R.style.Theme_Dantotsu_Red
-            "LAVENDER" -> if (useOLED) R.style.Theme_Dantotsu_LavenderOLED else R.style.Theme_Dantotsu_Lavender
-            "OCEAN" -> if (useOLED) R.style.Theme_Dantotsu_OceanOLED else R.style.Theme_Dantotsu_Ocean
-            "MONOCHROME (BETA)" -> if (useOLED) R.style.Theme_Dantotsu_MonochromeOLED else R.style.Theme_Dantotsu_Monochrome
-            else -> if (useOLED) R.style.Theme_Dantotsu_BlueOLED else R.style.Theme_Dantotsu_Blue
+            "BLUE" -> if (useOLED) R.style.Theme_Kiwami_BlueOLED else R.style.Theme_Kiwami_Blue
+            "GREEN" -> if (useOLED) R.style.Theme_Kiwami_GreenOLED else R.style.Theme_Kiwami_Green
+            "PURPLE" -> if (useOLED) R.style.Theme_Kiwami_PurpleOLED else R.style.Theme_Kiwami_Purple
+            "PINK" -> if (useOLED) R.style.Theme_Kiwami_PinkOLED else R.style.Theme_Kiwami_Pink
+            "ORIAX" -> if (useOLED) R.style.Theme_Kiwami_OriaxOLED else R.style.Theme_Kiwami_Oriax
+            "SAIKOU" -> if (useOLED) R.style.Theme_Kiwami_SaikouOLED else R.style.Theme_Kiwami_Saikou
+            "RED" -> if (useOLED) R.style.Theme_Kiwami_RedOLED else R.style.Theme_Kiwami_Red
+            "LAVENDER" -> if (useOLED) R.style.Theme_Kiwami_LavenderOLED else R.style.Theme_Kiwami_Lavender
+            "OCEAN" -> if (useOLED) R.style.Theme_Kiwami_OceanOLED else R.style.Theme_Kiwami_Ocean
+            "MONOCHROME (BETA)" -> if (useOLED) R.style.Theme_Kiwami_MonochromeOLED else R.style.Theme_Kiwami_Monochrome
+            else -> if (useOLED) R.style.Theme_Kiwami_BlueOLED else R.style.Theme_Kiwami_Blue
         }
 
         val window = context.window
@@ -65,7 +65,7 @@ class ThemeManager(private val context: Activity) {
         context.setTheme(themeToApply)
         val useSystemFont = PrefManager.getVal<Boolean>(PrefName.UseSystemFont)
         if (useSystemFont) {
-            context.theme.applyStyle(R.style.ThemeOverlay_Dantotsu_SystemFont, true)
+            context.theme.applyStyle(R.style.ThemeOverlay_Kiwami_SystemFont, true)
         }
         window.decorView.layoutDirection = View.LAYOUT_DIRECTION_LTR
     }
@@ -105,7 +105,7 @@ class ThemeManager(private val context: Activity) {
         }
         val useSystemFont = PrefManager.getVal<Boolean>(PrefName.UseSystemFont)
         if (useSystemFont) {
-            builder.setThemeOverlay(R.style.ThemeOverlay_Dantotsu_SystemFont)
+            builder.setThemeOverlay(R.style.ThemeOverlay_Kiwami_SystemFont)
         }
         if (needMaterial && !useMaterialYou) return true
 
@@ -124,7 +124,7 @@ class ThemeManager(private val context: Activity) {
         }
         if (useSystemFont) {
             val optionsFont = DynamicColorsOptions.Builder()
-                .setThemeOverlay(R.style.ThemeOverlay_Dantotsu_SystemFont)
+                .setThemeOverlay(R.style.ThemeOverlay_Kiwami_SystemFont)
                 .build()
             DynamicColors.applyToActivityIfAvailable(activity, optionsFont)
         }

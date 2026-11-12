@@ -31,7 +31,7 @@
     <string name="login">Login</string>
     <string name="logout">Logout</string>
 
-    <string name="dantotsu" translatable="false">https://dantotsu.app/</string>
+    <string name="project_website" translatable="false">https://dantotsu.app/</string>
     <string name="discord" translatable="false">https://discord.gg/4HPZ5nAWwM</string>
     <string name="github" translatable="false">https://github.com/StarnoxOn90Ping/Kiwami</string>
     <string name="telegram" translatable="false" tools:ignore="Typos">https://t.me/+gzBCQExtLQo1YTNh </string>
@@ -470,22 +470,22 @@
     <string name="review">Review</string>
     <string name="reviews">Reviews</string>
     <string name="discord_nothing_button">Display only the first button</string>
-    <string name="discord_dantotsu_button">Display dantotsu in the second button</string>
+    <string name="discord_kiwami_button">Display dantotsu in the second button</string>
     <string name="discord_anilist_button">Display your AniList profile instead</string>
     <string name="discord_rich_presence">Discord Rich Presence</string>
-    <string name="stream_on_dantotsu">Stream on Dantotsu</string>
+    <string name="stream_on_kiwami">Stream on Dantotsu</string>
     <string name="view_my_anilist">View My AniList</string>
     <string name="discord_preview">Preview</string>
     <string name="discord_playing_game">Playing a game</string>
     <string name="discord_just_now">Just Now</string>
     <string name="discord_select_service">Select Icon Service &amp; Links</string>
-    <string name="discord_dantotsu_mode">Dantotsu Mode</string>
+    <string name="discord_kiwami_mode">Dantotsu Mode</string>
     <string name="discord_anilist_mode">AniList Mode</string>
     <string name="discord_anime_presence">Anime Presence</string>
     <string name="discord_manga_presence">Manga Presence</string>
     <string name="discord_disable_adult_media_rpc">Disable RPC on adult media</string>
     <string name="discord_no_tracker_link">No Tracker Link (Hidden)</string>
-    <string name="view_profile_in_dantotsu">Kiwami Profile</string>
+    <string name="view_profile_in_kiwami">Kiwami Profile</string>
     <string name="discord_view_profile">View Profile</string>
 
     <string name="jobless_message">DAMN! YOU TRULY ARE JOBLESS\nYOU REACHED THE END</string>
@@ -586,8 +586,8 @@
     <string name="type_source">SOURCE</string>
     <string name="type_contains">CONTAINS</string>
 
-    <string name="read_on_dantotsu">Read on Kiwami</string>
-    <string name="watch_on_dantotsu">Watch on Kiwami</string>
+    <string name="read_on_kiwami">Read on Kiwami</string>
+    <string name="watch_on_kiwami">Watch on Kiwami</string>
 
     <string name="continue_episode">Continue : Episode %1$s%2$s\n%3$s</string>
     <string name="filler_tag"> - Filler</string>

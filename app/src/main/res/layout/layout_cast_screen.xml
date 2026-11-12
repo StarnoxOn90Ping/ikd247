@@ -95,7 +95,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleType="centerCrop"
-            android:src="@drawable/ic_dantotsu_round" />
+            android:src="@drawable/ic_kiwami_round" />
     </com.google.android.material.card.MaterialCardView>
 
     <LinearLayout

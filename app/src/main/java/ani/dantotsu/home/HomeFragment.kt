@@ -578,18 +578,18 @@ binding.homeRecommendedRecyclerView.addOnScrollListener(object :
             }
         }
 
-        binding.homeDantotsuIcon.setSafeOnClickListener {
-            (binding.homeDantotsuIcon.drawable as? Animatable)?.start()
+        binding.homeKiwamiIcon.setSafeOnClickListener {
+            (binding.homeKiwamiIcon.drawable as? Animatable)?.start()
         }
         model.empty.observe(viewLifecycleOwner)
         {
             // posted after every refresh: only react when the empty state actually flips
             val show = it == true
-            if (binding.homeDantotsuContainer.isVisible != show) {
-                binding.homeDantotsuContainer.visibility = if (show) View.VISIBLE else View.GONE
+            if (binding.homeKiwamiContainer.isVisible != show) {
+                binding.homeKiwamiContainer.visibility = if (show) View.VISIBLE else View.GONE
                 if (show) {
-                    (binding.homeDantotsuIcon.drawable as? Animatable)?.start()
-                    binding.homeDantotsuContainer.startAnimation(setSlideUp())
+                    (binding.homeKiwamiIcon.drawable as? Animatable)?.start()
+                    binding.homeKiwamiContainer.startAnimation(setSlideUp())
                 }
             }
         }

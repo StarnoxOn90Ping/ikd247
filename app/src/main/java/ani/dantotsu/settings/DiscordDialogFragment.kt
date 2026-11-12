@@ -58,7 +58,7 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
             if (isLoadingSettings) return@setOnCheckedChangeListener
             val mode = when (checkedId) {
                 binding.radioNothing.id -> "nothing"
-                binding.radioDantotsu.id -> "dantotsu"
+                binding.radioKiwami.id -> "dantotsu"
                 binding.radioAnilist.id -> "anilist"
                 else -> "dantotsu"
             }
@@ -139,9 +139,9 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
 
         when (mode) {
             "nothing" -> binding.radioNothing.isChecked = true
-            "dantotsu" -> binding.radioDantotsu.isChecked = true
+            "dantotsu" -> binding.radioKiwami.isChecked = true
             "anilist" -> binding.radioAnilist.isChecked = true
-            else -> binding.radioDantotsu.isChecked = true
+            else -> binding.radioKiwami.isChecked = true
         }
 
         val showIcon = if (isMangaTabSelected) {
