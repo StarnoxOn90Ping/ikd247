@@ -74,7 +74,7 @@
             android:clipToPadding="false"
             android:orientation="vertical">
 
-            <ani.kiwami.others.Xpandable
+            <nox.kiwami.others.Xpandable
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
@@ -149,11 +149,11 @@
                     app:iconPadding="16dp"
                     app:iconSize="24dp" />
 
-            </ani.kiwami.others.Xpandable>
+            </nox.kiwami.others.Xpandable>
 
 
 
-            <ani.kiwami.others.Xpandable
+            <nox.kiwami.others.Xpandable
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
@@ -230,9 +230,9 @@
                     app:iconSize="24dp" />
 
 
-            </ani.kiwami.others.Xpandable>
+            </nox.kiwami.others.Xpandable>
 
-            <ani.kiwami.others.Xpandable
+            <nox.kiwami.others.Xpandable
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
@@ -248,7 +248,7 @@
                     app:drawableEndCompat="@drawable/ic_round_arrow_drop_down_24"
                     tools:ignore="TextContrastCheck" />
 
-                <ani.kiwami.others.Xpandable
+                <nox.kiwami.others.Xpandable
                     android:id="@+id/subtitleTest"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -284,7 +284,7 @@
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="8dp" />
-                </ani.kiwami.others.Xpandable>
+                </nox.kiwami.others.Xpandable>
 
                 <com.google.android.material.materialswitch.MaterialSwitch
                     android:id="@+id/subSwitch"
@@ -636,9 +636,9 @@
                     android:text="@string/sub_color_info"
                     android:textSize="14sp" />
 
-            </ani.kiwami.others.Xpandable>
+            </nox.kiwami.others.Xpandable>
 
-            <ani.kiwami.others.Xpandable
+            <nox.kiwami.others.Xpandable
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
@@ -887,9 +887,9 @@
                     android:text="@string/auto_skip_fillers_info"
                     android:textSize="14sp" />
 
-            </ani.kiwami.others.Xpandable>
+            </nox.kiwami.others.Xpandable>
 
-            <ani.kiwami.others.Xpandable
+            <nox.kiwami.others.Xpandable
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
@@ -1030,9 +1030,9 @@
                     android:text="@string/watch_complete_percentage_info"
                     android:textSize="14sp" />
 
-            </ani.kiwami.others.Xpandable>
+            </nox.kiwami.others.Xpandable>
 
-            <ani.kiwami.others.Xpandable
+            <nox.kiwami.others.Xpandable
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
@@ -1295,7 +1295,7 @@
                     android:text="@string/skip_time_info"
                     android:textSize="14sp" />
 
-            </ani.kiwami.others.Xpandable>
+            </nox.kiwami.others.Xpandable>
 
 
             <TextView

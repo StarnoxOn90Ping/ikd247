@@ -74,7 +74,7 @@
             android:clipToPadding="false"
             android:orientation="vertical">
 
-            <ani.kiwami.others.Xpandable
+            <nox.kiwami.others.Xpandable
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
@@ -638,9 +638,9 @@
                     app:showText="false"
                     app:thumbTint="@color/button_switch_track" />
 
-            </ani.kiwami.others.Xpandable>
+            </nox.kiwami.others.Xpandable>
 
-            <ani.kiwami.others.Xpandable
+            <nox.kiwami.others.Xpandable
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
@@ -1207,7 +1207,7 @@
                     app:showText="false"
                     app:thumbTint="@color/button_switch_track"
                     tools:ignore="VisualLintButtonSize" />
-            </ani.kiwami.others.Xpandable>
+            </nox.kiwami.others.Xpandable>
 
             <TextView
                 android:layout_width="match_parent"

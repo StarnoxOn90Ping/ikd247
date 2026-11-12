@@ -200,7 +200,7 @@
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     <!-- floating category carousel (enabled by ListActivity only) -->
-    <ani.kiwami.media.user.CategoryCarousel
+    <nox.kiwami.media.user.CategoryCarousel
         android:id="@+id/listCategoryBar"
         android:layout_width="match_parent"
         android:layout_height="64dp"

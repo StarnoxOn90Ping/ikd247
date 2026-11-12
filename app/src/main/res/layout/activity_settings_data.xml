@@ -117,7 +117,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <ani.kiwami.FadingEdgeRecyclerView
+        <nox.kiwami.FadingEdgeRecyclerView
             android:id="@+id/dataSettingsRecyclerView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

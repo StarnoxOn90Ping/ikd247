@@ -1,0 +1,38 @@
+package nox.kiwami.notifications.subscription
+
+import android.content.Context
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
+import nox.kiwami.settings.saving.PrefManager
+import nox.kiwami.util.Logger
+
+class SubscriptionNotificationWorker(appContext: Context, workerParams: WorkerParameters) :
+    CoroutineWorker(appContext, workerParams) {
+
+    override suspend fun doWork(): Result {
+        Logger.log("SubscriptionNotificationWorker: doWork")
+        PrefManager.init(applicationContext)
+        if (SubscriptionAppLockHelper.isAppLocked()) {
+            Logger.log("SubscriptionNotificationWorker: doWork skipped (calculator lock enabled)")
+            return Result.success()
+        }
+        if (System.currentTimeMillis() - lastCheck < 60000) {
+            Logger.log("SubscriptionNotificationWorker: doWork skipped")
+            return Result.success()
+        }
+        lastCheck = System.currentTimeMillis()
+        return if (SubscriptionNotificationTask().execute(applicationContext)) {
+            Result.success()
+        } else {
+            Logger.log("SubscriptionNotificationWorker: doWork failed")
+            Result.retry()
+        }
+    }
+
+    companion object {
+        val checkIntervals = arrayOf(0L, 480, 720, 1440)
+        const val WORK_NAME =
+            "nox.kiwami.notifications.subscription.SubscriptionNotificationWorker"
+        private var lastCheck = 0L
+    }
+}

@@ -3,8 +3,8 @@ package tachiyomi.source.local.entries.manga
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
-import ani.kiwami.media.MediaNameAdapter
-import ani.kiwami.util.Logger
+import nox.kiwami.media.MediaNameAdapter
+import nox.kiwami.util.Logger
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.UnmeteredSource
@@ -481,8 +481,8 @@ class LocalMangaSource(
         private val SUPPORTED_IMAGE_EXTENSIONS = listOf("jpg", "jpeg", "png", "webp", "gif", "bmp")
 
         fun getBaseDirectory(context: Context): DocumentFile? {
-            val uriString = ani.kiwami.settings.saving.PrefManager
-                .getVal<String>(ani.kiwami.settings.saving.PrefName.LocalDir)
+            val uriString = nox.kiwami.settings.saving.PrefManager
+                .getVal<String>(nox.kiwami.settings.saving.PrefName.LocalDir)
             if (uriString.isBlank()) return null
             val uri = Uri.parse(uriString)
             return DocumentFile.fromTreeUri(context, uri)

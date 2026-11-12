@@ -184,7 +184,7 @@
         </LinearLayout>
 
         <!-- Active Queue & Downloaded Content List -->
-        <ani.kiwami.FadingEdgeRecyclerView
+        <nox.kiwami.FadingEdgeRecyclerView
             android:id="@+id/downloadQueueRecyclerView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

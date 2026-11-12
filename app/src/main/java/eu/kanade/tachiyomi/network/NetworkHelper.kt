@@ -2,10 +2,10 @@ package eu.kanade.tachiyomi.network
 
 import android.content.Context
 import android.os.Build
-import ani.kiwami.Mapper
-import ani.kiwami.settings.saving.PrefManager
-import ani.kiwami.settings.saving.PrefName
-import ani.kiwami.util.Logger
+import nox.kiwami.Mapper
+import nox.kiwami.settings.saving.PrefManager
+import nox.kiwami.settings.saving.PrefName
+import nox.kiwami.util.Logger
 import com.lagradost.nicehttp.Requests
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject

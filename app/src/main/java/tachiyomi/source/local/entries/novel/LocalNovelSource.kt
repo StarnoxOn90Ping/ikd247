@@ -2,9 +2,9 @@ package tachiyomi.source.local.entries.novel
 
 import android.content.Context
 import androidx.documentfile.provider.DocumentFile
-import ani.kiwami.settings.saving.PrefManager
-import ani.kiwami.settings.saving.PrefName
-import ani.kiwami.util.Logger
+import nox.kiwami.settings.saving.PrefManager
+import nox.kiwami.settings.saving.PrefName
+import nox.kiwami.util.Logger
 import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.UnmeteredSource
 import eu.kanade.tachiyomi.source.model.FilterList

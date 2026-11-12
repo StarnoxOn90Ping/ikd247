@@ -62,7 +62,7 @@
 
         </LinearLayout>
 
-        <ani.kiwami.others.Xpandable
+        <nox.kiwami.others.Xpandable
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
@@ -187,7 +187,7 @@
                     tools:ignore="LabelFor,TextContrastCheck,DuplicateSpeakableTextCheck" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <ani.kiwami.FadingEdgeRecyclerView
+            <nox.kiwami.FadingEdgeRecyclerView
                 android:id="@+id/settingsRecyclerView1"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -197,9 +197,9 @@
                 android:requiresFadingEdge="vertical"
                 tools:itemCount="2"
                 tools:listitem="@layout/item_settings" />
-        </ani.kiwami.others.Xpandable>
+        </nox.kiwami.others.Xpandable>
 
-        <ani.kiwami.others.Xpandable
+        <nox.kiwami.others.Xpandable
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
@@ -348,7 +348,7 @@
                 android:fontFamily="@font/poppins_bold"
                 android:text="@string/save" />
 
-        </ani.kiwami.others.Xpandable>
+        </nox.kiwami.others.Xpandable>
 
         <TextView
             android:layout_width="match_parent"
@@ -398,7 +398,7 @@
                 tools:ignore="LabelFor,TextContrastCheck,DuplicateSpeakableTextCheck" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <ani.kiwami.FadingEdgeRecyclerView
+        <nox.kiwami.FadingEdgeRecyclerView
             android:id="@+id/settingsRecyclerView2"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

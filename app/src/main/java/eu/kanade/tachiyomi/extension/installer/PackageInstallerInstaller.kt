@@ -10,10 +10,10 @@ import android.content.pm.PackageInstaller
 import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.core.content.IntentSanitizer
-import ani.kiwami.R
-import ani.kiwami.snackString
-import ani.kiwami.toast
-import ani.kiwami.util.Logger
+import nox.kiwami.R
+import nox.kiwami.snackString
+import nox.kiwami.toast
+import nox.kiwami.util.Logger
 import eu.kanade.tachiyomi.extension.InstallStep
 import eu.kanade.tachiyomi.util.lang.use
 import eu.kanade.tachiyomi.util.system.getParcelableExtraCompat

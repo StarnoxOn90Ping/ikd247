@@ -122,7 +122,7 @@
             android:orientation="vertical"
             tools:ignore="ContentDescription">
 
-            <ani.kiwami.FadingEdgeRecyclerView
+            <nox.kiwami.FadingEdgeRecyclerView
                 android:id="@+id/settingsRecyclerView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

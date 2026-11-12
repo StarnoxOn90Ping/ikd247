@@ -1,0 +1,260 @@
+package nox.kiwami.settings.paging
+
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import android.view.animation.LinearInterpolator
+import android.widget.ImageView
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.PagingDataAdapter
+import androidx.paging.PagingSource
+import androidx.paging.PagingState
+import androidx.paging.cachedIn
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.RecyclerView
+import nox.kiwami.R
+import nox.kiwami.databinding.ItemExtensionAllBinding
+import nox.kiwami.others.LanguageMapper
+import nox.kiwami.parsers.novel.LnReaderPluginItem
+import nox.kiwami.parsers.novel.NovelExtension
+import nox.kiwami.parsers.novel.NovelExtensionManager
+import nox.kiwami.settings.saving.PrefManager
+import nox.kiwami.settings.saving.PrefName
+import com.bumptech.glide.Glide
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+
+class NovelExtensionsViewModelFactory(
+    private val novelExtensionManager: NovelExtensionManager
+) : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return NovelExtensionsViewModel(novelExtensionManager) as T
+    }
+}
+
+class NovelExtensionsViewModel(
+    novelExtensionManager: NovelExtensionManager
+) : ViewModel() {
+    private val searchQuery = MutableStateFlow("")
+    private var currentPagingSource: NovelExtensionPagingSource? = null
+
+    fun setSearchQuery(query: String) {
+        searchQuery.value = query
+    }
+
+    fun invalidatePager() {
+        currentPagingSource?.invalidate()
+
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val pagerFlow: Flow<PagingData<NovelExtension.Available>> = combine(
+        novelExtensionManager.availableExtensionsFlow,
+        novelExtensionManager.installedExtensionsFlow,
+        novelExtensionManager.lnReaderManager.availablePluginsFlow,
+        novelExtensionManager.lnReaderManager.installedPluginsFlow,
+        searchQuery
+    ) { available, installed, lnAvailable, lnInstalled, query ->
+        val installedPkgs = installed.map { it.pkgName }.toSet()
+        val installedLnIds = lnInstalled.map { it.id }.toSet()
+
+        val lnAsAvailable = lnAvailable
+            .filter { it.id !in installedLnIds }
+            .map { plugin ->
+                NovelExtension.Available(
+                    name = plugin.name,
+                    pkgName = "lnreader-${plugin.id}",
+                    versionName = plugin.version,
+                    versionCode = 0L,
+                    repository = "lnreader",
+                    sources = emptyList(),
+                    iconUrl = plugin.iconUrl,
+                    lang = plugin.lang,
+                )
+            }
+
+        val combinedAvailable = available.filterNot { avail ->
+            avail.pkgName.isBlank() || avail.versionName.isBlank() ||
+            installed.any { inst -> nox.kiwami.parsers.novel.isSameNovelExtension(avail.pkgName, avail.name, inst.pkgName, inst.name) }
+        } + lnAsAvailable
+        Pair(combinedAvailable, query)
+    }.flatMapLatest { (combinedAvailable, query) ->
+        Pager(
+            PagingConfig(
+                pageSize = 15,
+                initialLoadSize = 15,
+                prefetchDistance = 15
+            )
+        ) {
+            val nEPS = NovelExtensionPagingSource(combinedAvailable, novelExtensionManager, query)
+            currentPagingSource = nEPS
+            nEPS
+        }.flow
+    }.cachedIn(viewModelScope)
+}
+
+
+class NovelExtensionPagingSource(
+    private val availableExtensions: List<NovelExtension.Available>,
+    private val novelExtensionManager: NovelExtensionManager,
+    private val searchQuery: String
+) : PagingSource<Int, NovelExtension.Available>() {
+
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, NovelExtension.Available> {
+        val position = params.key ?: 0
+        val installed = novelExtensionManager.installedExtensionsFlow.value
+        val installedLnIds = novelExtensionManager.lnReaderManager.installedPluginsFlow.value.map { it.id }.toSet()
+        val uninstalledAvailable = availableExtensions.filterNot { avail ->
+            if (avail.pkgName.startsWith("lnreader-")) {
+                avail.pkgName.removePrefix("lnreader-") in installedLnIds
+            } else {
+                installed.any { inst -> nox.kiwami.parsers.novel.isSameNovelExtension(avail.pkgName, avail.name, inst.pkgName, inst.name) }
+            }
+        }
+        val query = searchQuery
+        val filteredExtensions = if (query.isEmpty()) {
+            uninstalledAvailable
+        } else {
+            uninstalledAvailable.filter { it.name.contains(query, ignoreCase = true) }
+        }
+        val lang: String = PrefManager.getVal(PrefName.LangSort)
+        val langFilter = if (lang != "all") {
+            filteredExtensions.filter { ext ->
+                val extLangCode = LanguageMapper.getLanguageCode(ext.lang)
+                extLangCode.equals(lang, ignoreCase = true) || ext.lang.equals(lang, ignoreCase = true)
+            }
+        } else {
+            filteredExtensions
+        }
+        return try {
+            val sublist = langFilter.subList(
+                fromIndex = position,
+                toIndex = (position + params.loadSize).coerceAtMost(langFilter.size)
+            )
+            LoadResult.Page(
+                data = sublist,
+                prevKey = if (position == 0) null else position - params.loadSize,
+                nextKey = if (position + params.loadSize >= langFilter.size) null else position + params.loadSize
+            )
+        } catch (e: Exception) {
+            LoadResult.Error(e)
+        }
+    }
+
+    override fun getRefreshKey(state: PagingState<Int, NovelExtension.Available>): Int? {
+        return null
+    }
+}
+
+class NovelExtensionAdapter(private val clickListener: OnNovelInstallClickListener) :
+    PagingDataAdapter<NovelExtension.Available, NovelExtensionAdapter.NovelExtensionViewHolder>(
+        DIFF_CALLBACK
+    ) {
+
+    private val skipIcons: Boolean = PrefManager.getVal(PrefName.SkipExtensionIcons)
+
+    companion object {
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<NovelExtension.Available>() {
+            override fun areItemsTheSame(
+                oldItem: NovelExtension.Available,
+                newItem: NovelExtension.Available
+            ): Boolean {
+                return oldItem.pkgName == newItem.pkgName && oldItem.repository == newItem.repository
+            }
+
+            override fun areContentsTheSame(
+                oldItem: NovelExtension.Available,
+                newItem: NovelExtension.Available
+            ): Boolean {
+                return oldItem == newItem
+            }
+        }
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NovelExtensionViewHolder {
+        val binding =
+            ItemExtensionAllBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return NovelExtensionViewHolder(binding)
+    }
+
+    override fun onBindViewHolder(holder: NovelExtensionViewHolder, position: Int) {
+        val extension = getItem(position)
+        if (extension != null) {
+            if (!skipIcons) {
+                Glide.with(holder.itemView.context)
+                    .load(extension.iconUrl)
+                    .into(holder.extensionIconImageView)
+            }
+            holder.bind(extension)
+        }
+    }
+
+    inner class NovelExtensionViewHolder(private val binding: ItemExtensionAllBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+
+        private val job = Job()
+        private val scope = CoroutineScope(Dispatchers.Main + job)
+
+        init {
+            binding.closeTextView.setOnClickListener {
+                if (bindingAdapterPosition == RecyclerView.NO_POSITION) return@setOnClickListener
+                val extension = getItem(bindingAdapterPosition)
+                if (extension != null) {
+                    clickListener.onInstallClick(extension)
+                    binding.closeTextView.setImageResource(R.drawable.ic_sync)
+                    scope.launch {
+                        while (isActive) {
+                            withContext(Dispatchers.Main) {
+                                binding.closeTextView.animate()
+                                    .rotationBy(360f)
+                                    .setDuration(1000)
+                                    .setInterpolator(LinearInterpolator())
+                                    .start()
+                            }
+                            delay(1000)
+                        }
+                    }
+                }
+            }
+        }
+
+        val extensionIconImageView: ImageView = binding.extensionIconImageView
+        fun bind(extension: NovelExtension.Available) {
+            val lang = LanguageMapper.getLanguageName(extension.lang)
+            binding.extensionNameTextView.text = extension.name
+            val repo = extension.repoName ?: nox.kiwami.parsers.ExtensionRepoMetaHelper.getRepoBadgeName(extension.repository)
+            val repoBadge = if (repo.isNotBlank()) "@$repo" else ""
+            val versionText = listOf(lang, extension.versionName, repoBadge).filter { it.isNotBlank() }.joinToString(" ")
+            binding.extensionVersionTextView.text = versionText
+        }
+
+        fun clear() {
+            job.cancel() // Cancel the coroutine when the view is recycled
+        }
+    }
+
+    override fun onViewRecycled(holder: NovelExtensionViewHolder) {
+        super.onViewRecycled(holder)
+        holder.clear()
+    }
+}
+
+interface OnNovelInstallClickListener {
+    fun onInstallClick(pkg: NovelExtension.Available)
+}

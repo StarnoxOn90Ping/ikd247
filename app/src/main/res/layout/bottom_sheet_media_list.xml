@@ -312,7 +312,7 @@
 
             </LinearLayout>
 
-            <ani.kiwami.others.Xpandable
+            <nox.kiwami.others.Xpandable
                 android:id="@+id/mediaListExpandable"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -419,7 +419,7 @@
 
                 </LinearLayout>
 
-            </ani.kiwami.others.Xpandable>
+            </nox.kiwami.others.Xpandable>
 
             <LinearLayout
                 android:layout_width="match_parent"

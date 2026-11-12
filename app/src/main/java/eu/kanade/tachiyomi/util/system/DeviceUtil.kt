@@ -2,7 +2,7 @@ package eu.kanade.tachiyomi.util.system
 
 import android.annotation.SuppressLint
 import android.os.Build
-import ani.kiwami.util.Logger
+import nox.kiwami.util.Logger
 
 object DeviceUtil {
 

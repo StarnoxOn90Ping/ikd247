@@ -141,7 +141,7 @@
                 android:visibility="gone"
                 app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-            <ani.kiwami.FadingEdgeRecyclerView
+            <nox.kiwami.FadingEdgeRecyclerView
                 android:id="@+id/authorCharactersRecycler"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -155,7 +155,7 @@
                 tools:orientation="horizontal"
                 tools:visibility="visible" />
 
-            <ani.kiwami.FadingEdgeRecyclerView
+            <nox.kiwami.FadingEdgeRecyclerView
                 android:id="@+id/characterRecyclerView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

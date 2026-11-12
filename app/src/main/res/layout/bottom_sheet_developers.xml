@@ -31,7 +31,7 @@
         android:layout_height="wrap_content"
         android:layout_weight="1">
 
-        <ani.kiwami.FadingEdgeRecyclerView
+        <nox.kiwami.FadingEdgeRecyclerView
             android:id="@+id/devsRecyclerView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

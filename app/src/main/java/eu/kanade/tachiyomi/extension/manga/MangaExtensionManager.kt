@@ -2,9 +2,9 @@ package eu.kanade.tachiyomi.extension.manga
 
 import android.content.Context
 import android.graphics.drawable.Drawable
-import ani.kiwami.media.MediaType
-import ani.kiwami.snackString
-import ani.kiwami.util.Logger
+import nox.kiwami.media.MediaType
+import nox.kiwami.snackString
+import nox.kiwami.util.Logger
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.InstallStep
 import eu.kanade.tachiyomi.extension.api.ExtensionGithubApi
@@ -219,7 +219,7 @@ class MangaExtensionManager(
                         repoName = newRepoName,
                     )
                     changed = true
-                    ani.kiwami.parsers.ExtensionRepoMetaHelper.saveInstalledExtensionRepo(
+                    nox.kiwami.parsers.ExtensionRepoMetaHelper.saveInstalledExtensionRepo(
                         pkgName,
                         newRepo,
                         newRepoName
@@ -241,7 +241,7 @@ class MangaExtensionManager(
      * @param extension The extension to be installed.
      */
     fun installExtension(extension: MangaExtension.Available): Observable<InstallStep> {
-        ani.kiwami.parsers.ExtensionRepoMetaHelper.saveInstalledExtensionRepo(
+        nox.kiwami.parsers.ExtensionRepoMetaHelper.saveInstalledExtensionRepo(
             extension.pkgName,
             extension.repository,
             extension.repoName

@@ -5,12 +5,12 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.pm.PackageInfoCompat
-import ani.kiwami.connections.crashlytics.CrashlyticsInterface
-import ani.kiwami.media.MediaType
-import ani.kiwami.parsers.NovelInterface
-import ani.kiwami.parsers.novel.NovelExtension
-import ani.kiwami.parsers.novel.NovelLoadResult
-import ani.kiwami.util.Logger
+import nox.kiwami.connections.crashlytics.CrashlyticsInterface
+import nox.kiwami.media.MediaType
+import nox.kiwami.parsers.NovelInterface
+import nox.kiwami.parsers.novel.NovelExtension
+import nox.kiwami.parsers.novel.NovelLoadResult
+import nox.kiwami.util.Logger
 import dalvik.system.PathClassLoader
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
@@ -32,8 +32,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import ani.kiwami.core.metro.GraphProvider
-import ani.kiwami.di.AppGraph
+import nox.kiwami.core.metro.GraphProvider
+import nox.kiwami.di.AppGraph
 import java.util.Locale
 import java.io.File
 
@@ -571,7 +571,7 @@ internal object ExtensionLoader {
             else -> "all"
         }
 
-        val savedRepo = ani.kiwami.parsers.ExtensionRepoMetaHelper.getInstalledExtensionRepo(pkgName)
+        val savedRepo = nox.kiwami.parsers.ExtensionRepoMetaHelper.getInstalledExtensionRepo(pkgName)
         val extension = AnimeExtension.Installed(
             name = extName,
             pkgName = pkgName,
@@ -708,7 +708,7 @@ internal object ExtensionLoader {
             else -> "all"
         }
 
-        val savedRepo = ani.kiwami.parsers.ExtensionRepoMetaHelper.getInstalledExtensionRepo(pkgName)
+        val savedRepo = nox.kiwami.parsers.ExtensionRepoMetaHelper.getInstalledExtensionRepo(pkgName)
         val extension = MangaExtension.Installed(
             name = extName,
             pkgName = pkgName,
@@ -773,8 +773,8 @@ internal object ExtensionLoader {
             candidateNames.add("$pkgName.${cleanLabel.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }}")
             candidateNames.add("$pkgName.$pkgSuffix")
             candidateNames.add("$pkgName.${pkgSuffix.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }}")
-            candidateNames.add("ani.kiwami.extension.novel.$pkgSuffix.$cleanLabel")
-            candidateNames.add("ani.kiwami.extension.novel.$pkgSuffix.${pkgSuffix.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }}")
+            candidateNames.add("nox.kiwami.extension.novel.$pkgSuffix.$cleanLabel")
+            candidateNames.add("nox.kiwami.extension.novel.$pkgSuffix.${pkgSuffix.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }}")
             if (pkgName.contains('.')) {
                 candidateNames.add("${pkgName.substringBeforeLast('.')}.$pkgSuffix.$cleanLabel")
             }
@@ -807,7 +807,7 @@ internal object ExtensionLoader {
             return NovelLoadResult.Error(if (e is Exception) e else Exception(e))
         }
 
-        val savedRepo = ani.kiwami.parsers.ExtensionRepoMetaHelper.getInstalledExtensionRepo(pkgName)
+        val savedRepo = nox.kiwami.parsers.ExtensionRepoMetaHelper.getInstalledExtensionRepo(pkgName)
         val extension = NovelExtension.Installed(
             name = extName,
             pkgName = pkgName,
@@ -832,21 +832,21 @@ internal object ExtensionLoader {
 
             object : NovelInterface {
                 @Suppress("UNCHECKED_CAST")
-                override suspend fun search(query: String, client: com.lagradost.nicehttp.Requests): List<ani.kiwami.parsers.ShowResponse> {
+                override suspend fun search(query: String, client: com.lagradost.nicehttp.Requests): List<nox.kiwami.parsers.ShowResponse> {
                     val searchMethod = instanceClass.methods.first { it.name == "search" }
                     val result = kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn<Any?> { cont ->
                         searchMethod.invoke(instance, query, client, cont)
                     }
-                    return (result as? List<*>)?.filterIsInstance<ani.kiwami.parsers.ShowResponse>() ?: emptyList()
+                    return (result as? List<*>)?.filterIsInstance<nox.kiwami.parsers.ShowResponse>() ?: emptyList()
                 }
 
                 @Suppress("UNCHECKED_CAST")
-                override suspend fun loadBook(link: String, extra: Map<String, String>?, client: com.lagradost.nicehttp.Requests): ani.kiwami.parsers.Book {
+                override suspend fun loadBook(link: String, extra: Map<String, String>?, client: com.lagradost.nicehttp.Requests): nox.kiwami.parsers.Book {
                     val loadMethod = instanceClass.methods.first { it.name == "loadBook" }
                     val result = kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn<Any?> { cont ->
                         loadMethod.invoke(instance, link, extra, client, cont)
                     }
-                    return result as? ani.kiwami.parsers.Book ?: ani.kiwami.parsers.Book("", "", "", emptyList())
+                    return result as? nox.kiwami.parsers.Book ?: nox.kiwami.parsers.Book("", "", "", emptyList())
                 }
             }
         } catch (e: Throwable) {
@@ -865,10 +865,10 @@ internal object ExtensionLoader {
         if (type == MediaType.NOVEL) {
             val meta = pkgInfo.applicationInfo?.metaData
             val hasFeature = pkgInfo.reqFeatures.orEmpty().any {
-                it.name == "dantotsu.novelextension" || it.name == "ani.kiwami.novelextension"
+                it.name == "dantotsu.novelextension" || it.name == "nox.kiwami.novelextension"
             }
             if (hasFeature) return true
-            return pkgInfo.packageName.startsWith("ani.kiwami.extension.novel") ||
+            return pkgInfo.packageName.startsWith("nox.kiwami.extension.novel") ||
                     pkgInfo.packageName.contains(".extension.novel") ||
                     meta?.containsKey("dantotsu.novelextension.class") == true
         }

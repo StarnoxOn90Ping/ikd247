@@ -5,10 +5,10 @@ import android.os.Bundle
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import ani.kiwami.addons.download.DownloadAddonManager
-import ani.kiwami.media.AddonType
-import ani.kiwami.media.MediaType
-import ani.kiwami.parsers.novel.NovelExtensionManager
+import nox.kiwami.addons.download.DownloadAddonManager
+import nox.kiwami.media.AddonType
+import nox.kiwami.media.MediaType
+import nox.kiwami.parsers.novel.NovelExtensionManager
 import eu.kanade.tachiyomi.extension.InstallStep
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager

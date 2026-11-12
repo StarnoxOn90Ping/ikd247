@@ -5,10 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.content.ContextCompat
-import ani.kiwami.media.MediaType
-import ani.kiwami.parsers.novel.NovelExtension
-import ani.kiwami.parsers.novel.NovelLoadResult
-import ani.kiwami.util.Logger
+import nox.kiwami.media.MediaType
+import nox.kiwami.parsers.novel.NovelExtension
+import nox.kiwami.parsers.novel.NovelLoadResult
+import nox.kiwami.util.Logger
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.extension.anime.model.AnimeLoadResult
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
@@ -20,7 +20,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import tachiyomi.core.util.lang.launchNow
 import androidx.core.net.toUri
-import ani.kiwami.BuildConfig
+import nox.kiwami.BuildConfig
 
 /**
  * Broadcast receiver that listens for the system's packages installed, updated or removed, and only

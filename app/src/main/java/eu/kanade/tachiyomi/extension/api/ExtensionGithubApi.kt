@@ -1,12 +1,12 @@
 package eu.kanade.tachiyomi.extension.api
 
-import ani.kiwami.asyncMap
-import ani.kiwami.media.MediaType
-import ani.kiwami.parsers.novel.AvailableNovelSources
-import ani.kiwami.parsers.novel.NovelExtension
-import ani.kiwami.settings.saving.PrefManager
-import ani.kiwami.settings.saving.PrefName
-import ani.kiwami.util.Logger
+import nox.kiwami.asyncMap
+import nox.kiwami.media.MediaType
+import nox.kiwami.parsers.novel.AvailableNovelSources
+import nox.kiwami.parsers.novel.NovelExtension
+import nox.kiwami.settings.saving.PrefManager
+import nox.kiwami.settings.saving.PrefName
+import nox.kiwami.util.Logger
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.extension.anime.model.AvailableAnimeSources
 import eu.kanade.tachiyomi.extension.manga.model.AvailableMangaSources
@@ -64,7 +64,7 @@ internal class ExtensionGithubApi {
 
     private fun List<ExtensionJsonObject>.toAnimeExtensions(repository: String): List<AnimeExtension.Available> {
         val cleanRepo = cleanRepoUrl(repository)
-        val badge = ani.kiwami.parsers.ExtensionRepoMetaHelper.getRepoBadgeName(repository)
+        val badge = nox.kiwami.parsers.ExtensionRepoMetaHelper.getRepoBadgeName(repository)
         return this
             .filter {
                 val libVersion = it.extractLibVersion()
@@ -201,7 +201,7 @@ internal class ExtensionGithubApi {
                                 json.decodeFromString<NetworkLegacyExtensionRepo>(bodyString)
                             }.getOrNull()
                             if (legacyRepo?.meta != null) {
-                                ani.kiwami.parsers.ExtensionRepoMetaHelper.saveMeta(
+                                nox.kiwami.parsers.ExtensionRepoMetaHelper.saveMeta(
                                     originalUrl,
                                     name = legacyRepo.meta.name,
                                     shortName = legacyRepo.meta.shortName,
@@ -226,7 +226,7 @@ internal class ExtensionGithubApi {
                                 json.decodeFromString<NetworkLegacyExtensionRepo>(bodyString)
                             }.getOrNull()
                             if (legacy?.meta != null) {
-                                ani.kiwami.parsers.ExtensionRepoMetaHelper.saveMeta(
+                                nox.kiwami.parsers.ExtensionRepoMetaHelper.saveMeta(
                                     originalUrl,
                                     name = legacy.meta.name,
                                     shortName = legacy.meta.shortName,
@@ -254,7 +254,7 @@ internal class ExtensionGithubApi {
                         }
 
                         if (animeStore != null) {
-                            ani.kiwami.parsers.ExtensionRepoMetaHelper.saveMeta(
+                            nox.kiwami.parsers.ExtensionRepoMetaHelper.saveMeta(
                                 originalUrl,
                                 name = animeStore.name,
                                 shortName = animeStore.badgeLabel,
@@ -331,7 +331,7 @@ internal class ExtensionGithubApi {
                     }
 
                     if (store != null) {
-                        ani.kiwami.parsers.ExtensionRepoMetaHelper.saveMeta(
+                        nox.kiwami.parsers.ExtensionRepoMetaHelper.saveMeta(
                             originalUrl,
                             name = store.name,
                             shortName = store.badgeLabel,
@@ -447,7 +447,7 @@ internal class ExtensionGithubApi {
 
     private fun List<ExtensionJsonObject>.toMangaExtensions(repository: String): List<MangaExtension.Available> {
         val cleanRepo = cleanRepoUrl(repository)
-        val badge = ani.kiwami.parsers.ExtensionRepoMetaHelper.getRepoBadgeName(repository)
+        val badge = nox.kiwami.parsers.ExtensionRepoMetaHelper.getRepoBadgeName(repository)
         return this
             .filter {
                 val libVersion = it.extractLibVersion()
@@ -531,7 +531,7 @@ internal class ExtensionGithubApi {
 
     private fun List<ExtensionJsonObject>.toNovelExtensions(repository: String): List<NovelExtension.Available> {
         val cleanRepo = cleanRepoUrl(repository)
-        val badge = ani.kiwami.parsers.ExtensionRepoMetaHelper.getRepoBadgeName(repository)
+        val badge = nox.kiwami.parsers.ExtensionRepoMetaHelper.getRepoBadgeName(repository)
         return filter { !it.apk.isNullOrBlank() && !it.pkg.isNullOrBlank() && it.apk.endsWith(".apk", ignoreCase = true) }
             .mapNotNull { extension ->
                 val sources = extension.sources?.map { source ->

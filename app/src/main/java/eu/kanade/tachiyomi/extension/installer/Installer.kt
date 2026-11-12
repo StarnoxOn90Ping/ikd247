@@ -8,11 +8,11 @@ import android.content.IntentFilter
 import android.net.Uri
 import androidx.annotation.CallSuper
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import ani.kiwami.addons.download.DownloadAddonManager
-import ani.kiwami.media.AddonType
-import ani.kiwami.media.MediaType
-import ani.kiwami.media.Type
-import ani.kiwami.parsers.novel.NovelExtensionManager
+import nox.kiwami.addons.download.DownloadAddonManager
+import nox.kiwami.media.AddonType
+import nox.kiwami.media.MediaType
+import nox.kiwami.media.Type
+import nox.kiwami.parsers.novel.NovelExtensionManager
 import eu.kanade.tachiyomi.extension.InstallStep
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.manga.MangaExtensionManager
