@@ -764,7 +764,7 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
 
     /**
      * Scales the banner to the backdrop's height (so it is never zoomed beyond what's needed to fill it),
-     * then slowly glides it left <-> right across the extra width.
+     * then slowly glides it left <-> right across the extra width, starting from the middle.
      */
     private fun layoutBannerPan(imageW: Int, imageH: Int) {
         if (!::binding.isInitialized || imageW <= 0 || imageH <= 0) return
@@ -791,12 +791,19 @@ class MediaDetailsActivity : AppCompatActivity(), AppBarLayout.OnOffsetChangedLi
                 return@doOnLayout
             }
             val speed = PrefManager.getVal(PrefName.AnimationSpeed) as Float
+            // Start in the middle of the banner and head off to the left or right (50/50),
+            // then glide end to end like before.
+            banner.translationX = -range / 2f
             bannerPan = ObjectAnimator.ofFloat(banner, "translationX", 0f, -range).apply {
                 duration = (10000 + 15000 * speed).toLong()
                 interpolator = AccelerateDecelerateInterpolator()
                 repeatCount = ObjectAnimator.INFINITE
                 repeatMode = ObjectAnimator.REVERSE
                 start()
+                // Half way through the first sweep is the middle, moving one way; half way
+                // through the second (reversed) sweep is the middle, moving the other way.
+                currentPlayTime =
+                    if (kotlin.random.Random.nextBoolean()) duration / 2 else duration + duration / 2
                 if (isCollapsed) pause()
             }
         }

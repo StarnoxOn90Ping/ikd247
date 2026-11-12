@@ -1597,32 +1597,27 @@ suspend fun View.pop() {
     delay(100.milliseconds)
 }
 
+private const val BANNER_BLUR_RADIUS = 2
+private const val BANNER_BLUR_SAMPLING = 2
+
 fun blurImage(imageView: ImageView, originalBanner: String?) {
     val banner = ani.dantotsu.others.CustomMediaImages.overrideFor(originalBanner)?.absolutePath
         ?: originalBanner
     if (banner != null) {
-        val radius = PrefManager.getVal<Float>(PrefName.BlurRadius).toInt()
-        val sampling = PrefManager.getVal<Float>(PrefName.BlurSampling).toInt()
         val context = imageView.context
         if (!(context as Activity).isDestroyed) {
             val url = PrefManager.getVal<String>(PrefName.ImageUrl).ifEmpty { banner }
-            if (PrefManager.getVal(PrefName.BlurBanners)) {
-                Glide.with(context as Context)
-                    .load(
-                        if (banner.startsWith("http")) GlideUrl(url) else if (banner.startsWith("content://")) url.toUri() else File(url)
+            Glide.with(context as Context)
+                .load(
+                    if (banner.startsWith("http")) GlideUrl(url) else if (banner.startsWith("content://")) url.toUri() else File(url)
+                )
+                .diskCacheStrategy(DiskCacheStrategy.RESOURCE).override(400)
+                .apply(
+                    RequestOptions.bitmapTransform(
+                        BlurTransformation(BANNER_BLUR_RADIUS, BANNER_BLUR_SAMPLING)
                     )
-                    .diskCacheStrategy(DiskCacheStrategy.RESOURCE).override(400)
-                    .apply(RequestOptions.bitmapTransform(BlurTransformation(radius, sampling)))
-                    .into(imageView)
-
-            } else {
-                Glide.with(context as Context)
-                    .load(
-                        if (banner.startsWith("http")) GlideUrl(url) else if (banner.startsWith("content://")) url.toUri() else File(url)
-                    )
-                    .diskCacheStrategy(DiskCacheStrategy.RESOURCE).override(400)
-                    .into(imageView)
-            }
+                )
+                .into(imageView)
         }
     } else {
         imageView.setImageResource(R.drawable.linear_gradient_bg)
