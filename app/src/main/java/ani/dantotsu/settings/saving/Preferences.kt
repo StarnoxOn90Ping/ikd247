@@ -308,6 +308,8 @@ enum class PrefName(val data: Pref) {
     DiscordId(Pref(Location.Protected, String::class, "")),
     DiscordUserName(Pref(Location.Protected, String::class, "")),
     DiscordAvatar(Pref(Location.Protected, String::class, "")),
+    DiscordBanner(Pref(Location.Protected, String::class, "")),
+    DiscordBannerColor(Pref(Location.Protected, String::class, "")),
     AnilistToken(Pref(Location.Protected, String::class, "")),
     AnilistUserName(Pref(Location.Protected, String::class, "")),
     AnilistUserId(Pref(Location.Protected, String::class, "")),

@@ -23,8 +23,6 @@ import kotlinx.coroutines.withContext
 import okhttp3.Request
 import org.json.JSONObject
 import java.io.File
-import ani.dantotsu.settings.saving.PrefManager
-import ani.dantotsu.settings.saving.PrefName
 
 class Login : AppCompatActivity() {
 
@@ -112,12 +110,7 @@ class Login : AppCompatActivity() {
                     userResponse.body.string()
                 }
 
-                jsonString.let {
-                    val json = JSONObject(it)
-                    PrefManager.setVal(PrefName.DiscordId, json.optString("id"))
-                    PrefManager.setVal(PrefName.DiscordUserName, json.optString("username"))
-                    PrefManager.setVal(PrefName.DiscordAvatar, json.optString("avatar"))
-                }
+                Discord.saveProfile(JSONObject(jsonString))
 
                 // 2. Pre-fetch OAuth2 Bearer token (can take 3-5s for PKCE)
                 TokenManager(

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="discord_settings">Discord Settings</string>
+    <string name="discord_settings_desc">Rich Presence, online status and more</string>
+    <string name="discord_status_title">Online status</string>
+    <string name="discord_status_label_online">Online</string>
+    <string name="discord_status_label_idle">Idle</string>
+    <string name="discord_status_label_dnd">Do Not Disturb</string>
+    <string name="discord_status_label_invisible">Invisible</string>
+    <string name="discord_rpc_display">Rich Presence display</string>
+    <string name="discord_rpc_display_desc">Choose what shows on your Discord profile for anime and manga</string>
+</resources>

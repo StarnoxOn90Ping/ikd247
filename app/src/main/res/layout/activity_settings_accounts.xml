@@ -158,86 +158,114 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <LinearLayout
-            android:id="@+id/settingsDiscordLoginContainer"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/settingsDiscordCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            tools:ignore="ExtraText">
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
 
             <ImageView
-                android:layout_width="31dp"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:adjustViewBounds="true"
-                android:layout_marginEnd="16dp"
-                android:src="@drawable/ic_discord"
-                app:tint="?attr/colorPrimary"
+                android:id="@+id/settingsDiscordBanner"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
                 tools:ignore="ContentDescription" />
 
+            <View
+                android:id="@+id/settingsDiscordBannerColor"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
+
+            <View
+                android:id="@+id/settingsDiscordScrim"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:alpha="0.75"
+                android:background="?attr/colorSurface"
+                android:visibility="gone" />
+
             <LinearLayout
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:gravity="center_vertical"
-                android:minHeight="64dp"
-                android:orientation="vertical">
+                android:orientation="horizontal"
+                android:padding="8dp">
 
-                <TextView
-                    android:id="@+id/settingsDiscordUsername"
-                    android:layout_width="wrap_content"
+                <ImageView
+                    android:id="@+id/settingsDiscordLogo"
+                    android:layout_width="24dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="-2dp"
-                    android:fontFamily="@font/poppins_bold"
-                    android:gravity="center"
-                    android:maxLines="1"
-                    android:text="@string/username"
-                    android:textColor="?attr/colorSecondary"
-                    android:textSize="16sp" />
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="20dp"
+                    android:adjustViewBounds="true"
+                    android:contentDescription="@string/discord_rich_presence"
+                    app:srcCompat="@drawable/ic_discord"
+                    app:tint="?attr/colorPrimary" />
 
-                <TextView
-                    android:id="@+id/settingsDiscordLogin"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="-16dp"
-                    android:layout_marginTop="-16dp"
-                    android:layout_marginBottom="-16dp"
-                    android:fontFamily="@font/poppins_bold"
-                    android:padding="16dp"
-                    android:text="@string/logout"
-                    android:textSize="14sp" />
+                    android:layout_weight="1"
+                    android:gravity="center_vertical"
+                    android:minHeight="64dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/settingsDiscordUsername"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="0dp"
+                        android:layout_marginBottom="-2dp"
+                        android:ellipsize="end"
+                        android:fontFamily="@font/poppins_bold"
+                        android:maxLines="1"
+                        android:text="@string/username"
+                        android:textColor="?attr/colorSecondary"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/settingsDiscordLogin"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="-16dp"
+                        android:layout_marginTop="-16dp"
+                        android:layout_marginBottom="-16dp"
+                        android:fontFamily="@font/poppins_bold"
+                        android:padding="16dp"
+                        android:text="@string/logout"
+                        android:textSize="14sp" />
+
+                </LinearLayout>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/settingsDiscordAvatarContainer"
+                    android:layout_width="51dp"
+                    android:layout_height="51dp"
+                    android:layout_gravity="center_vertical"
+                    android:backgroundTint="@color/nav_bg_inv"
+                    app:cardCornerRadius="26dp">
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/settingsDiscordAvatar"
+                        android:layout_width="51dp"
+                        android:layout_height="51dp"
+                        android:scaleType="center"
+                        app:srcCompat="@drawable/ic_round_person_24"
+                        tools:ignore="ContentDescription,ImageContrastCheck" />
+
+                </com.google.android.material.card.MaterialCardView>
 
             </LinearLayout>
 
-            <ImageView
-                android:id="@+id/settingsPresenceSwitcher"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:contentDescription="@string/discord_rich_presence"
-                android:padding="16dp"
-                android:src="@drawable/discord_status_idle" />
+        </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/settingsDiscordAvatarContainer"
-                android:layout_width="51dp"
-                android:layout_height="51dp"
-                android:layout_gravity="center_vertical"
-                android:backgroundTint="@color/nav_bg_inv"
-                app:cardCornerRadius="26dp">
-
-                <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/settingsDiscordAvatar"
-                    android:layout_width="51dp"
-                    android:layout_height="51dp"
-                    android:scaleType="center"
-                    app:srcCompat="@drawable/ic_round_person_24"
-                    tools:ignore="ContentDescription,ImageContrastCheck" />
-
-            </com.google.android.material.card.MaterialCardView>
-
-        </LinearLayout>
         <ani.dantotsu.FadingEdgeRecyclerView
             android:id="@+id/settingsRecyclerView"
             android:layout_width="match_parent"

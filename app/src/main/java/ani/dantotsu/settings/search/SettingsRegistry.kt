@@ -6,6 +6,7 @@ import ani.dantotsu.R
 import ani.dantotsu.connections.anilist.Anilist
 import ani.dantotsu.connections.discord.Discord
 import ani.dantotsu.settings.AnilistSettingsActivity
+import ani.dantotsu.settings.DiscordSettingsActivity
 import ani.dantotsu.settings.FAQActivity
 import ani.dantotsu.settings.PlayerSettingsActivity
 import ani.dantotsu.settings.ReaderSettingsActivity
@@ -533,14 +534,45 @@ object SettingsRegistry {
         // 10. Accounts & Anilist Settings
         list.add(
             SearchableSetting(
+                title = context.getString(R.string.discord_settings),
+                desc = context.getString(R.string.discord_settings_desc),
+                icon = R.drawable.ic_discord,
+                category = context.getString(R.string.accounts),
+                breadcrumbs = "${context.getString(R.string.settings)} > ${context.getString(R.string.accounts)}",
+                targetActivity = SettingsAccountActivity::class.java,
+                highlightKey = context.getString(R.string.discord_settings)
+            )
+        )
+        list.add(
+            SearchableSetting(
                 title = context.getString(R.string.enable_rpc),
                 desc = context.getString(R.string.enable_rpc_desc),
                 icon = R.drawable.interests_24,
                 category = context.getString(R.string.accounts),
-                breadcrumbs = "${context.getString(R.string.settings)} > ${context.getString(R.string.accounts)}",
-                targetActivity = SettingsAccountActivity::class.java,
-                highlightKey = context.getString(R.string.enable_rpc),
-                isVisible = (Discord.token != null)
+                breadcrumbs = "${context.getString(R.string.settings)} > ${context.getString(R.string.accounts)} > ${context.getString(R.string.discord_settings)}",
+                targetActivity = DiscordSettingsActivity::class.java,
+                highlightKey = context.getString(R.string.enable_rpc)
+            )
+        )
+        list.add(
+            SearchableSetting(
+                title = context.getString(R.string.discord_status_title),
+                icon = R.drawable.discord_status_online,
+                category = context.getString(R.string.accounts),
+                breadcrumbs = "${context.getString(R.string.settings)} > ${context.getString(R.string.accounts)} > ${context.getString(R.string.discord_settings)}",
+                targetActivity = DiscordSettingsActivity::class.java,
+                highlightKey = context.getString(R.string.discord_status_title)
+            )
+        )
+        list.add(
+            SearchableSetting(
+                title = context.getString(R.string.discord_rpc_display),
+                desc = context.getString(R.string.discord_rpc_display_desc),
+                icon = R.drawable.ic_discord,
+                category = context.getString(R.string.accounts),
+                breadcrumbs = "${context.getString(R.string.settings)} > ${context.getString(R.string.accounts)} > ${context.getString(R.string.discord_settings)}",
+                targetActivity = DiscordSettingsActivity::class.java,
+                highlightKey = context.getString(R.string.discord_rpc_display)
             )
         )
         list.add(
