@@ -1,56 +1,56 @@
 package ani.dantotsu.parsers.search
 
-class DantotsuSearchParser(private val tokens: List<DantotsuToken>) {
+class KiwamiSearchParser(private val tokens: List<KiwamiToken>) {
     private var index = 0
 
-    fun parse(): DantotsuSearchNode {
+    fun parse(): KiwamiSearchNode {
         if (tokens.isEmpty()) return SearchEmptyNode
         val result = parseOr()
         return if (index < tokens.size) result else result
     }
 
-    private fun parseOr(): DantotsuSearchNode {
-        val nodes = mutableListOf<DantotsuSearchNode>()
+    private fun parseOr(): KiwamiSearchNode {
+        val nodes = mutableListOf<KiwamiSearchNode>()
         nodes.add(parseAnd())
 
-        while (match(DantotsuToken.Or)) {
+        while (match(KiwamiToken.Or)) {
             nodes.add(parseAnd())
         }
 
         return if (nodes.size == 1) nodes[0] else SearchOrNode(nodes)
     }
 
-    private fun parseAnd(): DantotsuSearchNode {
-        val nodes = mutableListOf<DantotsuSearchNode>()
+    private fun parseAnd(): KiwamiSearchNode {
+        val nodes = mutableListOf<KiwamiSearchNode>()
         nodes.add(parseTerm())
 
-        while (index < tokens.size && peek() !is DantotsuToken.RParen && peek() !is DantotsuToken.Or) {
-            match(DantotsuToken.And) // Optional explicit &&
+        while (index < tokens.size && peek() !is KiwamiToken.RParen && peek() !is KiwamiToken.Or) {
+            match(KiwamiToken.And) // Optional explicit &&
             nodes.add(parseTerm())
         }
 
         return if (nodes.size == 1) nodes[0] else SearchAndNode(nodes)
     }
 
-    private fun parseTerm(): DantotsuSearchNode {
+    private fun parseTerm(): KiwamiSearchNode {
         var negated = false
-        if (match(DantotsuToken.Not)) {
+        if (match(KiwamiToken.Not)) {
             negated = true
         }
 
         val node = when (val current = next()) {
-            is DantotsuToken.LParen -> {
+            is KiwamiToken.LParen -> {
                 val subNode = parseOr()
-                match(DantotsuToken.RParen)
+                match(KiwamiToken.RParen)
                 subNode
             }
-            is DantotsuToken.FieldToken -> {
+            is KiwamiToken.FieldToken -> {
                 SearchFieldNode(current.field, current.value, negated)
             }
-            is DantotsuToken.CompToken -> {
+            is KiwamiToken.CompToken -> {
                 SearchCompNode(current.field, current.comparator, current.value, negated)
             }
-            is DantotsuToken.TermToken -> {
+            is KiwamiToken.TermToken -> {
                 SearchGeneralNode(current.value, negated)
             }
             else -> SearchEmptyNode
@@ -63,11 +63,11 @@ class DantotsuSearchParser(private val tokens: List<DantotsuToken>) {
         }
     }
 
-    private fun peek(): DantotsuToken? = tokens.getOrNull(index)
+    private fun peek(): KiwamiToken? = tokens.getOrNull(index)
 
-    private fun next(): DantotsuToken? = tokens.getOrNull(index++)
+    private fun next(): KiwamiToken? = tokens.getOrNull(index++)
 
-    private fun match(expected: DantotsuToken): Boolean {
+    private fun match(expected: KiwamiToken): Boolean {
         if (peek() == expected) {
             index++
             return true

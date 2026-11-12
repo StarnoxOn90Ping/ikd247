@@ -10,7 +10,7 @@ import com.google.android.gms.cast.framework.media.CastMediaOptions
 import com.google.android.gms.cast.framework.media.MediaIntentReceiver
 import com.google.android.gms.cast.framework.media.NotificationOptions
 
-class DantotsuCastOptionsProvider : OptionsProvider {
+class KiwamiCastOptionsProvider : OptionsProvider {
     override fun getCastOptions(context: Context): CastOptions {
         val buttonActions = listOf(
             MediaIntentReceiver.ACTION_REWIND,

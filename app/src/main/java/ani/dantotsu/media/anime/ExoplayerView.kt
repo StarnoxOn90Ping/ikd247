@@ -90,7 +90,7 @@ import ani.dantotsu.media.Media
 import ani.dantotsu.media.MediaDetailsViewModel
 import ani.dantotsu.media.MediaNameAdapter
 import ani.dantotsu.media.anime.player.CastScreenView
-import ani.dantotsu.media.anime.player.DantotsuPlayerManager
+import ani.dantotsu.media.anime.player.KiwamiPlayerManager
 import ani.dantotsu.media.anime.player.PlayerAniSkipManager
 import ani.dantotsu.media.anime.player.PlayerCastManager
 import ani.dantotsu.media.anime.player.PlayerDiscordManager
@@ -140,7 +140,7 @@ class ExoplayerView : AppCompatActivity(), Player.Listener {
     private val playerFullscreen = "playerFullscreen"
     private val playerOnPlay = "playerOnPlay"
 
-    lateinit var playerManager: DantotsuPlayerManager
+    lateinit var playerManager: KiwamiPlayerManager
         private set
     lateinit var subtitleManager: PlayerSubtitleManager
         private set
@@ -371,7 +371,7 @@ class ExoplayerView : AppCompatActivity(), Player.Listener {
         subtitleManager = PlayerSubtitleManager(this, playerView, customSubtitleView, model) {
             playerManager.exoPlayer
         }
-        playerManager = DantotsuPlayerManager(this, playerView, subtitleManager, client) { error ->
+        playerManager = KiwamiPlayerManager(this, playerView, subtitleManager, client) { error ->
             onPlayerError(error)
         }
         gestureManager = PlayerGestureManager(

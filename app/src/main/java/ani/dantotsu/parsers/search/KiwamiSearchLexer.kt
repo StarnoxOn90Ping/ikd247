@@ -1,29 +1,29 @@
 package ani.dantotsu.parsers.search
 
-sealed interface DantotsuToken {
-    object LParen : DantotsuToken
-    object RParen : DantotsuToken
-    object Not : DantotsuToken
-    object Or : DantotsuToken
-    object And : DantotsuToken
+sealed interface KiwamiToken {
+    object LParen : KiwamiToken
+    object RParen : KiwamiToken
+    object Not : KiwamiToken
+    object Or : KiwamiToken
+    object And : KiwamiToken
 
     data class CompToken(
         val field: String,
         val comparator: String,
         val value: String
-    ) : DantotsuToken
+    ) : KiwamiToken
 
     data class FieldToken(
         val field: String,
         val value: String
-    ) : DantotsuToken
+    ) : KiwamiToken
 
     data class TermToken(
         val value: String
-    ) : DantotsuToken
+    ) : KiwamiToken
 }
 
-object DantotsuSearchLexer {
+object KiwamiSearchLexer {
     private val regex = Regex(
         """
             (?<LParen> \( )|
@@ -38,16 +38,16 @@ object DantotsuSearchLexer {
         RegexOption.COMMENTS
     )
 
-    fun tokenize(query: String): List<DantotsuToken> {
-        val tokens = mutableListOf<DantotsuToken>()
+    fun tokenize(query: String): List<KiwamiToken> {
+        val tokens = mutableListOf<KiwamiToken>()
         for (match in regex.findAll(query)) {
             val groups = match.groups
             when {
-                groups["LParen"] != null -> tokens.add(DantotsuToken.LParen)
-                groups["RParen"] != null -> tokens.add(DantotsuToken.RParen)
-                groups["NOT"] != null -> tokens.add(DantotsuToken.Not)
-                groups["OR"] != null -> tokens.add(DantotsuToken.Or)
-                groups["AND"] != null -> tokens.add(DantotsuToken.And)
+                groups["LParen"] != null -> tokens.add(KiwamiToken.LParen)
+                groups["RParen"] != null -> tokens.add(KiwamiToken.RParen)
+                groups["NOT"] != null -> tokens.add(KiwamiToken.Not)
+                groups["OR"] != null -> tokens.add(KiwamiToken.Or)
+                groups["AND"] != null -> tokens.add(KiwamiToken.And)
                 groups["CompField"] != null -> {
                     val field = groups["CompField"]!!.value
                     val comp = groups["Comparator"]!!.value
@@ -55,7 +55,7 @@ object DantotsuSearchLexer {
                         ?: groups["CompValSingleQuoted"]?.value
                         ?: groups["CompVal"]?.value
                         ?: ""
-                    tokens.add(DantotsuToken.CompToken(field, comp, valStr))
+                    tokens.add(KiwamiToken.CompToken(field, comp, valStr))
                 }
                 groups["Field"] != null -> {
                     val field = groups["Field"]!!.value
@@ -63,7 +63,7 @@ object DantotsuSearchLexer {
                         ?: groups["FieldValSingleQuoted"]?.value
                         ?: groups["FieldVal"]?.value
                         ?: ""
-                    tokens.add(DantotsuToken.FieldToken(field, valStr))
+                    tokens.add(KiwamiToken.FieldToken(field, valStr))
                 }
                 else -> {
                     val valStr = groups["GeneralQuoted"]?.value
@@ -71,7 +71,7 @@ object DantotsuSearchLexer {
                         ?: groups["General"]?.value
                         ?: ""
                     if (valStr.isNotEmpty()) {
-                        tokens.add(DantotsuToken.TermToken(valStr))
+                        tokens.add(KiwamiToken.TermToken(valStr))
                     }
                 }
             }

@@ -53,7 +53,7 @@ import java.util.Calendar
 import java.util.zip.GZIPInputStream
 
 @UnstableApi
-class DantotsuPlayerManager(
+class KiwamiPlayerManager(
     private val activity: AppCompatActivity,
     private val playerView: PlayerView,
     private val subtitleManager: PlayerSubtitleManager,

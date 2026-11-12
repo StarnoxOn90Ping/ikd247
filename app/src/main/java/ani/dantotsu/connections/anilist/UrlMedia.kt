@@ -32,7 +32,7 @@ class UrlMedia : Activity() {
 
         try {
             when (data.scheme?.lowercase()) {
-                "dantotsu" -> handleDantotsuScheme(data)
+                "dantotsu" -> handleKiwamiScheme(data)
                 "http", "https" -> handleHttpScheme(data)
                 else -> handleFallbackScheme(data)
             }
@@ -42,7 +42,7 @@ class UrlMedia : Activity() {
         }
     }
 
-    private fun handleDantotsuScheme(uri: Uri) {
+    private fun handleKiwamiScheme(uri: Uri) {
         val host = uri.host?.lowercase().orEmpty()
         val pathSegments = uri.pathSegments
         val firstSegment = pathSegments.firstOrNull()?.lowercase().orEmpty()
