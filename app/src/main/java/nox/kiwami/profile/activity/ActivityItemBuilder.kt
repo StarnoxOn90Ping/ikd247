@@ -89,7 +89,7 @@ class ActivityItemBuilder {
                     notification.context ?: "You should not see this"
                 }
 
-                NotificationType.DANTOTSU_UPDATE -> {
+                NotificationType.KIWAMI_UPDATE -> {
                     notification.context ?: "You should not see this"
                 }
 

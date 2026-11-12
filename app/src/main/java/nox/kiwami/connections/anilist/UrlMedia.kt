@@ -32,7 +32,7 @@ class UrlMedia : Activity() {
 
         try {
             when (data.scheme?.lowercase()) {
-                "dantotsu" -> handleKiwamiScheme(data)
+                "kiwami" -> handleKiwamiScheme(data)
                 "http", "https" -> handleHttpScheme(data)
                 else -> handleFallbackScheme(data)
             }

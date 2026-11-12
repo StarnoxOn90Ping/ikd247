@@ -259,8 +259,8 @@ enum class PrefName(val data: Pref) {
     //Irrelevant
     Incognito(Pref(Location.Irrelevant, Boolean::class, false)),
     DiscordStatus(Pref(Location.Irrelevant, String::class, "online")),
-    DiscordRPCModeAnime(Pref(Location.Irrelevant, String::class, "dantotsu")),
-    DiscordRPCModeManga(Pref(Location.Irrelevant, String::class, "dantotsu")),
+    DiscordRPCModeAnime(Pref(Location.Irrelevant, String::class, "kiwami")),
+    DiscordRPCModeManga(Pref(Location.Irrelevant, String::class, "kiwami")),
     DiscordRPCShowIconAnime(Pref(Location.Irrelevant, Boolean::class, true)),
     DiscordRPCShowIconManga(Pref(Location.Irrelevant, Boolean::class, true)),
     DiscordRPCDisableAdultMedia(Pref(Location.Irrelevant, Boolean::class, false)),

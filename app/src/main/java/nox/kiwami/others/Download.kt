@@ -31,7 +31,7 @@ object Download {
     }
 
     private fun getDownloadDir(context: Context): File {
-        val direct = File("storage/emulated/0/${Environment.DIRECTORY_DOWNLOADS}/Dantotsu/")
+        val direct = File("storage/emulated/0/${Environment.DIRECTORY_DOWNLOADS}/Kiwami/")
         if (!direct.exists()) direct.mkdirs()
         return direct
     }

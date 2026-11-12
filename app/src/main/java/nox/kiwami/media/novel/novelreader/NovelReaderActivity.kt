@@ -1081,11 +1081,11 @@ class NovelReaderActivity : AppCompatActivity() {
             (function() {
                 try {
                     var targetParent = document.head || document.documentElement;
-                    var fontStyle = document.getElementById('dantotsu-font-override');
+                    var fontStyle = document.getElementById('kiwami-font-override');
                     if ('$fontCombined'.length > 0) {
                         if (!fontStyle) {
                             fontStyle = document.createElement('style');
-                            fontStyle.id = 'dantotsu-font-override';
+                            fontStyle.id = 'kiwami-font-override';
                             targetParent.appendChild(fontStyle);
                         }
                         fontStyle.textContent = '$fontCombined';
@@ -1093,11 +1093,11 @@ class NovelReaderActivity : AppCompatActivity() {
                         fontStyle.remove();
                     }
 
-                    var boldStyle = document.getElementById('dantotsu-bold-override');
+                    var boldStyle = document.getElementById('kiwami-bold-override');
                     if ('$boldCombined'.length > 0) {
                         if (!boldStyle) {
                             boldStyle = document.createElement('style');
-                            boldStyle.id = 'dantotsu-bold-override';
+                            boldStyle.id = 'kiwami-bold-override';
                             targetParent.appendChild(boldStyle);
                         }
                         boldStyle.textContent = '$boldCombined';

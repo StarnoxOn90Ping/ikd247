@@ -176,7 +176,7 @@ curl -fsS -H "Content-Type: application/json" -d "$discord_data" "$DISCORD_WEBHO
   || echo "::warning::Discord embed failed to send"
 
 if [ "$SKIP_BUILD" != "true" ] && [ -n "$APK_PATH" ] && [ -f "$APK_PATH" ]; then
-  curl -fsS -F "dantotsu_debug=@${APK_PATH}" "$DISCORD_WEBHOOK" >/dev/null \
+  curl -fsS -F "kiwami_debug=@${APK_PATH}" "$DISCORD_WEBHOOK" >/dev/null \
     && echo "APK uploaded to Discord" \
     || echo "::warning::APK upload to Discord failed"
 else

@@ -112,7 +112,7 @@
                     android:fontFamily="@font/poppins"
                     android:textColor="?attr/colorSecondary"
                     android:textSize="12sp"
-                    tools:text="Downloads: /storage/emulated/0/Download/Dantotsu" />
+                    tools:text="Downloads: /storage/emulated/0/Download/Kiwami" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

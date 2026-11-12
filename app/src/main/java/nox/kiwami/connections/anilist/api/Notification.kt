@@ -26,7 +26,7 @@ enum class NotificationType(val value: String) {
     //custom
     COMMENT_REPLY("COMMENT_REPLY"),
     COMMENT_WARNING("COMMENT_WARNING"),
-    DANTOTSU_UPDATE("DANTOTSU_UPDATE"),
+    KIWAMI_UPDATE("KIWAMI_UPDATE"),
     SUBSCRIPTION("SUBSCRIPTION");
 
     fun toFormattedString(): String {

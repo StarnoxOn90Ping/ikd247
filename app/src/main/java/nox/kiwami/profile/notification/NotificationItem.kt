@@ -165,7 +165,7 @@ class NotificationItem(
 
             NotificationType.COMMENT_WARNING -> R.drawable.ic_round_notifications_active_24
 
-            NotificationType.DANTOTSU_UPDATE -> R.drawable.ic_round_notifications_active_24
+            NotificationType.KIWAMI_UPDATE -> R.drawable.ic_round_notifications_active_24
         }
     }
 
@@ -486,7 +486,7 @@ class NotificationItem(
                 }
             }
 
-            NotificationType.DANTOTSU_UPDATE -> {
+            NotificationType.KIWAMI_UPDATE -> {
                 image(user = true)
             }
 

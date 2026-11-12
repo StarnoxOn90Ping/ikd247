@@ -1153,7 +1153,7 @@ class NativeVideoDownloader(private val context: Context) : DownloadAddonApiV2 {
         val url = "http://localhost:$rpcPort/jsonrpc"
         val requestMap = mapOf(
             "jsonrpc" to "2.0",
-            "id" to "dantotsu",
+            "id" to "kiwami",
             "method" to method,
             "params" to params
         )

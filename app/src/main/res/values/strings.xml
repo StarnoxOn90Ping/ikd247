@@ -23,7 +23,7 @@
     <string name="play_via_torrent_magnet">Play via Torrent / Magnet</string>
 
     <string name="repo" translatable="false">StarnoxOn90Ping/Kiwami</string>
-    <string name="preference_file_key" translatable="false">dantotsuprefs</string>
+    <string name="preference_file_key" translatable="false">kiwamiprefs</string>
 
     <string name="app_name" translatable="false">Kiwami</string>
     <string name="slogan">The NEW Best Anime &amp; Manga app for Android.</string>
@@ -1343,7 +1343,7 @@ Non quae tempore quo provident laudantium qui illo dolor vel quia dolor et exerc
     <string name="torrent_seasons_linked">%1$d seasons linked</string>
     <string name="torrent_select_season_to_link">Select a season above to manage links</string>
     <string name="screenshot">Screenshot</string>
-    <string name="screenshot_saved">Screenshot saved to Pictures/Dantotsu</string>
+    <string name="screenshot_saved">Screenshot saved to Pictures/Kiwami</string>
     <string name="video_not_ready">Video not ready</string>
 
     <string name="news">News</string>

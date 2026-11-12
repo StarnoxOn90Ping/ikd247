@@ -58,9 +58,9 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
             if (isLoadingSettings) return@setOnCheckedChangeListener
             val mode = when (checkedId) {
                 binding.radioNothing.id -> "nothing"
-                binding.radioKiwami.id -> "dantotsu"
+                binding.radioKiwami.id -> "kiwami"
                 binding.radioAnilist.id -> "anilist"
-                else -> "dantotsu"
+                else -> "kiwami"
             }
             if (isMangaTabSelected) {
                 PrefManager.setVal(PrefName.DiscordRPCModeManga, mode)
@@ -132,14 +132,14 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
         isLoadingSettings = true
 
         val mode = if (isMangaTabSelected) {
-            PrefManager.getVal(PrefName.DiscordRPCModeManga, "dantotsu")
+            PrefManager.getVal(PrefName.DiscordRPCModeManga, "kiwami")
         } else {
-            PrefManager.getVal(PrefName.DiscordRPCModeAnime, "dantotsu")
+            PrefManager.getVal(PrefName.DiscordRPCModeAnime, "kiwami")
         }
 
         when (mode) {
             "nothing" -> binding.radioNothing.isChecked = true
-            "dantotsu" -> binding.radioKiwami.isChecked = true
+            "kiwami" -> binding.radioKiwami.isChecked = true
             "anilist" -> binding.radioAnilist.isChecked = true
             else -> binding.radioKiwami.isChecked = true
         }
@@ -157,8 +157,8 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
     }
 
     private fun updatePreview() {
-        val mode = if (isMangaTabSelected) PrefManager.getVal(PrefName.DiscordRPCModeManga, "dantotsu")
-                   else PrefManager.getVal(PrefName.DiscordRPCModeAnime, "dantotsu")
+        val mode = if (isMangaTabSelected) PrefManager.getVal(PrefName.DiscordRPCModeManga, "kiwami")
+                   else PrefManager.getVal(PrefName.DiscordRPCModeAnime, "kiwami")
         val useIcon = if (isMangaTabSelected) PrefManager.getVal(PrefName.DiscordRPCShowIconManga, true)
                       else PrefManager.getVal(PrefName.DiscordRPCShowIconAnime, true)
 
@@ -199,7 +199,7 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
             binding.previewButton1.text = "VIEW ON ANILIST"
 
             binding.previewButton2.text = when (mode) {
-                "dantotsu" -> "DANTOTSU PROFILE"
+                "kiwami" -> "DANTOTSU PROFILE"
                 else -> "VIEW PROFILE"
             }
         }

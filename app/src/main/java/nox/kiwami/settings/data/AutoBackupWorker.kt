@@ -37,11 +37,11 @@ class AutoBackupWorker(appContext: Context, workerParams: WorkerParameters) :
 
             val backupDir = File(
                 Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                "Dantotsu/Backups"
+                "Kiwami/Backups"
             ).apply { if (!exists()) mkdirs() }
 
             val timestampStr = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault()).format(Date())
-            val backupFile = File(backupDir, "dantotsu_autobackup_${timestampStr}.ani")
+            val backupFile = File(backupDir, "kiwami_autobackup_${timestampStr}.ani")
             backupFile.writeText(serialized)
             android.media.MediaScannerConnection.scanFile(applicationContext, arrayOf(backupFile.absolutePath), null, null)
 
@@ -51,7 +51,7 @@ class AutoBackupWorker(appContext: Context, workerParams: WorkerParameters) :
             // Pruning old auto-backups exceeding retention limit
             val maxCopies = PrefManager.getVal<Int>(PrefName.AutoBackupMaxCopies).coerceAtLeast(1)
             val autoBackups = backupDir.listFiles { file ->
-                file.isFile && file.name.startsWith("dantotsu_autobackup_") && file.name.endsWith(".ani")
+                file.isFile && file.name.startsWith("kiwami_autobackup_") && file.name.endsWith(".ani")
             }?.sortedBy { it.lastModified() } ?: emptyList()
 
             if (autoBackups.size > maxCopies) {

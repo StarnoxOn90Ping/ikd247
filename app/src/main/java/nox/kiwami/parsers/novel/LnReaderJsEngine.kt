@@ -47,7 +47,7 @@ object LnReaderJsEngine {
             val jsoupElements = mutableMapOf<Int, org.jsoup.nodes.Element>()
             var elementCounter = 0
 
-            qjs.set("__dantotsuJsoup", JsoupBridge::class.java, object : JsoupBridge {
+            qjs.set("__kiwamiJsoup", JsoupBridge::class.java, object : JsoupBridge {
                 override fun parse(html: String): Int {
                     val doc = org.jsoup.Jsoup.parse(html)
                     val id = ++elementCounter
@@ -219,19 +219,19 @@ object LnReaderJsEngine {
                 }
             })
 
-            qjs.set("__dantotsuFetch", FetchBridge::class.java, object : FetchBridge {
+            qjs.set("__kiwamiFetch", FetchBridge::class.java, object : FetchBridge {
                 override fun fetch(url: String, method: String, headersJson: String, body: String?): String {
                     return executeFetch(url, method, headersJson, body)
                 }
             })
 
-            qjs.set("__dantotsuLog", LogBridge::class.java, object : LogBridge {
+            qjs.set("__kiwamiLog", LogBridge::class.java, object : LogBridge {
                 override fun log(msg: String) {
                     Logger.log("LnReaderJS[$pluginId]: $msg")
                 }
             })
 
-            qjs.set("__dantotsuStorage", StorageBridge::class.java, object : StorageBridge {
+            qjs.set("__kiwamiStorage", StorageBridge::class.java, object : StorageBridge {
                 private val prefs = nox.kiwami.App.currentContext()?.getSharedPreferences("lnreader_plugin_storage", Context.MODE_PRIVATE)
 
                 override fun get(key: String): String? {
@@ -520,7 +520,7 @@ const gcm = function(key, nonce) {
 
 function PluginStorage(pluginId) { this.pluginId = pluginId || ''; }
 PluginStorage.prototype.get = function(key) {
-    var stored = __dantotsuStorage.get(this.pluginId + "_DB_" + key);
+    var stored = __kiwamiStorage.get(this.pluginId + "_DB_" + key);
     if (!stored) return undefined;
     try {
         var item = JSON.parse(stored);
@@ -536,22 +536,22 @@ PluginStorage.prototype.get = function(key) {
 PluginStorage.prototype.set = function(key, value, expires) {
     var exp = (expires instanceof Date) ? expires.getTime() : expires;
     var item = { created: Date.now(), value: value, expires: exp };
-    __dantotsuStorage.set(this.pluginId + "_DB_" + key, JSON.stringify(item));
+    __kiwamiStorage.set(this.pluginId + "_DB_" + key, JSON.stringify(item));
 };
 PluginStorage.prototype.delete = function(key) {
-    __dantotsuStorage.delete(this.pluginId + "_DB_" + key);
+    __kiwamiStorage.delete(this.pluginId + "_DB_" + key);
 };
 PluginStorage.prototype.clearAll = function() {
-    var keysStr = __dantotsuStorage.getAllKeys(this.pluginId + "_DB_");
+    var keysStr = __kiwamiStorage.getAllKeys(this.pluginId + "_DB_");
     try {
         var keys = JSON.parse(keysStr);
         for (var i = 0; i < keys.length; i++) {
-            __dantotsuStorage.delete(keys[i]);
+            __kiwamiStorage.delete(keys[i]);
         }
     } catch(e) {}
 };
 PluginStorage.prototype.getAllKeys = function() {
-    var keysStr = __dantotsuStorage.getAllKeys(this.pluginId + "_DB_");
+    var keysStr = __kiwamiStorage.getAllKeys(this.pluginId + "_DB_");
     try {
         var keys = JSON.parse(keysStr);
         var prefix = this.pluginId + "_DB_";
@@ -759,9 +759,9 @@ const require = (pkg) => {
 
     private val POLYFILL_JS = """
 var console = {
-    log: function() { try { __dantotsuLog.log(Array.prototype.slice.call(arguments).map(function(a) { return typeof a === 'object' ? JSON.stringify(a) : String(a); }).join(' ')); } catch(e){} },
-    warn: function() { try { __dantotsuLog.log('WARN: ' + Array.prototype.slice.call(arguments).map(function(a) { return typeof a === 'object' ? JSON.stringify(a) : String(a); }).join(' ')); } catch(e){} },
-    error: function() { try { __dantotsuLog.log('ERROR: ' + Array.prototype.slice.call(arguments).map(function(a) { return typeof a === 'object' ? JSON.stringify(a) : String(a); }).join(' ')); } catch(e){} }
+    log: function() { try { __kiwamiLog.log(Array.prototype.slice.call(arguments).map(function(a) { return typeof a === 'object' ? JSON.stringify(a) : String(a); }).join(' ')); } catch(e){} },
+    warn: function() { try { __kiwamiLog.log('WARN: ' + Array.prototype.slice.call(arguments).map(function(a) { return typeof a === 'object' ? JSON.stringify(a) : String(a); }).join(' ')); } catch(e){} },
+    error: function() { try { __kiwamiLog.log('ERROR: ' + Array.prototype.slice.call(arguments).map(function(a) { return typeof a === 'object' ? JSON.stringify(a) : String(a); }).join(' ')); } catch(e){} }
 };
 
 var setTimeout = function(fn, ms) { try { if (typeof fn === 'function') fn(); } catch(e){} return 0; };
@@ -959,7 +959,7 @@ var fetchApi = function(url, init) {
     }
     
     var headersJson = JSON.stringify(headers);
-    var resultStr = __dantotsuFetch.fetch(url, method, headersJson, body);
+    var resultStr = __kiwamiFetch.fetch(url, method, headersJson, body);
     var result = JSON.parse(resultStr);
     var responseHeaders = result.headers || {};
     responseHeaders.get = function(key) {
@@ -1096,32 +1096,32 @@ Parser.prototype.end = function() {
     private val CHEERIO_JSOUP_BRIDGE_JS = """
 function load(html) {
     if (typeof html !== 'string') html = String(html || "");
-    var rootId = __dantotsuJsoup.parse(html);
+    var rootId = __kiwamiJsoup.parse(html);
     
     function wrap(nodeIds) {
         var obj = {
             _nodes: nodeIds,
             length: nodeIds.length,
             nodeType: 1,
-            text: function() { return __dantotsuJsoup.text(JSON.stringify(this._nodes)); },
+            text: function() { return __kiwamiJsoup.text(JSON.stringify(this._nodes)); },
             attr: function(a, v) { 
                 if (this._nodes.length === 0) return undefined;
                 if (v !== undefined) {
-                    __dantotsuJsoup.setAttr(JSON.stringify(this._nodes), a, String(v));
+                    __kiwamiJsoup.setAttr(JSON.stringify(this._nodes), a, String(v));
                     return this;
                 }
-                return __dantotsuJsoup.attr(JSON.stringify(this._nodes), a) || undefined; 
+                return __kiwamiJsoup.attr(JSON.stringify(this._nodes), a) || undefined; 
             },
             removeAttr: function(a) {
-                __dantotsuJsoup.removeAttr(JSON.stringify(this._nodes), a);
+                __kiwamiJsoup.removeAttr(JSON.stringify(this._nodes), a);
                 return this;
             },
             addClass: function(className) {
-                if (className) __dantotsuJsoup.addClass(JSON.stringify(this._nodes), className);
+                if (className) __kiwamiJsoup.addClass(JSON.stringify(this._nodes), className);
                 return this;
             },
             removeClass: function(className) {
-                if (className) __dantotsuJsoup.removeClass(JSON.stringify(this._nodes), className);
+                if (className) __kiwamiJsoup.removeClass(JSON.stringify(this._nodes), className);
                 return this;
             },
             prop: function(name) {
@@ -1173,15 +1173,15 @@ function load(html) {
                 return this;
             },
             siblings: function(sel) {
-                var resStr = __dantotsuJsoup.siblings(JSON.stringify(this._nodes), sel || "");
+                var resStr = __kiwamiJsoup.siblings(JSON.stringify(this._nodes), sel || "");
                 return wrap(JSON.parse(resStr));
             },
             closest: function(sel) {
-                var resStr = __dantotsuJsoup.closest(JSON.stringify(this._nodes), sel || "");
+                var resStr = __kiwamiJsoup.closest(JSON.stringify(this._nodes), sel || "");
                 return wrap(JSON.parse(resStr));
             },
             parents: function(sel) {
-                var resStr = __dantotsuJsoup.parents(JSON.stringify(this._nodes), sel || "");
+                var resStr = __kiwamiJsoup.parents(JSON.stringify(this._nodes), sel || "");
                 return wrap(JSON.parse(resStr));
             },
             slice: function(start, end) {
@@ -1203,23 +1203,23 @@ function load(html) {
                 if (val !== undefined) return this.attr('style', (this.attr('style') || '') + ';' + prop + ':' + val);
                 return '';
             },
-            html: function() { return __dantotsuJsoup.html(JSON.stringify(this._nodes)); },
-            outerHtml: function() { return __dantotsuJsoup.outerHtml(JSON.stringify(this._nodes)); },
-            remove: function() { __dantotsuJsoup.remove(JSON.stringify(this._nodes)); return this; },
+            html: function() { return __kiwamiJsoup.html(JSON.stringify(this._nodes)); },
+            outerHtml: function() { return __kiwamiJsoup.outerHtml(JSON.stringify(this._nodes)); },
+            remove: function() { __kiwamiJsoup.remove(JSON.stringify(this._nodes)); return this; },
             find: function(sel) {
-                var resStr = __dantotsuJsoup.select(JSON.stringify(this._nodes), sel);
+                var resStr = __kiwamiJsoup.select(JSON.stringify(this._nodes), sel);
                 return wrap(JSON.parse(resStr));
             },
             children: function(sel) {
-                var resStr = __dantotsuJsoup.children(JSON.stringify(this._nodes), sel || "");
+                var resStr = __kiwamiJsoup.children(JSON.stringify(this._nodes), sel || "");
                 return wrap(JSON.parse(resStr));
             },
             parent: function() {
-                var resStr = __dantotsuJsoup.parent(JSON.stringify(this._nodes));
+                var resStr = __kiwamiJsoup.parent(JSON.stringify(this._nodes));
                 return wrap(JSON.parse(resStr));
             },
             hasClass: function(className) {
-                return __dantotsuJsoup.hasClass(JSON.stringify(this._nodes), className);
+                return __kiwamiJsoup.hasClass(JSON.stringify(this._nodes), className);
             },
             each: function(fn) {
                 for (var i = 0; i < this._nodes.length; i++) {
@@ -1251,11 +1251,11 @@ function load(html) {
                  return wrapObj;
             },
             next: function() {
-                 var resStr = __dantotsuJsoup.next(JSON.stringify(this._nodes));
+                 var resStr = __kiwamiJsoup.next(JSON.stringify(this._nodes));
                  return wrap(JSON.parse(resStr));
             },
             prev: function() {
-                 var resStr = __dantotsuJsoup.prev(JSON.stringify(this._nodes));
+                 var resStr = __kiwamiJsoup.prev(JSON.stringify(this._nodes));
                  return wrap(JSON.parse(resStr));
             },
             trim: function() { return this.text().trim(); },
@@ -1266,7 +1266,7 @@ function load(html) {
                  var map = {};
                  if (nodeIds.length > 0) {
                      try {
-                         var str = __dantotsuJsoup.attrs(JSON.stringify(nodeIds));
+                         var str = __kiwamiJsoup.attrs(JSON.stringify(nodeIds));
                          map = JSON.parse(str) || {};
                      } catch(e){}
                  }
@@ -1280,7 +1280,7 @@ function load(html) {
         Object.defineProperty(obj, 'tagName', {
             get: function() {
                  if (nodeIds.length === 0) return "";
-                 return __dantotsuJsoup.tagName(JSON.stringify(nodeIds));
+                 return __kiwamiJsoup.tagName(JSON.stringify(nodeIds));
             },
             enumerable: true
         });
@@ -1301,15 +1301,15 @@ function load(html) {
         }
         if (context) {
              if (typeof context === 'object' && context._nodes) {
-                  var resStr = __dantotsuJsoup.select(JSON.stringify(context._nodes), sel);
+                  var resStr = __kiwamiJsoup.select(JSON.stringify(context._nodes), sel);
                   return wrap(JSON.parse(resStr));
              }
         }
-        var resStr = __dantotsuJsoup.select(JSON.stringify([rootId]), sel);
+        var resStr = __kiwamiJsoup.select(JSON.stringify([rootId]), sel);
         return wrap(JSON.parse(resStr));
     };
     
-    $.html = function() { return __dantotsuJsoup.outerHtml(JSON.stringify([rootId])); };
+    $.html = function() { return __kiwamiJsoup.outerHtml(JSON.stringify([rootId])); };
     $.root = function() { return wrap([rootId]); };
     return $;
 }

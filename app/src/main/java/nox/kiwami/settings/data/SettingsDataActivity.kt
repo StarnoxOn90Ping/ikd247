@@ -131,7 +131,7 @@ class SettingsDataActivity : AppCompatActivity() {
     }
 
     private fun getReadableDownloadPath(uriString: String): String {
-        val defaultPath = "${Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).path}/Dantotsu"
+        val defaultPath = "${Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).path}/Kiwami"
         if (uriString.isBlank()) return defaultPath
 
         return try {
@@ -184,14 +184,14 @@ class SettingsDataActivity : AppCompatActivity() {
                 }
             }
 
-            // 3. Handle primary storage document tree (e.g. primary:Download/Dantotsu)
+            // 3. Handle primary storage document tree (e.g. primary:Download/Kiwami)
             if (docId.contains("primary:") || uriString.contains("primary:") || uriString.contains("primary%3A")) {
                 val decoded = Uri.decode(docId)
                 val relative = decoded.substringAfter("primary:").substringAfter("primary%3A").trimStart('/')
                 return "/storage/emulated/0/$relative"
             }
 
-            // 4. Handle SD card volume document tree (e.g. 1234-5678:Download/Dantotsu)
+            // 4. Handle SD card volume document tree (e.g. 1234-5678:Download/Kiwami)
             if (docId.contains(":")) {
                 val volume = docId.substringBefore(":")
                 val relative = docId.substringAfter(":").trimStart('/')
@@ -487,7 +487,7 @@ class SettingsDataActivity : AppCompatActivity() {
                     val exportableLocations = Location.entries.filter { it.exportable }
                     val timestampStr = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault()).format(Date())
                     savePrefsToDownloads(
-                        "Dantotsu_${timestampStr}",
+                        "Kiwami_${timestampStr}",
                         PrefManager.exportAllPrefs(exportableLocations),
                         context
                     )
