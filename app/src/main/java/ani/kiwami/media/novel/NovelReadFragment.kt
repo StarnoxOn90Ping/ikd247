@@ -1,0 +1,950 @@
+package ani.kiwami.media.novel
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.Parcelable
+import android.view.LayoutInflater
+import android.view.View
+import ani.kiwami.toast
+import ani.kiwami.media.anime.EpisodeSelectionBar
+import androidx.activity.OnBackPressedCallback
+import android.view.ViewGroup
+import androidx.core.content.ContextCompat
+import androidx.core.view.updatePadding
+import androidx.core.view.isGone
+import androidx.core.view.isVisible
+import androidx.cardview.widget.CardView
+import android.widget.FrameLayout
+import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.appbar.AppBarLayout
+import ani.kiwami.parsers.novel.ConfigurableNovelSource
+import ani.kiwami.parsers.novel.NovelExtension
+import ani.kiwami.settings.extensionprefs.NovelSourcePreferencesFragment
+import ani.kiwami.util.customAlertDialog
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ConcatAdapter
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import ani.kiwami.R
+import ani.kiwami.currContext
+import ani.kiwami.databinding.FragmentMediaSourceBinding
+import ani.kiwami.dp
+import ani.kiwami.download.DownloadedType
+import ani.kiwami.download.DownloadsManager
+import ani.kiwami.download.findValidName
+import ani.kiwami.download.novel.NovelDownloaderService
+import ani.kiwami.download.novel.NovelServiceDataSingleton
+import ani.kiwami.media.Media
+import ani.kiwami.media.MediaDetailsActivity
+import ani.kiwami.media.MediaDetailsViewModel
+import ani.kiwami.media.MediaType
+import ani.kiwami.media.novel.novelreader.NovelReaderActivity
+import ani.kiwami.navBarHeight
+import ani.kiwami.setBaseline
+import ani.kiwami.toPx
+import ani.kiwami.isOnline
+import ani.kiwami.parsers.ShowResponse
+import ani.kiwami.settings.saving.PrefManager
+import ani.kiwami.settings.saving.PrefName
+import ani.kiwami.snackString
+import ani.kiwami.util.Logger
+import ani.kiwami.util.StoragePermissions
+import ani.kiwami.util.StoragePermissions.Companion.accessAlertDialog
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.math.max
+import kotlin.math.roundToInt
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
+
+class NovelReadFragment : Fragment(),
+    DownloadTriggerCallback,
+    DownloadedCheckCallback {
+
+    private var _binding: FragmentMediaSourceBinding? = null
+    private val binding get() = _binding!!
+    val model: MediaDetailsViewModel by activityViewModels()
+
+    lateinit var media: Media
+    var source = 0
+    lateinit var novelName: String
+
+    private lateinit var headerAdapter: NovelReadAdapter
+    private lateinit var novelResponseAdapter: NovelResponseAdapter
+    private var progress = View.VISIBLE
+
+
+    var style: Int = 0
+    var reverse: Boolean = false
+
+    private var continueEp: Boolean = false
+    var loaded = false
+    private var sourceRequested = false
+    private var isReceiverRegistered = false
+
+    private var isShowingChapters = false
+    private var currentChapterLinks: List<ani.kiwami.FileUrl> = emptyList()
+    private var currentChapterResponses: List<ShowResponse>? = null
+    private var storedSearchResults: List<ShowResponse>? = null
+    private var start = 0
+    private var end: Int? = null
+    private var page = 0
+
+    override fun downloadTrigger(novelDownloadPackage: NovelDownloadPackage) {
+        Logger.log("novel link: ${novelDownloadPackage.link}")
+        activity?.let {
+            fun continueDownload() {
+                if (PrefManager.getVal<Boolean>(PrefName.DownloadWifiOnly) && !ani.kiwami.isWifiConnected(it)) {
+                    snackString(getString(R.string.download_wifi_only_warning))
+                    return
+                }
+                val parser = model.novelSources[source] as? ani.kiwami.parsers.novel.LnReaderNovelParser
+                val downloadTask = NovelDownloaderService.DownloadTask(
+                    title = media.mainName(),
+                    chapter = novelDownloadPackage.novelName,
+                    downloadLink = novelDownloadPackage.link,
+                    originalLink = novelDownloadPackage.originalLink,
+                    sourceMedia = media,
+                    coverUrl = novelDownloadPackage.coverUrl,
+                    retries = 2,
+                    lnReaderParser = parser
+                )
+                NovelServiceDataSingleton.downloadQueue.offer(downloadTask)
+                CoroutineScope(Dispatchers.IO).launch {
+                    val intent = Intent(context, NovelDownloaderService::class.java)
+                    withContext(Dispatchers.Main) {
+                        ContextCompat.startForegroundService(requireContext(), intent)
+                    }
+                    NovelServiceDataSingleton.isServiceRunning = true
+                }
+            }
+            if (!StoragePermissions.hasDirAccess(it)) {
+                (it as MediaDetailsActivity).accessAlertDialog(it.launcher) { success ->
+                    if (success) {
+                        continueDownload()
+                    } else {
+                        snackString(getString(R.string.download_permission_required))
+                    }
+                }
+            } else {
+                continueDownload()
+            }
+        }
+    }
+
+    override fun downloadedCheckWithStart(novel: ShowResponse): Boolean {
+        if (media.format == "LOCAL" || media.format == "LOCAL_NOVEL" || novel.link.startsWith("content://") || novel.link.startsWith("file://")) {
+            try {
+                val fileUri = android.net.Uri.parse(novel.link)
+                val intent = Intent(requireContext(), NovelReaderActivity::class.java).apply {
+                    action = Intent.ACTION_VIEW
+                    setDataAndType(fileUri, "application/epub+zip")
+                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                }
+                startActivity(intent)
+                return true
+            } catch (e: Exception) {
+                Logger.log(e)
+                return false
+            }
+        }
+
+        val downloadsManager = Injekt.get<DownloadsManager>()
+        val downloadedItem = downloadsManager.novelDownloadedTypes.firstOrNull {
+            (it.titleName.equals(media.mainName(), ignoreCase = true) ||
+             it.titleName.equals(media.name, ignoreCase = true) ||
+             it.titleName.equals(media.nameRomaji, ignoreCase = true) ||
+             it.titleName.equals(novel.extra?.get("title"), ignoreCase = true)) &&
+            (it.chapterName.equals(novel.name, ignoreCase = true) ||
+             it.chapterName.equals(novel.name.findValidName(), ignoreCase = true))
+        }
+
+        val titleToSearch = downloadedItem?.titleName ?: novel.extra?.get("title") ?: media.mainName()
+        val chapterToSearch = downloadedItem?.chapterName ?: novel.name
+
+        val directory = DownloadsManager.findSubDirectory(
+            context ?: currContext()!!,
+            MediaType.NOVEL,
+            titleToSearch,
+            chapterToSearch
+        ) ?: DownloadsManager.getSubDirectory(
+            context ?: currContext()!!,
+            MediaType.NOVEL,
+            false,
+            titleToSearch,
+            chapterToSearch
+        )
+
+        val file = directory?.findFile("0.epub")
+            ?: directory?.listFiles()?.firstOrNull {
+                it.isFile && (it.name?.endsWith(".epub", ignoreCase = true) == true || it.type == "application/epub+zip")
+            }
+            ?: directory?.listFiles()?.firstOrNull {
+                it.isFile && it.length() > 0 && it.name != "cover.jpg" && it.name != "media.json" && !it.name.orEmpty().startsWith(".")
+            }
+
+        if (file != null && file.exists()) {
+            try {
+                val fileUri = file.uri
+                val intent = Intent(requireContext(), NovelReaderActivity::class.java).apply {
+                    action = Intent.ACTION_VIEW
+                    setDataAndType(fileUri, "application/epub+zip")
+                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                }
+                startActivity(intent)
+                return true
+            } catch (e: Exception) {
+                Logger.log(e)
+                return false
+            }
+        }
+        return false
+    }
+
+    override fun downloadedCheck(novel: ShowResponse): Boolean {
+        if (media.format == "LOCAL" || media.format == "LOCAL_NOVEL" || novel.link.startsWith("content://") || novel.link.startsWith("file://")) return true
+
+        val downloadsManager = Injekt.get<DownloadsManager>()
+        val isIndexed = downloadsManager.novelDownloadedTypes.any {
+            (it.titleName.equals(media.mainName(), ignoreCase = true) ||
+             it.titleName.equals(media.name, ignoreCase = true) ||
+             it.titleName.equals(media.nameRomaji, ignoreCase = true) ||
+             it.titleName.equals(novel.extra?.get("title"), ignoreCase = true)) &&
+            (it.chapterName.equals(novel.name, ignoreCase = true) ||
+             it.chapterName.equals(novel.name.findValidName(), ignoreCase = true))
+        }
+        if (isIndexed) return true
+
+        val titleToSearch = novel.extra?.get("title") ?: media.mainName()
+        val dir = DownloadsManager.findSubDirectory(
+            context ?: currContext()!!,
+            MediaType.NOVEL,
+            titleToSearch,
+            novel.name
+        )
+        return dir != null && (dir.findFile("0.epub") != null || dir.listFiles().any { it.isFile && it.name?.endsWith(".epub", ignoreCase = true) == true })
+    }
+
+    override fun deleteDownload(novel: ShowResponse) {
+        val downloadsManager = Injekt.get<DownloadsManager>()
+        val downloadedItem = downloadsManager.novelDownloadedTypes.firstOrNull {
+            (it.titleName.equals(media.mainName(), ignoreCase = true) ||
+             it.titleName.equals(media.name, ignoreCase = true) ||
+             it.titleName.equals(media.nameRomaji, ignoreCase = true) ||
+             it.titleName.equals(novel.extra?.get("title"), ignoreCase = true)) &&
+            (it.chapterName.equals(novel.name, ignoreCase = true) ||
+             it.chapterName.equals(novel.name.findValidName(), ignoreCase = true))
+        }
+        val titleToUse = downloadedItem?.titleName ?: novel.extra?.get("title") ?: media.mainName()
+        val chapterToUse = downloadedItem?.chapterName ?: novel.name.findValidName()
+        downloadsManager.removeDownload(
+            DownloadedType(
+                titleToUse,
+                chapterToUse,
+                MediaType.NOVEL
+            )
+        ) {}
+    }
+
+    private val downloadStatusReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (!this@NovelReadFragment::novelResponseAdapter.isInitialized) return
+            when (intent.action) {
+                ACTION_DOWNLOAD_STARTED -> {
+                    val link = intent.getStringExtra(EXTRA_NOVEL_LINK)
+                    link?.let {
+                        novelResponseAdapter.startDownload(it)
+                    }
+                }
+
+                ACTION_DOWNLOAD_FINISHED -> {
+                    val link = intent.getStringExtra(EXTRA_NOVEL_LINK)
+                    link?.let {
+                        novelResponseAdapter.stopDownload(it)
+                    }
+                }
+
+                ACTION_DOWNLOAD_FAILED -> {
+                    val link = intent.getStringExtra(EXTRA_NOVEL_LINK)
+                    link?.let {
+                        novelResponseAdapter.purgeDownload(it)
+                    }
+                }
+
+                ACTION_DOWNLOAD_PROGRESS -> {
+                    val link = intent.getStringExtra(EXTRA_NOVEL_LINK)
+                    val progress = intent.getIntExtra("progress", 0)
+                    link?.let {
+                        novelResponseAdapter.updateDownloadProgress(it, progress)
+                    }
+                }
+            }
+        }
+    }
+
+    fun onNovelClick(novel: ShowResponse) {
+        if (novelResponseAdapter.isDownloading(novel.link)) {
+            return
+        }
+        ani.kiwami.settings.saving.PrefManager.setCustomVal("${media.id}_last_read_volume", novel.name)
+
+        if (isShowingChapters) {
+            if (!downloadedCheckWithStart(novel)) {
+                onChapterClick(novel)
+            }
+            return
+        }
+
+        if (downloadedCheckWithStart(novel)) {
+            return
+        }
+
+        val isOfflineSource = source in 0 until model.novelSources.names.size &&
+                (model.novelSources.names[source] == "Downloaded" || model.novelSources.names[source] == "Local")
+        if (isOfflineSource) {
+            snackString("File not found or corrupted")
+            return
+        }
+
+        val parser = model.novelSources[source] as? ani.kiwami.parsers.novel.LnReaderNovelParser
+        if (parser != null) {
+            // LNReader handling
+            headerAdapter.progress?.visibility = View.VISIBLE
+            lifecycleScope.launch(Dispatchers.IO) {
+                model.overrideNovelChapters(source, novel, media.id)
+                model.loadNovelChapters(media, source, invalidate = true)
+            }
+        } else {
+            // EPUB source
+            val bookDialog = BookDialog.newInstance(novelName, novel, source)
+            bookDialog.setCallback(object : BookDialog.Callback {
+                override fun onDownloadTriggered(link: String) {
+                    downloadTrigger(
+                        NovelDownloadPackage(
+                            link,
+                            media.cover ?: novel.coverUrl.url,
+                            novel.name,
+                            novel.link
+                        )
+                    )
+                    bookDialog.dismiss()
+                }
+            })
+            bookDialog.show(parentFragmentManager, "dialog")
+        }
+    }
+
+    private fun onChapterClick(chapter: ShowResponse) {
+        val parser = model.novelSources[source] as? ani.kiwami.parsers.novel.LnReaderNovelParser
+            ?: return
+
+        NovelReaderSession.chapters = currentChapterLinks
+        NovelReaderSession.currentIndex = currentChapterLinks.indexOfFirst { it.url == chapter.link }.coerceAtLeast(0)
+        NovelReaderSession.parser = parser
+
+        val intent = Intent(requireContext(), NovelReaderActivity::class.java)
+        startActivity(intent)
+    }
+
+    fun onBackFromChapters(): Boolean {
+        if (isShowingChapters) {
+            isShowingChapters = false
+            headerAdapter.clearChips()
+            novelResponseAdapter.clear()
+            storedSearchResults?.let { novelResponseAdapter.submitList(it) }
+            novelResponseAdapter.updateType(style)
+            return true
+        }
+        return false
+    }
+
+    fun resetChapterState() {
+        isShowingChapters = false
+        currentChapterLinks = emptyList()
+        currentChapterResponses = null
+        headerAdapter.clearChips()
+        novelResponseAdapter.clear()
+    }
+
+    fun overrideNovelSource(selected: ShowResponse) {
+        resetChapterState()
+        headerAdapter.progress?.visibility = View.VISIBLE
+        lifecycleScope.launch(Dispatchers.IO) {
+            model.overrideNovelChapters(source, selected, media.id)
+            model.loadNovelChapters(media, source, invalidate = true)
+        }
+    }
+
+    fun onChipClicked(page: Int, s: Int, e: Int) {
+        this.page = page
+        start = s
+        end = e
+        media.selected?.chip = page
+        if (media.selected != null) {
+            model.saveSelected(media.id, media.selected!!)
+        }
+        reloadChapters()
+    }
+    
+    private fun reloadChapters() {
+        val listToDisplay = if (isShowingChapters) currentChapterResponses else response
+        if (listToDisplay != null) {
+            var chunk = listToDisplay
+            if (isShowingChapters && end != null) {
+                val safeEnd = minOf(end!!, chunk.size - 1)
+                if (start <= safeEnd && start < chunk.size) {
+                    chunk = chunk.slice(start..safeEnd)
+                } else {
+                    chunk = emptyList()
+                }
+            }
+            novelResponseAdapter.clear()
+            val sortedList = if (reverse) chunk.reversed() else chunk
+            novelResponseAdapter.submitList(sortedList)
+        }
+    }
+    
+    private fun updateChaptersTabs() {
+        val chapterResponses = currentChapterResponses ?: return
+        val total = chapterResponses.size
+        val divisions = total.toDouble() / 10
+        start = 0
+        end = null
+        val limit = when {
+            (divisions < 25) -> 25
+            (divisions < 50) -> 50
+            else -> 100
+        }
+        headerAdapter.clearChips()
+        if (total > limit) {
+            val arr = chapterResponses.map { it.name }.toTypedArray()
+            val stored = kotlin.math.ceil((total).toDouble() / limit).toInt()
+
+            val lastReadName = PrefManager.getCustomVal("${media.id}_last_read_volume", "")
+            var targetIndex = if (lastReadName.isNotBlank()) chapterResponses.indexOfFirst { it.name == lastReadName } else -1
+            if (targetIndex == -1 && (media.userProgress ?: 0) > 0) {
+                targetIndex = ((media.userProgress ?: 1) - 1).coerceIn(0, chapterResponses.size - 1)
+            }
+
+            val targetChip = if (targetIndex >= 0) (targetIndex / limit).coerceIn(0, stored - 1) else 0
+            val position = if ((media.selected?.chip ?: 0) == 0 && targetChip > 0) {
+                media.selected?.chip = targetChip
+                targetChip
+            } else {
+                (media.selected?.chip ?: 0).coerceIn(0, stored - 1)
+            }
+            val last = if (position + 1 == stored) total else (limit * (position + 1))
+            start = limit * position
+            end = last - 1
+            headerAdapter.updateChips(
+                limit,
+                arr,
+                (1..stored).toList().toTypedArray(),
+                position
+            )
+        }
+    }
+
+    var response: List<ShowResponse>? = null
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        val intentFilter = IntentFilter().apply {
+            addAction(ACTION_DOWNLOAD_STARTED)
+            addAction(ACTION_DOWNLOAD_FINISHED)
+            addAction(ACTION_DOWNLOAD_FAILED)
+            addAction(ACTION_DOWNLOAD_PROGRESS)
+        }
+
+        if (!isReceiverRegistered) {
+            ContextCompat.registerReceiver(
+                requireContext(),
+                downloadStatusReceiver,
+                intentFilter,
+                ContextCompat.RECEIVER_EXPORTED
+            )
+            isReceiverRegistered = true
+        }
+
+        val mediaDetailsActivity = activity as? MediaDetailsActivity
+        if (mediaDetailsActivity?.bindingReady == true) {
+            val actBinding = mediaDetailsActivity.binding
+            val baselineAnchor = actBinding.mediaBottomBarContainer ?: actBinding.commentMessageContainer
+            baselineAnchor?.let {
+                val includeSystemPaddings = it != actBinding.mediaBottomBarContainer
+                binding.mediaSourceRecycler.setBaseline(it, includeSystemNavBar = includeSystemPaddings)
+                binding.mediaSourceRecycler.clipToPadding = false
+            }
+        }
+
+        val screenWidth = resources.displayMetrics.widthPixels.dp
+        var maxGridSize = (screenWidth / 100f).roundToInt()
+        maxGridSize = max(4, maxGridSize - (maxGridSize % 2))
+
+        val gridLayoutManager = androidx.recyclerview.widget.GridLayoutManager(requireContext(), maxGridSize)
+        gridLayoutManager.spanSizeLookup = object : androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int {
+
+                if (position == 0 && ::headerAdapter.isInitialized) return maxGridSize
+                return when (style) {
+                    1 -> 1
+                    else -> maxGridSize
+                }
+            }
+        }
+        binding.mediaSourceRecycler.layoutManager = gridLayoutManager
+
+        binding.mediaSourceSwipeRefresh.apply {
+            val primaryColor = PrefManager.getVal<Int>(PrefName.PrimaryColor)
+            setColorSchemeColors(primaryColor)
+            setProgressBackgroundColorSchemeResource(R.color.nav_bg)
+            setOnRefreshListener {
+                if (!this@NovelReadFragment::media.isInitialized) {
+                    isRefreshing = false
+                    return@setOnRefreshListener
+                }
+                viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                    model.loadNovelChapters(media, source, invalidate = true)
+                    withContext(Dispatchers.Main) {
+                        _binding?.mediaSourceSwipeRefresh?.isRefreshing = false
+                    }
+                }
+            }
+        }
+
+        binding.ScrollTop.setOnClickListener {
+            binding.mediaSourceRecycler.scrollToPosition(10)
+            binding.mediaSourceRecycler.smoothScrollToPosition(0)
+        }
+        binding.mediaSourceRecycler.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                val position = gridLayoutManager.findFirstVisibleItemPosition()
+                if (position > 2) {
+                    binding.ScrollTop.translationY = -(navBarHeight + 12.toPx + selectionInset).toFloat()
+                    binding.ScrollTop.visibility = View.VISIBLE
+                } else {
+                    binding.ScrollTop.visibility = View.GONE
+                }
+            }
+        })
+        model.scrolledToTop.observe(viewLifecycleOwner) {
+            if (it) binding.mediaSourceRecycler.scrollToPosition(0)
+        }
+
+        continueEp = model.continueMedia ?: false
+        model.getMedia().observe(viewLifecycleOwner) {
+            if (it != null) {
+                media = it
+                novelName = media.userPreferredName
+                progress = View.GONE
+                binding.mediaInfoProgressBar.visibility = progress
+                if (!loaded) {
+                    val sel = media.selected
+                    source = sel?.sourceIndex ?: 0
+                    val isLocal = sel?.server == "Local" || media.format == "LOCAL_NOVEL" || media.format == "LOCAL"
+                    searchQuery = if (isLocal) (media.name ?: media.nameRomaji) else (sel?.server ?: media.name ?: media.nameRomaji)
+                    headerAdapter = NovelReadAdapter(media, this, model.novelSources)
+                    novelResponseAdapter = NovelResponseAdapter(
+                        this,
+                        this,
+                        this
+                    )
+
+                    binding.mediaSourceRecycler.adapter =
+                        ConcatAdapter(headerAdapter, novelResponseAdapter)
+                    setupSelectionUi()
+                    loaded = true
+
+                    val isLnReader = source in 0 until model.novelSources.names.size
+                            && model.novelSources[source] is ani.kiwami.parsers.novel.LnReaderNovelParser
+                    if (isLnReader) {
+                        sourceRequested = true
+                        binding.mediaSourceRecycler.post { headerAdapter.startLoading() }
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            model.loadNovelChapters(media, source)
+                        }
+                    } else {
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            search(searchQuery, source, auto = sel?.server == null || isLocal)
+                        }, 100)
+                    }
+                }
+            }
+        }
+        model.novelResponses.observe(viewLifecycleOwner) {
+            if (it != null && sourceRequested) {
+                response = it
+                searching = false
+                val sortedList = if (reverse) it.reversed() else it
+                novelResponseAdapter.submitList(sortedList)
+                headerAdapter.updateContinue(it)
+                headerAdapter.progress?.visibility = View.GONE
+                headerAdapter.handleSourceNotFound(it.isEmpty())
+            }
+        }
+
+        model.getNovelChapters().observe(viewLifecycleOwner) { loadedChapters ->
+            if (loadedChapters != null && loadedChapters.containsKey(source)) {
+                searching = false
+                val chapters = loadedChapters[source]
+                if (!chapters.isNullOrEmpty()) {
+                    isShowingChapters = true
+                    currentChapterResponses = chapters
+                    currentChapterLinks = chapters.map { ch ->
+                        val headers = mutableMapOf("X-Chapter-Name" to ch.name)
+                        ch.extra?.get("releaseTime")?.let { headers["X-Release-Time"] = it }
+                        ch.extra?.get("chapterNumber")?.let { headers["X-Chapter-Number"] = it }
+                        ani.kiwami.FileUrl(ch.link, headers)
+                    }
+                    updateChaptersTabs()
+                    novelResponseAdapter.clear()
+                    var chunk = chapters
+                    if (end != null) {
+                        chunk = chunk.slice(start..end!!)
+                    }
+                    val sorted = if (reverse) chunk.reversed() else chunk
+                    novelResponseAdapter.submitList(sorted)
+                    novelResponseAdapter.updateType(style) 
+                    headerAdapter.updateContinue(chapters)
+                    headerAdapter.progress?.visibility = View.GONE
+                    headerAdapter.handleSourceNotFound(false)
+                } else {
+                    headerAdapter.progress?.visibility = View.GONE
+                    headerAdapter.handleSourceNotFound(true)
+                }
+            }
+        }
+    }
+
+    lateinit var searchQuery: String
+    private var searching = false
+    fun search(query: String, source: Int, save: Boolean = false, auto: Boolean = false) {
+        if (!searching) {
+            this.source = source
+            isShowingChapters = false
+            headerAdapter.clearChips()
+            novelResponseAdapter.clear()
+            searchQuery = query
+            sourceRequested = true
+            headerAdapter.startLoading()
+            
+            val isLnReader = source in 0 until model.novelSources.names.size
+                    && model.novelSources[source] is ani.kiwami.parsers.novel.LnReaderNovelParser
+
+            if (isLnReader) {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    model.loadNovelChapters(media, source, invalidate = true)
+                }
+            } else {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    if (auto || query == "") model.autoSearchNovels(media)
+                    else model.searchNovels(query, source)
+                }
+            }
+            searching = true
+            if (save) {
+                val selected = model.loadSelected(media)
+                selected.server = query
+                model.saveSelected(media.id, selected)
+            }
+        }
+    }
+
+    fun onSourceChange(i: Int) {
+        val selected = model.loadSelected(media)
+        selected.sourceIndex = i
+        source = i
+        selected.server = null
+        model.saveSelected(media.id, selected)
+        media.selected = selected
+        searching = false
+        resetChapterState()
+        novelResponseAdapter.clear()
+        headerAdapter.startLoading()
+    }
+
+    fun onLayoutChanged(newStyle: Int, newReverse: Boolean) {
+        val styleChanged = style != newStyle
+        val reverseChanged = reverse != newReverse
+        style = newStyle
+        reverse = newReverse
+
+        if (styleChanged) {
+            novelResponseAdapter.updateType(newStyle)
+        }
+        if (reverseChanged) {
+            reloadChapters()
+        }
+    }
+
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        _binding = FragmentMediaSourceBinding.inflate(inflater, container, false)
+        return _binding?.root
+    }
+
+    override fun onDestroyView() {
+        if (isReceiverRegistered) {
+            try {
+                context?.unregisterReceiver(downloadStatusReceiver)
+            } catch (_: Exception) {}
+            isReceiverRegistered = false
+        }
+        if (::headerAdapter.isInitialized) {
+            headerAdapter.clearBinding()
+        }
+        selectionBar?.let { (it.view.parent as? ViewGroup)?.removeView(it.view) }
+        selectionBar = null
+        recyclerBasePaddingBottom = -1
+        selectionInset = 0
+        super.onDestroyView()
+        _binding?.mediaSourceRecycler?.adapter = null
+        _binding = null
+    }
+
+    override fun onDestroy() {
+        model.mangaReadSources?.flushText()
+        if (isReceiverRegistered) {
+            try {
+                context?.unregisterReceiver(downloadStatusReceiver)
+            } catch (_: Exception) {}
+            isReceiverRegistered = false
+        }
+        super.onDestroy()
+    }
+
+    // ---------------- Multi-select (long-press a novel) ----------------
+    private var selectionBar: EpisodeSelectionBar? = null
+    private val selectionBackCallback = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            if (::novelResponseAdapter.isInitialized) novelResponseAdapter.clearSelection()
+        }
+    }
+    private var recyclerBasePaddingBottom = -1
+    private var selectionInset = 0
+
+    // Novels have no per-item read progress, so the bar only has Info / Download / Delete.
+    private fun setupSelectionUi() {
+        val root = _binding?.root as? ViewGroup ?: return
+        if (selectionBar == null) {
+            val bar = EpisodeSelectionBar(
+                requireContext(),
+                onClose = { novelResponseAdapter.clearSelection() },
+                onSelectAll = { novelResponseAdapter.selectAll() },
+                onInfo = { showSelectedNovelInfo() },
+                onDownload = { downloadSelectedNovels() },
+                onDelete = { deleteSelectedNovels() }
+            )
+            root.addView(bar.view)
+            selectionBar = bar
+            requireActivity().onBackPressedDispatcher.addCallback(
+                viewLifecycleOwner,
+                selectionBackCallback
+            )
+        }
+        novelResponseAdapter.onSelectionChanged = { count ->
+            selectionBackCallback.isEnabled = count > 0
+            selectionBar?.update(count)
+            applySelectionInsets(count > 0)
+        }
+    }
+
+    /** Leaves room under the list (and lifts the scroll-to-top button) while the bar is showing. */
+    private fun applySelectionInsets(show: Boolean) {
+        val b = _binding ?: return
+        val bar = selectionBar ?: return
+        if (recyclerBasePaddingBottom < 0) {
+            recyclerBasePaddingBottom = b.mediaSourceRecycler.paddingBottom
+        }
+        selectionInset = if (show) bar.measuredHeightPx() else 0
+        b.mediaSourceRecycler.updatePadding(bottom = recyclerBasePaddingBottom + selectionInset)
+        if (b.ScrollTop.isVisible) {
+            b.ScrollTop.translationY = -(navBarHeight + 12.toPx + selectionInset).toFloat()
+        }
+    }
+
+    private fun showSelectedNovelInfo() {
+        val novels = novelResponseAdapter.selectedNovelsInOrder()
+        if (novels.isEmpty()) return
+        val text = StringBuilder()
+        novels.forEach { novel ->
+            text.append(novel.name).append("\n")
+            if (novel.otherNames.isNotEmpty()) {
+                text.append("Also known as: ").append(novel.otherNames.joinToString(", ")).append("\n")
+            }
+            novel.total?.let { text.append("Chapters: ").append(it).append("\n") }
+            novel.extra?.get("1")?.takeIf { it.isNotBlank() }?.let { text.append(it).append("\n") }
+            when {
+                novelResponseAdapter.isDownloading(novel.link) -> text.append("Status: downloading\n")
+                novelResponseAdapter.isDownloaded(novel) -> text.append("Status: downloaded\n")
+            }
+            novel.extra?.get("2")?.takeIf { it.isNotBlank() }?.let { text.append(it).append("\n") }
+            text.append("\n")
+        }
+        requireContext().customAlertDialog().apply {
+            setTitle(if (novels.size == 1) "Novel info" else "${novels.size} novels")
+            setMessage(text.toString().trim())
+            setPosButton(R.string.ok)
+            show()
+        }
+    }
+
+    private fun downloadSelectedNovels() {
+        val started = novelResponseAdapter.downloadSelected()
+        if (started == 0) {
+            toast("Selected novels are already downloaded")
+            return
+        }
+        novelResponseAdapter.clearSelection()
+    }
+
+    private fun deleteSelectedNovels() {
+        val deletable = novelResponseAdapter.selectedNovelsInOrder().count {
+            !novelResponseAdapter.isDownloading(it.link) && novelResponseAdapter.isDownloaded(it)
+        }
+        if (deletable == 0) {
+            toast("None of the selected novels are downloaded")
+            return
+        }
+        requireContext().customAlertDialog().apply {
+            setTitle("Delete downloads")
+            setMessage("Delete $deletable downloaded novel(s)?")
+            setPosButton(R.string.yes) {
+                novelResponseAdapter.deleteSelected()
+                novelResponseAdapter.clearSelection()
+            }
+            setNegButton(R.string.no)
+            show()
+        }
+    }
+
+    fun multiDownload(n: Int) {
+        lifecycleScope.launch {
+            val selected = media.userProgress ?: 0
+            val chapters = currentChapterResponses ?: return@launch
+            if (chapters.isEmpty() || n < 1) return@launch
+
+            val progressChapterIndex = (chapters.indexOfFirst {
+                ani.kiwami.media.MediaNameAdapter.findChapterNumber(it.name)?.toInt() == selected
+            } + 1).coerceAtLeast(0)
+            
+            val endIndex = (progressChapterIndex + n).coerceAtMost(chapters.size)
+            val chaptersToDownload = chapters.subList(progressChapterIndex, endIndex)
+            
+            for (chapter in chaptersToDownload) {
+                try {
+                    downloadNovelSequentially(chapter)
+                } catch (e: Exception) {
+                    ani.kiwami.snackString("Failed to download chapter: ${chapter.name}")
+                }
+            }
+            ani.kiwami.snackString("All downloads completed!")
+        }
+    }
+
+    private suspend fun downloadNovelSequentially(chapter: ShowResponse) {
+        withContext(Dispatchers.Main) {
+            val downloaded = downloadedCheck(chapter)
+            if (!downloaded && !novelResponseAdapter.isDownloading(chapter.link)) {
+                val pack = NovelDownloadPackage(
+                    chapter.link, chapter.coverUrl.url, chapter.name, chapter.link
+                )
+                downloadTrigger(pack)
+                novelResponseAdapter.startDownload(chapter.link)
+            }
+        }
+        withContext(Dispatchers.IO) {
+            kotlinx.coroutines.delay(2000)
+        }
+    }
+
+    private var state: Parcelable? = null
+    override fun onResume() {
+        super.onResume()
+        binding.mediaInfoProgressBar.visibility = progress
+        binding.mediaSourceRecycler.layoutManager?.onRestoreInstanceState(state)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        state = binding.mediaSourceRecycler.layoutManager?.onSaveInstanceState()
+    }
+
+    fun openSettings(pkg: NovelExtension.Installed) {
+        val changeUIVisibility: (Boolean) -> Unit = { show ->
+            val activity = activity
+            if (activity is MediaDetailsActivity && isAdded) {
+                activity.findViewById<AppBarLayout>(R.id.mediaAppBar).isVisible = show
+                activity.findViewById<ViewPager2>(R.id.mediaViewPager).isVisible = show
+                activity.findViewById<CardView>(R.id.mediaCover).isVisible = show
+                activity.findViewById<CardView>(R.id.mediaClose).isVisible = show
+                activity.navBar.isVisible = show
+                activity.findViewById<FrameLayout>(R.id.fragmentExtensionsContainer).isGone = show
+            }
+        }
+        val configurable = pkg.sources.filterIsInstance<ConfigurableNovelSource>()
+        val hasPrefMethod = pkg.sources.any { src ->
+            src.javaClass.methods.any { it.name == "setupPreferenceScreen" }
+        }
+        if (configurable.isNotEmpty() || hasPrefMethod) {
+            changeUIVisibility(false)
+            val fragment = NovelSourcePreferencesFragment().getInstance(pkg.pkgName) {
+                changeUIVisibility(true)
+                val sel = media.selected?.sourceIndex ?: 0
+                lifecycleScope.launch {
+                    model.loadNovelChapters(media, sel, invalidate = true)
+                }
+            }
+            parentFragmentManager.beginTransaction()
+                .setCustomAnimations(R.anim.slide_up, R.anim.slide_down)
+                .replace(R.id.fragmentExtensionsContainer, fragment)
+                .addToBackStack(null)
+                .commit()
+        } else {
+            requireContext().customAlertDialog().apply {
+                setTitle(pkg.name)
+                val msg = buildString {
+                    append("Package: ${pkg.pkgName}\n")
+                    append("Version: ${pkg.versionName}\n")
+                    pkg.repository?.let { append("Repository: $it\n") }
+                    append("Sources: ${pkg.sources.size}")
+                }
+                setMessage(msg)
+                setPosButton(R.string.ok)
+                show()
+            }
+        }
+    }
+
+    companion object {
+        const val ACTION_DOWNLOAD_STARTED = "ani.kiwami.ACTION_DOWNLOAD_STARTED"
+        const val ACTION_DOWNLOAD_FINISHED = "ani.kiwami.ACTION_DOWNLOAD_FINISHED"
+        const val ACTION_DOWNLOAD_FAILED = "ani.kiwami.ACTION_DOWNLOAD_FAILED"
+        const val ACTION_DOWNLOAD_PROGRESS = "ani.kiwami.ACTION_DOWNLOAD_PROGRESS"
+        const val EXTRA_NOVEL_LINK = "extra_novel_link"
+    }
+}
+
+interface DownloadTriggerCallback {
+    fun downloadTrigger(novelDownloadPackage: NovelDownloadPackage)
+}
+
+interface DownloadedCheckCallback {
+    fun downloadedCheck(novel: ShowResponse): Boolean
+    fun downloadedCheckWithStart(novel: ShowResponse): Boolean
+    fun deleteDownload(novel: ShowResponse)
+}

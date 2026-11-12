@@ -7,7 +7,7 @@
     android:background="#080814">
 
     <!-- Tilted, drifting, blurred wall of anime artwork -->
-    <ani.dantotsu.onboarding.AnimeTileWall
+    <ani.kiwami.onboarding.AnimeTileWall
         android:id="@+id/tileWall"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />

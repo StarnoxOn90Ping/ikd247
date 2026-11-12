@@ -10,7 +10,7 @@
     tools:context=".media.MediaInfoFragment"
     tools:ignore="SpeakableTextPresentCheck">
 
-    <ani.dantotsu.util.BounceNestedScrollView
+    <ani.kiwami.util.BounceNestedScrollView
 
         android:id="@+id/mediaInfoScroll"
         android:layout_width="match_parent"
@@ -285,7 +285,7 @@
                             tools:ignore="ContentDescription" />
                     </LinearLayout>
 
-                    <ani.dantotsu.media.FadingTextView
+                    <ani.kiwami.media.FadingTextView
                         android:id="@+id/mediaInfoDescription"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -737,5 +737,5 @@
 
             </LinearLayout>
         </FrameLayout>
-    </ani.dantotsu.util.BounceNestedScrollView>
+    </ani.kiwami.util.BounceNestedScrollView>
 </androidx.cardview.widget.CardView>

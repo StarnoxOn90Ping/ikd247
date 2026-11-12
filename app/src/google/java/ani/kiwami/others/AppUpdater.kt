@@ -1,0 +1,284 @@
+package ani.kiwami.others
+
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.net.Uri
+import android.os.Environment
+import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.core.content.getSystemService
+import androidx.fragment.app.FragmentActivity
+import ani.kiwami.BuildConfig
+import ani.kiwami.Mapper
+import ani.kiwami.R
+import ani.kiwami.buildMarkwon
+import ani.kiwami.client
+import ani.kiwami.currContext
+import ani.kiwami.logError
+import ani.kiwami.openLinkInBrowser
+import ani.kiwami.settings.saving.PrefManager
+import ani.kiwami.snackString
+import ani.kiwami.toast
+import ani.kiwami.tryWithSuspend
+import ani.kiwami.util.Logger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import java.text.SimpleDateFormat
+import java.util.Locale
+
+object AppUpdater {
+    // Updates come from the latest GitHub release of Kiwami, with multi-ABI APK selection
+    private const val UPDATER_REPO = "StarnoxOn90Ping/Kiwami"
+
+    private suspend fun fetchFromCustomUpdater(repo: String = UPDATER_REPO): Pair<String, String>? {
+        return try {
+            val res = client.get("https://api.github.com/repos/$repo/releases/latest")
+            if (res.code == 200) {
+                val release = Mapper.json.decodeFromString<GithubResponse>(res.text)
+                val v = release.tagName.removePrefix("v").trim()
+                (release.body ?: "") to v.ifEmpty { release.tagName }
+            } else null
+        } catch (e: Exception) {
+            Logger.log("Custom updater check failed: ${e.message}")
+            null
+        }
+    }
+
+    private suspend fun fetchApkUrlFromCustomUpdater(repo: String = UPDATER_REPO, version: String): String? {
+        val tagParam = if (version.startsWith("v")) version else "v$version"
+        val assets = try {
+            client.get("https://api.github.com/repos/$repo/releases/tags/$tagParam")
+                .parsed<GithubResponse>().assets?.filter {
+                    it.browserDownloadURL.endsWith(".apk")
+                }
+        } catch (e: Exception) {
+            try {
+                client.get("https://api.github.com/repos/$repo/releases/tags/$version")
+                    .parsed<GithubResponse>().assets?.filter {
+                        it.browserDownloadURL.endsWith(".apk")
+                    }
+            } catch (e2: Exception) {
+                null
+            }
+        } ?: return null
+
+        val supportedAbis = android.os.Build.SUPPORTED_ABIS ?: emptyArray()
+        for (abi in supportedAbis) {
+            val normalizedAbi = abi.lowercase()
+            val match = assets.firstOrNull { asset ->
+                val name = asset.browserDownloadURL.lowercase()
+                name.contains("-$normalizedAbi-") || name.contains("-$normalizedAbi.") || name.contains("_$normalizedAbi")
+            }
+            if (match != null) {
+                Logger.log("Selected APK matching ABI $normalizedAbi: ${match.browserDownloadURL}")
+                return match.browserDownloadURL
+            }
+        }
+
+        val universal = assets.firstOrNull { it.browserDownloadURL.contains("universal", ignoreCase = true) }
+        if (universal != null) {
+            Logger.log("Selected Universal APK: ${universal.browserDownloadURL}")
+            return universal.browserDownloadURL
+        }
+
+        return assets.firstOrNull()?.browserDownloadURL
+    }
+
+    suspend fun check(activity: FragmentActivity, post: Boolean = false) {
+        if (post) snackString(currContext()?.getString(R.string.checking_for_update))
+        tryWithSuspend {
+            val update = fetchFromCustomUpdater()
+            val md = update?.first ?: ""
+            val version = update?.second ?: ""
+            val shouldUpdate = update != null && isOutdated(version, BuildConfig.VERSION_NAME)
+
+            Logger.log("Git Version : $version")
+            val dontShow = PrefManager.getCustomVal("dont_ask_for_update_$version", false)
+
+            if (shouldUpdate && !dontShow && !activity.isDestroyed) activity.runOnUiThread {
+                CustomBottomDialog.newInstance().apply {
+                    setTitleText(
+                        "${if (BuildConfig.DEBUG) "Beta " else ""}Update " + currContext()!!.getString(
+                            R.string.available
+                        )
+                    )
+                    addView(
+                        TextView(activity).apply {
+                            val markWon = try {
+                                buildMarkwon(activity, false)
+                            } catch (e: IllegalArgumentException) {
+                                return@runOnUiThread
+                            }
+                            markWon.setMarkdown(this, md)
+                        }
+                    )
+
+                    setCheck(
+                        currContext()!!.getString(R.string.dont_show_again, version),
+                        false
+                    ) { isChecked ->
+                        if (isChecked) {
+                            PrefManager.setCustomVal("dont_ask_for_update_$version", true)
+                        }
+                    }
+                    setPositiveButton(currContext()!!.getString(R.string.lets_go)) {
+                        MainScope().launch(Dispatchers.IO) {
+                            try {
+                                val apkUrl = fetchApkUrlFromCustomUpdater(UPDATER_REPO, version)
+                                if (apkUrl != null) {
+                                    activity.downloadUpdate(version, apkUrl)
+                                } else {
+                                    openLinkInBrowser("https://github.com/$UPDATER_REPO/releases/tag/v$version")
+                                }
+                            } catch (e: Exception) {
+                                logError(e)
+                            }
+                        }
+                        dismiss()
+                    }
+                    setNegativeButton(currContext()!!.getString(R.string.cope)) {
+                        dismiss()
+                    }
+                    show(activity.supportFragmentManager, "dialog")
+                }
+            } else {
+                if (post) snackString(currContext()?.getString(R.string.no_update_found))
+            }
+        }
+    }
+
+    private fun isOutdated(latestTag: String, currentVersion: String): Boolean {
+        val latest = latestTag.removePrefix("v").trim()
+        val current = currentVersion.removePrefix("v").trim()
+        if (latest == current) return false
+
+        val latestBase = latest.substringBefore("+").substringBefore("-").trim()
+        val currentBase = current.substringBefore("+").substringBefore("-").trim()
+
+        val lParts = latestBase.split(".").mapNotNull { it.toIntOrNull() }
+        val cParts = currentBase.split(".").mapNotNull { it.toIntOrNull() }
+
+        if (lParts.isNotEmpty() && cParts.isNotEmpty()) {
+            val maxLen = maxOf(lParts.size, cParts.size)
+            for (i in 0 until maxLen) {
+                val l = lParts.getOrElse(i) { 0 }
+                val c = cParts.getOrElse(i) { 0 }
+                if (l > c) return true
+                if (l < c) return false
+            }
+        }
+
+        val latestHash = when {
+            "+" in latest -> latest.substringAfter("+").substringBefore("-").trim()
+            lParts.isEmpty() && latest.isNotBlank() -> latest.substringBefore("-").trim()
+            else -> ""
+        }
+        val currentHash = when {
+            "+" in current -> current.substringAfter("+").substringBefore("-").trim()
+            cParts.isEmpty() && current.isNotBlank() -> current.substringBefore("-").trim()
+            else -> ""
+        }
+
+        if (latestHash.isNotEmpty() && currentHash.isNotEmpty()) {
+            return !(latestHash.startsWith(currentHash) || currentHash.startsWith(latestHash))
+        }
+
+        return latestHash.isNotEmpty() && currentHash.isEmpty()
+    }
+
+
+    //Blatantly kanged from https://github.com/LagradOst/CloudStream-3/blob/master/app/src/main/java/com/lagradost/cloudstream3/utils/InAppUpdater.kt
+    private fun Activity.downloadUpdate(version: String, url: String) {
+        toast(getString(R.string.downloading_update, version))
+
+        val downloadManager = this.getSystemService<DownloadManager>()!!
+
+        val request = DownloadManager.Request(Uri.parse(url))
+            .setMimeType("application/vnd.android.package-archive")
+            .setTitle("Downloading Kiwami $version")
+            .setDestinationInExternalPublicDir(
+                Environment.DIRECTORY_DOWNLOADS,
+                "Kiwami $version.apk"
+            )
+            .setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE)
+            .setAllowedOverRoaming(true)
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+
+        val id = try {
+            downloadManager.enqueue(request)
+        } catch (e: Exception) {
+            logError(e)
+            -1
+        }
+        if (id == -1L) return
+        ContextCompat.registerReceiver(
+            this,
+            object : BroadcastReceiver() {
+                @SuppressLint("Range")
+                override fun onReceive(context: Context?, intent: Intent?) {
+                    try {
+                        val downloadId = intent?.getLongExtra(
+                            DownloadManager.EXTRA_DOWNLOAD_ID, id
+                        ) ?: id
+
+                        downloadManager.getUriForDownloadedFile(downloadId)?.let {
+                            openApk(this@downloadUpdate, it)
+                        }
+                    } catch (e: Exception) {
+                        logError(e)
+                    }
+                }
+            }, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+            ContextCompat.RECEIVER_EXPORTED
+        )
+    }
+
+    private fun openApk(context: Context, uri: Uri) {
+        try {
+            uri.path?.let {
+                val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+                    data = uri
+                }
+                context.startActivity(installIntent)
+            }
+        } catch (e: Exception) {
+            logError(e)
+        }
+    }
+
+    val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+
+    @Serializable
+    data class GithubResponse(
+        @SerialName("html_url")
+        val htmlUrl: String,
+        @SerialName("tag_name")
+        val tagName: String,
+        val prerelease: Boolean,
+        @SerialName("created_at")
+        val createdAt: String,
+        val body: String? = null,
+        val assets: List<Asset>? = null
+    ) {
+        @Serializable
+        data class Asset(
+            @SerialName("browser_download_url")
+            val browserDownloadURL: String
+        )
+
+        fun timeStamp(): Long {
+            return dateFormat.parse(createdAt)!!.time
+        }
+    }
+}

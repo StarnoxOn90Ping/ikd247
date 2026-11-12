@@ -3,8 +3,8 @@ package tachiyomi.source.local.entries.anime
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
-import ani.dantotsu.media.MediaNameAdapter
-import ani.dantotsu.util.Logger
+import ani.kiwami.media.MediaNameAdapter
+import ani.kiwami.util.Logger
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.UnmeteredSource
@@ -309,8 +309,8 @@ class LocalAnimeSource(
         private val SUPPORTED_VIDEO_EXTENSIONS = listOf("avi", "flv", "mkv", "mov", "mp4", "webm", "wmv")
 
         fun getBaseDirectory(context: Context): DocumentFile? {
-            val uriString = ani.dantotsu.settings.saving.PrefManager
-                .getVal<String>(ani.dantotsu.settings.saving.PrefName.LocalDir)
+            val uriString = ani.kiwami.settings.saving.PrefManager
+                .getVal<String>(ani.kiwami.settings.saving.PrefName.LocalDir)
             if (uriString.isBlank()) return null
             val uri = Uri.parse(uriString)
             return DocumentFile.fromTreeUri(context, uri)

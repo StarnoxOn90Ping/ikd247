@@ -35,7 +35,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <ani.dantotsu.util.BounceRecyclerView
+        <ani.kiwami.util.BounceRecyclerView
             android:id="@+id/mediaSourceRecycler"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

@@ -1,6 +1,6 @@
 package eu.kanade.tachiyomi.torrentutils
 
-import ani.dantotsu.torrent.TorrentServerManager
+import ani.kiwami.torrent.TorrentServerManager
 import eu.kanade.tachiyomi.torrentutils.model.DeadTorrentException
 import eu.kanade.tachiyomi.torrentutils.model.TorrentFile
 import eu.kanade.tachiyomi.torrentutils.model.TorrentInfo

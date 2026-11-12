@@ -1,7 +1,7 @@
 package eu.kanade.tachiyomi.network
 
 import android.webkit.CookieManager
-import ani.dantotsu.snackString
+import ani.kiwami.snackString
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl

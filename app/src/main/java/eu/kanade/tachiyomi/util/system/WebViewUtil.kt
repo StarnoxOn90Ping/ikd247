@@ -6,7 +6,7 @@ import android.content.pm.PackageManager
 import android.webkit.CookieManager
 import android.webkit.WebSettings
 import android.webkit.WebView
-import ani.dantotsu.util.Logger
+import ani.kiwami.util.Logger
 
 import androidx.webkit.UserAgentMetadata
 import androidx.webkit.WebSettingsCompat

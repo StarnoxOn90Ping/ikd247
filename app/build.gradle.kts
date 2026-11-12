@@ -40,7 +40,7 @@ val gitCommitHash = computeGitCommitHash()
 val hashSuffix = if (gitCommitHash.isNotEmpty()) "+$gitCommitHash" else ""
 
 android {
-    namespace = "ani.dantotsu"
+    namespace = "ani.kiwami"
     compileSdk = 37
     compileSdkMinor = 2
 
