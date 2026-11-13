@@ -274,7 +274,7 @@ object RPCManager {
                 (data.state?.contains("Reading", ignoreCase = true) == true ||
                         data.state?.contains("Chapter", ignoreCase = true) == true)
 
-        val mode = if (isManga) PrefManager.getVal(PrefName.DiscordRPCModeManga, "kiwami") else PrefManager.getVal(PrefName.DiscordRPCModeAnime, "kiwami")
+        val mode = if (isManga) PrefManager.getVal(PrefName.DiscordRPCModeManga, "anilist") else PrefManager.getVal(PrefName.DiscordRPCModeAnime, "anilist")
         val useIconPref = if (isManga) PrefManager.getVal<Boolean>(PrefName.DiscordRPCShowIconManga, true) else PrefManager.getVal<Boolean>(PrefName.DiscordRPCShowIconAnime, true)
 
         val showSmallIcon = useIconPref && mode != "nothing" && 
@@ -283,10 +283,7 @@ object RPCManager {
 
         // Select Small Icon based on mode
         val (smallIconUrl, smallIconText) = if (showSmallIcon) {
-            when (mode) {
-                "anilist" -> Discord.small_Image_AniList to "AniList"
-                else -> Discord.small_Image to "Dantotsu"
-            }
+            Discord.small_Image_AniList to "AniList"
         } else {
             null to null
         }
@@ -307,15 +304,12 @@ object RPCManager {
             // Button 2: User Profile Link
             val anilistUser = PrefManager.getVal(PrefName.AnilistUserName, "")
             
-            val (userProfileUrl, profileLabel) = when (mode) {
-                "anilist" -> (if (anilistUser.isNotEmpty()) "https://anilist.co/user/$anilistUser/" else null) to "View Profile"
-                "kiwami" -> (if (anilistUser.isNotEmpty()) "https://dantotsu.app/u/$anilistUser" else null) to "Dantotsu Profile"
-                else -> null to null
-            }
+            val userProfileUrl = if (anilistUser.isNotEmpty()) "https://anilist.co/user/$anilistUser/" else null
+            val profileLabel = "View Profile"
 
             userProfileUrl?.let { url ->
                 if (url.isValidUrl()) {
-                    buttons.add(DiscordActivity.Button(label = profileLabel ?: "View Profile", url = url))
+                    buttons.add(DiscordActivity.Button(label = profileLabel, url = url))
                 }
             }
         }

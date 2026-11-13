@@ -262,16 +262,6 @@ class SettingsActivity : AppCompatActivity() {
                 override fun afterTextChanged(s: android.text.Editable?) {}
             })
 
-            settingBuyMeCoffee.setOnClickListener {
-                lifecycleScope.launch {
-                    it.pop()
-                }
-                openLinkInBrowser(getString(R.string.coffee))
-            }
-            lifecycleScope.launch {
-                settingBuyMeCoffee.pop()
-            }
-
             loginDiscord.setOnClickListener {
                 openLinkInBrowser(getString(R.string.discord))
             }

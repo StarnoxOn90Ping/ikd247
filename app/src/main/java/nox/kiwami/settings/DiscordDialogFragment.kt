@@ -58,9 +58,8 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
             if (isLoadingSettings) return@setOnCheckedChangeListener
             val mode = when (checkedId) {
                 binding.radioNothing.id -> "nothing"
-                binding.radioKiwami.id -> "kiwami"
                 binding.radioAnilist.id -> "anilist"
-                else -> "kiwami"
+                else -> "anilist"
             }
             if (isMangaTabSelected) {
                 PrefManager.setVal(PrefName.DiscordRPCModeManga, mode)
@@ -132,16 +131,15 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
         isLoadingSettings = true
 
         val mode = if (isMangaTabSelected) {
-            PrefManager.getVal(PrefName.DiscordRPCModeManga, "kiwami")
+            PrefManager.getVal(PrefName.DiscordRPCModeManga, "anilist")
         } else {
-            PrefManager.getVal(PrefName.DiscordRPCModeAnime, "kiwami")
+            PrefManager.getVal(PrefName.DiscordRPCModeAnime, "anilist")
         }
 
         when (mode) {
             "nothing" -> binding.radioNothing.isChecked = true
-            "kiwami" -> binding.radioKiwami.isChecked = true
             "anilist" -> binding.radioAnilist.isChecked = true
-            else -> binding.radioKiwami.isChecked = true
+            else -> binding.radioAnilist.isChecked = true
         }
 
         val showIcon = if (isMangaTabSelected) {
@@ -157,8 +155,8 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
     }
 
     private fun updatePreview() {
-        val mode = if (isMangaTabSelected) PrefManager.getVal(PrefName.DiscordRPCModeManga, "kiwami")
-                   else PrefManager.getVal(PrefName.DiscordRPCModeAnime, "kiwami")
+        val mode = if (isMangaTabSelected) PrefManager.getVal(PrefName.DiscordRPCModeManga, "anilist")
+                   else PrefManager.getVal(PrefName.DiscordRPCModeAnime, "anilist")
         val useIcon = if (isMangaTabSelected) PrefManager.getVal(PrefName.DiscordRPCShowIconManga, true)
                       else PrefManager.getVal(PrefName.DiscordRPCShowIconAnime, true)
 
@@ -179,10 +177,7 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
         // Small Icon
         if (useIcon && mode != "nothing") {
             binding.previewSmallImage.visibility = View.VISIBLE
-            val iconUrl = when (mode) {
-                "anilist" -> Discord.small_Image_AniList
-                else -> Discord.small_Image
-            }
+            val iconUrl = Discord.small_Image_AniList
             Glide.with(this).load(iconUrl).into(binding.previewSmallImage)
         } else {
             binding.previewSmallImage.visibility = View.GONE
@@ -198,10 +193,7 @@ class DiscordDialogFragment : BottomSheetDialogFragment() {
 
             binding.previewButton1.text = "VIEW ON ANILIST"
 
-            binding.previewButton2.text = when (mode) {
-                "kiwami" -> "DANTOTSU PROFILE"
-                else -> "VIEW PROFILE"
-            }
+            binding.previewButton2.text = "VIEW PROFILE"
         }
     }
 
