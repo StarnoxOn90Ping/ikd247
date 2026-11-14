@@ -15,36 +15,36 @@ import rx.Observable
 
 /**
  * Coordinator manager for both Dan Novel (APK-based) extensions and LNReader (JS-based) plugins.
- * Maintains a clean separation of concerns by delegating to [DanNovelExtensionManager]
+ * Maintains a clean separation of concerns by delegating to [KiwamiNovelExtensionManager]
  * and [LnReaderExtensionManager].
  */
 @Inject
 @SingleIn(AppScope::class)
 class NovelExtensionManager(private val context: Context) {
 
-    val danNovelManager = DanNovelExtensionManager(context)
+    val kiwamiNovelManager = KiwamiNovelExtensionManager(context)
     val lnReaderManager = LnReaderExtensionManager(context)
 
     val isInitialized: Boolean
-        get() = danNovelManager.isInitialized
+        get() = kiwamiNovelManager.isInitialized
 
     val installedExtensionsFlow: StateFlow<List<NovelExtension.Installed>>
-        get() = danNovelManager.installedExtensionsFlow
+        get() = kiwamiNovelManager.installedExtensionsFlow
 
     val availableExtensionsFlow: StateFlow<List<NovelExtension.Available>>
-        get() = danNovelManager.availableExtensionsFlow
+        get() = kiwamiNovelManager.availableExtensionsFlow
 
     val allInstalledExtensionsFlow: Flow<List<NovelExtension>> =
-        danNovelManager.installedExtensionsFlow.combine(lnReaderManager.installedPluginsFlow) { apk, js ->
+        kiwamiNovelManager.installedExtensionsFlow.combine(lnReaderManager.installedPluginsFlow) { apk, js ->
             val apkList: List<NovelExtension> = apk
             val jsList: List<NovelExtension>  = js.map { NovelExtension.JsPlugin(it) }
             apkList + jsList
         }
 
-    fun getSourceData(id: Long) = danNovelManager.getSourceData(id)
+    fun getSourceData(id: Long) = kiwamiNovelManager.getSourceData(id)
 
     suspend fun findAvailableExtensions() {
-        danNovelManager.findAvailableExtensions()
+        kiwamiNovelManager.findAvailableExtensions()
 
         try {
             val novelRepos = PrefManager.getVal<Set<String>>(PrefName.NovelExtensionRepos).toList()
@@ -56,22 +56,22 @@ class NovelExtensionManager(private val context: Context) {
 
     // --- APK Extension Delegation ---
     fun installExtension(extension: NovelExtension.Available): Observable<InstallStep> =
-        danNovelManager.installExtension(extension)
+        kiwamiNovelManager.installExtension(extension)
 
     fun updateExtension(extension: NovelExtension.Installed): Observable<InstallStep> =
-        danNovelManager.updateExtension(extension)
+        kiwamiNovelManager.updateExtension(extension)
 
     fun cancelInstallUpdateExtension(extension: NovelExtension) =
-        danNovelManager.cancelInstallUpdateExtension(extension)
+        kiwamiNovelManager.cancelInstallUpdateExtension(extension)
 
     fun setInstalling(downloadId: Long) =
-        danNovelManager.setInstalling(downloadId)
+        kiwamiNovelManager.setInstalling(downloadId)
 
     fun updateInstallStep(downloadId: Long, step: InstallStep) =
-        danNovelManager.updateInstallStep(downloadId, step)
+        kiwamiNovelManager.updateInstallStep(downloadId, step)
 
     fun uninstallExtension(pkgName: String) =
-        danNovelManager.uninstallExtension(pkgName)
+        kiwamiNovelManager.uninstallExtension(pkgName)
 
     // --- LNReader JS Plugin Delegation ---
     suspend fun findAvailableLnReaderPlugins(extraRepos: List<String> = emptyList()) =

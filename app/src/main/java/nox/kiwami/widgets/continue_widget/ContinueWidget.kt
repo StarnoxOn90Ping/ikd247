@@ -207,7 +207,7 @@ class ContinueWidget : AppWidgetProvider() {
                     coverUrl = prefs.getString(KEY_LAST_READ_COVER, null)
                     logoIconRes = R.drawable.ic_round_menu_book_24
                 } else {
-                    headerText = "DANTOTSU"
+                    headerText = "KIWAMI"
                     titleText = "Nothing active"
                     detailText = "Open Kiwami to start"
                     coverUrl = null

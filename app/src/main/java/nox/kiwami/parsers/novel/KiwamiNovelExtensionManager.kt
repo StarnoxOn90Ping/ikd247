@@ -19,11 +19,11 @@ import rx.Observable
 import tachiyomi.core.util.lang.withUIContext
 
 /**
- * Dedicated manager for APK-based Dantotsu Novel extensions.
+ * Dedicated manager for APK-based Kiwami Novel extensions.
  * Handles scanning installed APKs, fetching available APK extensions from GitHub,
  * and installing/updating/uninstalling APK packages.
  */
-class DanNovelExtensionManager(private val context: Context) {
+class KiwamiNovelExtensionManager(private val context: Context) {
 
     var isInitialized = false
         private set
@@ -83,7 +83,7 @@ class DanNovelExtensionManager(private val context: Context) {
                     ext.copy(lang = detectedLang)
                 }
         } catch (e: Exception) {
-            Logger.log("DanNovelExtensionManager: Error finding extensions: ${e.message}")
+            Logger.log("KiwamiNovelExtensionManager: Error finding extensions: ${e.message}")
             withUIContext { snackString("Failed to get Novel extensions list") }
             emptyList()
         }

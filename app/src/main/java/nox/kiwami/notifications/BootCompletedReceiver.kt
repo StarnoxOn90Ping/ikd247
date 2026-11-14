@@ -26,7 +26,7 @@ class BootCompletedReceiver : BroadcastReceiver() {
             val scheduler = AlarmManagerScheduler(context)
             PrefManager.init(context)
             Logger.init(context)
-            Logger.log("Starting Dantotsu Subscription Service on Boot")
+            Logger.log("Starting Kiwami Subscription Service on Boot")
             if (PrefManager.getVal(PrefName.UseAlarmManager)) {
                 val commentInterval =
                     CommentNotificationWorker.checkIntervals[PrefManager.getVal(PrefName.CommentNotificationInterval)]

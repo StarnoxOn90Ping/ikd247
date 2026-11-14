@@ -66,7 +66,7 @@ class PlayerDiscordManager(
                     stopTimestamp = endTimestamp,
                     state = finalState,
                     largeImage = media.cover?.let { RPC.Link(media.userPreferredName, it) },
-                    smallImage = RPC.Link("Dantotsu", Discord.small_Image),
+                    smallImage = RPC.Link("Kiwami", Discord.small_Image),
                     buttons = buttons,
                 )
                 RPCManager.setPresence(context, rpcData)

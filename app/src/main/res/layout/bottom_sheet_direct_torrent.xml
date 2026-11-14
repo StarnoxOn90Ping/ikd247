@@ -170,7 +170,7 @@
             android:textSize="13sp"
             tools:text="Total Size: 45.2 GiB · 22 Files" />
 
-        <!-- Directory / Season Dropdown (Dantotsu native style) -->
+        <!-- Directory / Season Dropdown (Kiwami native style) -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/torrentFolderDropdownContainer"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"

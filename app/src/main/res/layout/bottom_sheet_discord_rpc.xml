@@ -221,7 +221,7 @@
                         android:fontFamily="@font/poppins_semi_bold"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
-                        android:text="STREAM ON DANTOTSU"
+                        android:text="STREAM ON KIWAMI"
                         android:textColor="#e8e8e8"
                         android:textSize="12sp"
                         app:cornerRadius="50dp"

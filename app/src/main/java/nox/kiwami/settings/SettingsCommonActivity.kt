@@ -318,7 +318,7 @@ class SettingsCommonActivity : AppCompatActivity() {
                                             passwordAlertDialog(true) { password ->
                                                 if (password != null) {
                                                     savePrefsToDownloads(
-                                                        "DantotsuSettings",
+                                                        "KiwamiSettings",
                                                         PrefManager.exportAllPrefs(selected),
                                                         context,
                                                         password,
@@ -329,7 +329,7 @@ class SettingsCommonActivity : AppCompatActivity() {
                                             }
                                         } else {
                                             savePrefsToDownloads(
-                                                "DantotsuSettings",
+                                                "KiwamiSettings",
                                                 PrefManager.exportAllPrefs(selected),
                                                 context,
                                                 null,

@@ -316,7 +316,7 @@ object RPCManager {
 
         return DiscordActivity(
             applicationId = data.applicationId,
-            name = data.activityName?.takeIf { it.isNotBlank() } ?: "Dantotsu",
+            name = data.activityName?.takeIf { it.isNotBlank() } ?: "Kiwami",
             platform = "android", // Required by Discord
             type = data.type?.ordinal,
             statusDisplayType = 0,

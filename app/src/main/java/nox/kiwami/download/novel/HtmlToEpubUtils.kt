@@ -79,7 +79,7 @@ object HtmlToEpubUtils {
                     <dc:language>en</dc:language>
                     <dc:identifier id="BookId">urn:uuid:12345</dc:identifier>
                     <dc:description>$cleanTitle</dc:description>
-                    <dc:publisher>Dantotsu</dc:publisher>
+                    <dc:publisher>Kiwami</dc:publisher>
                     <dc:date>2024-01-01</dc:date>
                     <dc:rights>All rights reserved</dc:rights>
                 </metadata>
