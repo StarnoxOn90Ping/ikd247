@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.view.View
 import android.view.animation.PathInterpolator
+import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import java.util.WeakHashMap
 import kotlin.math.abs
@@ -51,8 +52,27 @@ private fun ViewPager2.ensureGuard() {
             if (running[pager]?.isRunning == true || pager.isFakeDragging) return
             val w = wanted[pager] ?: return
             if (pager.currentItem != w) pager.setCurrentItem(w, false)
+            // The transformer only runs on scroll events. When a glide is interrupted by a quick
+            // tab tap, the page that ends up selected can be left at alpha 0 / shifted (all black).
+            // Once everything has settled, put every page into its proper resting state.
+            pager.post { pager.restPages() }
         }
     })
+}
+
+/** Forces each page to its idle look: the selected one fully visible, the others hidden. */
+private fun ViewPager2.restPages() {
+    if (scrollState != ViewPager2.SCROLL_STATE_IDLE || isFakeDragging) return
+    if (running[this]?.isRunning == true) return
+    val rv = getChildAt(0) as? RecyclerView ?: return
+    for (i in 0 until rv.childCount) {
+        val page = rv.getChildAt(i)
+        val selected = rv.getChildAdapterPosition(page) == currentItem
+        page.alpha = if (selected) 1f else 0f
+        page.scaleX = 1f
+        page.scaleY = 1f
+        page.translationX = 0f
+    }
 }
 
 /**
