@@ -119,7 +119,8 @@ class HomeSlotLayout @JvmOverloads constructor(
                 tracker?.recycle()
                 tracker = VelocityTracker.obtain().also { it.addMovement(ev) }
                 parent?.requestDisallowInterceptTouchEvent(true)
-                return super.dispatchTouchEvent(ev)
+                super.dispatchTouchEvent(ev)
+                return true
             }
 
             MotionEvent.ACTION_MOVE -> {
