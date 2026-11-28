@@ -34,6 +34,7 @@ class HomeSlotLayout @JvmOverloads constructor(
     private var downY = 0f
     private var originY = 0f
     private var progress = 0f
+    private var dir = -1f
     private var pending: (() -> Unit)? = null
     private var fullHeight = 0
 
@@ -95,6 +96,7 @@ class HomeSlotLayout @JvmOverloads constructor(
                 page = if (shown == -1) target else shown
                 settle()
                 if (shown != -1 && shown != target) {
+                    dir = if (page == 0) -1f else 1f
                     beginMove()
                     animateSwap(0f, true, false)
                 }
@@ -104,6 +106,7 @@ class HomeSlotLayout @JvmOverloads constructor(
 
     fun toggle() {
         if (!swapEnabled || state != IDLE || animator?.isRunning == true) return
+        dir = -1f
         beginMove()
         animateSwap(0f, true, true)
     }
@@ -131,10 +134,10 @@ class HomeSlotLayout @JvmOverloads constructor(
                         val dy = ev.y - downY
                         val ay = abs(dy)
                         if (ax > slop || ay > slop) {
-                            val allowed = (page == 0 && dy < 0) || (page == 1 && dy > 0)
-                            if (allowed && ay > ax * 1.6f) {
+                            if (ay > ax * 1.6f) {
                                 state = DRAGGING
                                 originY = ev.y
+                                dir = if (dy < 0) -1f else 1f
                                 cancelChildren(ev)
                                 beginMove()
                                 return true
@@ -147,8 +150,8 @@ class HomeSlotLayout @JvmOverloads constructor(
 
                     DRAGGING -> {
                         val raw = ev.y - originY
-                        val signed = if (page == 0) -raw else raw
-                        progress = (signed / slotHeight()).coerceIn(0f, 1f)
+                        if (raw != 0f) dir = if (raw < 0f) -1f else 1f
+                        progress = (abs(raw) / slotHeight()).coerceIn(0f, 1f)
                         applyProgress(progress)
                         return true
                     }
@@ -169,7 +172,7 @@ class HomeSlotLayout @JvmOverloads constructor(
                 tracker = null
                 state = IDLE
                 if (wasDragging) {
-                    val toward = if (page == 0) -velocity else velocity
+                    val toward = dir * velocity
                     val commit = ev.actionMasked == MotionEvent.ACTION_UP &&
                         (progress > 0.3f || toward > flingVelocity)
                     animateSwap(progress, commit, true)
@@ -214,7 +217,6 @@ class HomeSlotLayout @JvmOverloads constructor(
         val out = pane(page) ?: return
         val inc = pane(1 - page) ?: return
         val h = slotHeight()
-        val dir = if (page == 0) -1f else 1f
         out.translationY = dir * p * h
         out.alpha = 1f - p
         inc.translationY = -dir * (1f - p) * h
