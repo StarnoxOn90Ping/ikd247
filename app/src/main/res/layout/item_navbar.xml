@@ -14,7 +14,8 @@
     android:clipChildren="false"
     android:clipToPadding="false"
     android:gravity="center_vertical"
-    android:orientation="horizontal">
+    android:orientation="horizontal"
+    android:paddingTop="24dp">
 
     <Space
         android:layout_width="0dp"
