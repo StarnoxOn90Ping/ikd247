@@ -4,6 +4,13 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
 import android.content.Context
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.Shader
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.VelocityTracker
@@ -38,8 +45,20 @@ class HomeSlotLayout @JvmOverloads constructor(
     private var pending: (() -> Unit)? = null
     private var fullHeight = 0
 
+    private var masking = false
+    private val maskPaint = Paint().apply {
+        xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+    }
+    private val topFade = TOP_FADE_DP * resources.displayMetrics.density
+    private val bottomFade = BOTTOM_FADE_DP * resources.displayMetrics.density
+
     private val slop = ViewConfiguration.get(context).scaledTouchSlop
     private val flingVelocity = ViewConfiguration.get(context).scaledMinimumFlingVelocity * 6f
+
+    init {
+        clipChildren = false
+        clipToPadding = false
+    }
 
     fun bind(top: View, bottom: View, dotsView: View) {
         topPane = top
@@ -151,7 +170,7 @@ class HomeSlotLayout @JvmOverloads constructor(
                     DRAGGING -> {
                         val raw = ev.y - originY
                         if (raw != 0f) dir = if (raw < 0f) -1f else 1f
-                        progress = (abs(raw) / slotHeight()).coerceIn(0f, 1f)
+                        progress = (abs(raw) / travel()).coerceIn(0f, 1f)
                         applyProgress(progress)
                         return true
                     }
@@ -184,6 +203,38 @@ class HomeSlotLayout @JvmOverloads constructor(
         return super.dispatchTouchEvent(ev)
     }
 
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        val total = topFade + h + bottomFade
+        if (total <= 0f || h <= 0) return
+        val colors = IntArray(STEPS * 2 + 2)
+        val positions = FloatArray(STEPS * 2 + 2)
+        for (i in 0..STEPS) {
+            val t = i / STEPS.toFloat()
+            val alpha = (t * t * (3f - 2f * t) * 255f).toInt()
+            colors[i] = Color.argb(alpha, 0, 0, 0)
+            positions[i] = (t * topFade) / total
+            colors[colors.size - 1 - i] = Color.argb(alpha, 0, 0, 0)
+            positions[positions.size - 1 - i] = 1f - (t * bottomFade) / total
+        }
+        maskPaint.shader = LinearGradient(
+            0f, -topFade, 0f, h + bottomFade, colors, positions, Shader.TileMode.CLAMP
+        )
+    }
+
+    override fun dispatchDraw(canvas: Canvas) {
+        if (!masking || maskPaint.shader == null) {
+            super.dispatchDraw(canvas)
+            return
+        }
+        val top = -topFade
+        val bottom = height + bottomFade
+        val layer = canvas.saveLayer(0f, top, width.toFloat(), bottom, null)
+        super.dispatchDraw(canvas)
+        canvas.drawRect(0f, top, width.toFloat(), bottom, maskPaint)
+        canvas.restoreToCount(layer)
+    }
+
     override fun onDetachedFromWindow() {
         pending = null
         stopAnimation()
@@ -192,6 +243,8 @@ class HomeSlotLayout @JvmOverloads constructor(
 
     private fun slotHeight(): Float =
         if (height > 0) height.toFloat() else 100f * resources.displayMetrics.density
+
+    private fun travel(): Float = slotHeight() + topFade + bottomFade
 
     private fun pane(index: Int): View? = if (index == 0) topPane else bottomPane
 
@@ -206,6 +259,8 @@ class HomeSlotLayout @JvmOverloads constructor(
         val out = pane(page) ?: return
         val inc = pane(1 - page) ?: return
         progress = 0f
+        masking = true
+        invalidate()
         out.visibility = VISIBLE
         inc.visibility = VISIBLE
         out.setLayerType(LAYER_TYPE_HARDWARE, null)
@@ -216,11 +271,9 @@ class HomeSlotLayout @JvmOverloads constructor(
     private fun applyProgress(p: Float) {
         val out = pane(page) ?: return
         val inc = pane(1 - page) ?: return
-        val h = slotHeight()
-        out.translationY = dir * p * h
-        out.alpha = 1f - p
-        inc.translationY = -dir * (1f - p) * h
-        inc.alpha = p
+        val t = travel()
+        out.translationY = dir * p * t
+        inc.translationY = -dir * (1f - p) * t
     }
 
     private fun animateSwap(from: Float, commit: Boolean, fromUser: Boolean) {
@@ -266,6 +319,8 @@ class HomeSlotLayout @JvmOverloads constructor(
     private fun settle() {
         val top = topPane ?: return
         val bottom = bottomPane ?: return
+        masking = false
+        invalidate()
         reset(top)
         reset(bottom)
         top.visibility = if (page == 0) VISIBLE else INVISIBLE
@@ -331,6 +386,7 @@ class HomeSlotLayout @JvmOverloads constructor(
         animator?.cancel()
         animator = null
         state = IDLE
+        masking = false
     }
 
     private companion object {
@@ -340,5 +396,8 @@ class HomeSlotLayout @JvmOverloads constructor(
         const val PASSING = 3
         const val REVEAL_MS = 220L
         const val COLLAPSE_MS = 240L
+        const val TOP_FADE_DP = 14f
+        const val BOTTOM_FADE_DP = 10f
+        const val STEPS = 6
     }
 }
