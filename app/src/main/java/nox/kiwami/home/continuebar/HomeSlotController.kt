@@ -46,6 +46,7 @@ class HomeSlotController(
 
     @SuppressLint("ClickableViewAccessibility")
     fun start(owner: LifecycleOwner) {
+        binding.homeSlotDots.setColors(activeDot, idleDot)
         binding.homeContinueBar.strokeColor = ColorUtils.setAlphaComponent(Color.WHITE, 40)
         binding.homeContinuePlayHalo.backgroundTintList =
             ColorStateList.valueOf(ColorUtils.setAlphaComponent(activeDot, 77))
@@ -59,8 +60,10 @@ class HomeSlotController(
         slot.bind(binding.homeSlotContinue, binding.homeSlotSocial, binding.homeSlotDots)
         slot.onPageChanged = { page ->
             PrefManager.setVal(PrefName.HomeSlotPage, page)
-            paintDots(page)
         }
+        slot.onDrag = { page, dir, progress -> binding.homeSlotDots.drag(page, dir, progress) }
+        slot.onRelease = { page, dir, commit -> binding.homeSlotDots.release(page, dir, commit) }
+        slot.onSettled = { page -> binding.homeSlotDots.snapTo(page) }
         binding.homeSlotDots.setOnClickListener { slot.toggle() }
         binding.homeContinueBar.setOnClickListener { open() }
         model.getAnimeContinue().observe(owner) { refresh() }
@@ -93,14 +96,7 @@ class HomeSlotController(
         if (reveal) binding.homeContinueBar.startAnimation(setSlideIn())
         binding.homeContinueSkeleton.visibility = if (barLoading) View.VISIBLE else View.GONE
         slot.configure(media != null || barLoading, hasSocial, PrefManager.getVal(PrefName.HomeSlotPage))
-        paintDots(slot.page)
-    }
-
-    private fun paintDots(page: Int) {
-        binding.homeSlotDotTop.backgroundTintList =
-            ColorStateList.valueOf(if (page == 0) activeDot else idleDot)
-        binding.homeSlotDotBottom.backgroundTintList =
-            ColorStateList.valueOf(if (page == 1) activeDot else idleDot)
+        binding.homeSlotDots.snapTo(slot.page)
     }
 
     private fun press(down: Boolean) {

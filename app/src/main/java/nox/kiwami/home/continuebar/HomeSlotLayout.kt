@@ -27,6 +27,9 @@ class HomeSlotLayout @JvmOverloads constructor(
 ) : FrameLayout(context, attrs) {
 
     var onPageChanged: ((Int) -> Unit)? = null
+    var onDrag: ((Int, Float, Float) -> Unit)? = null
+    var onRelease: ((Int, Float, Boolean) -> Unit)? = null
+    var onSettled: ((Int) -> Unit)? = null
     var page = 0
         private set
 
@@ -173,6 +176,7 @@ class HomeSlotLayout @JvmOverloads constructor(
                         if (raw != 0f) dir = if (raw < 0f) -1f else 1f
                         progress = (abs(raw) / travel()).coerceIn(0f, 1f)
                         applyProgress(progress)
+                        onDrag?.invoke(page, dir, progress)
                         return true
                     }
 
@@ -279,6 +283,7 @@ class HomeSlotLayout @JvmOverloads constructor(
 
     private fun animateSwap(from: Float, commit: Boolean, fromUser: Boolean) {
         val end = if (commit) 1f else 0f
+        onRelease?.invoke(page, dir, commit)
         animator?.cancel()
         val span = abs(end - from).coerceAtLeast(0.25f)
         animator = ValueAnimator.ofFloat(from, end).apply {
@@ -326,6 +331,7 @@ class HomeSlotLayout @JvmOverloads constructor(
         reset(bottom)
         top.visibility = if (page == 0) VISIBLE else INVISIBLE
         bottom.visibility = if (page == 1) VISIBLE else INVISIBLE
+        onSettled?.invoke(page)
     }
 
     private fun collapse(top: View, bottom: View) {

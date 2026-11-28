@@ -551,7 +551,7 @@
                     </FrameLayout>
                 </FrameLayout>
 
-                <LinearLayout
+                <nox.kiwami.home.continuebar.SlotDotsView
                     android:id="@+id/homeSlotDots"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -559,23 +559,7 @@
                     android:layout_marginEnd="4dp"
                     android:clickable="true"
                     android:focusable="true"
-                    android:orientation="vertical"
-                    android:padding="8dp"
-                    android:visibility="gone">
-
-                    <View
-                        android:id="@+id/homeSlotDotTop"
-                        android:layout_width="5dp"
-                        android:layout_height="5dp"
-                        android:background="@drawable/bg_slot_dot" />
-
-                    <View
-                        android:id="@+id/homeSlotDotBottom"
-                        android:layout_width="5dp"
-                        android:layout_height="5dp"
-                        android:layout_marginTop="5dp"
-                        android:background="@drawable/bg_slot_dot" />
-                </LinearLayout>
+                    android:visibility="gone" />
             </nox.kiwami.home.continuebar.HomeSlotLayout>
 
             <LinearLayout
