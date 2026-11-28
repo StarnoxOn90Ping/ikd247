@@ -19,6 +19,7 @@ import android.view.ViewConfiguration
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 class HomeSlotLayout @JvmOverloads constructor(
     context: Context,
@@ -49,8 +50,8 @@ class HomeSlotLayout @JvmOverloads constructor(
     private val maskPaint = Paint().apply {
         xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
     }
-    private val topFade = TOP_FADE_DP * resources.displayMetrics.density
-    private val bottomFade = BOTTOM_FADE_DP * resources.displayMetrics.density
+    private val topFade = (TOP_FADE_DP * resources.displayMetrics.density).roundToInt().toFloat()
+    private val bottomFade = (BOTTOM_FADE_DP * resources.displayMetrics.density).roundToInt().toFloat()
 
     private val slop = ViewConfiguration.get(context).scaledTouchSlop
     private val flingVelocity = ViewConfiguration.get(context).scaledMinimumFlingVelocity * 6f
@@ -231,7 +232,7 @@ class HomeSlotLayout @JvmOverloads constructor(
         val bottom = height + bottomFade
         val layer = canvas.saveLayer(0f, top, width.toFloat(), bottom, null)
         super.dispatchDraw(canvas)
-        canvas.drawRect(0f, top, width.toFloat(), bottom, maskPaint)
+        canvas.drawRect(-MASK_BLEED, top - MASK_BLEED, width + MASK_BLEED, bottom + MASK_BLEED, maskPaint)
         canvas.restoreToCount(layer)
     }
 
@@ -399,5 +400,6 @@ class HomeSlotLayout @JvmOverloads constructor(
         const val TOP_FADE_DP = 14f
         const val BOTTOM_FADE_DP = 10f
         const val STEPS = 6
+        const val MASK_BLEED = 2f
     }
 }
