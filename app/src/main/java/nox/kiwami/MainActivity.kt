@@ -153,8 +153,10 @@ class MainActivity : AppCompatActivity() {
 
         val bottomNavBar = findViewById<AnimatedBottomBar>(R.id.navbar)
         bottomNavBar.background = ContextCompat.getDrawable(this, R.drawable.bottom_nav_gray)
-        if (ThemeSurface.isOled(this)) OledNavStyle.pill(bottomNavBar)
-        NavGlow.wrap(bottomNavBar, GradientDrawable.RECTANGLE, 40f)
+        if (ThemeSurface.isOled(this)) {
+            OledNavStyle.pill(bottomNavBar)
+            NavGlow.wrap(bottomNavBar, GradientDrawable.RECTANGLE, 40f)
+        }
         NavFade.apply(binding.navbarFade)
 
         val offset = try {

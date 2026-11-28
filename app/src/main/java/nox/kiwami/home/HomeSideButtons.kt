@@ -37,9 +37,9 @@ class HomeSideButtons(
         if (ThemeSurface.isOled(activity)) {
             OledNavStyle.circle(nav.calendarButton)
             OledNavStyle.circle(nav.downloadsButton)
+            NavGlow.wrap(nav.calendarButton, GradientDrawable.OVAL, 0f)
+            NavGlow.wrap(nav.downloadsButton, GradientDrawable.OVAL, 0f)
         }
-        NavGlow.wrap(nav.calendarButton, GradientDrawable.OVAL, 0f)
-        NavGlow.wrap(nav.downloadsButton, GradientDrawable.OVAL, 0f)
         nav.calendarButton.setPressBounce(0.82f)
         nav.downloadsButton.setPressBounce(0.82f)
         nav.calendarButton.setOnClickListener { openCalendar() }
